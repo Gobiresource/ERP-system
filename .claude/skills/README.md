@@ -4,6 +4,7 @@
 
 | Skill | Юунд | Эх сурвалж | Лиценз |
 |---|---|---|---|
+| `erp-ui-guidelines` | ERP-ийн дэлгэц, компонент зохиох болон шалгах дүрэм | Энэ төсөлд бичсэн (NN/g, Carbon, Polaris, GOV.UK, WCAG 2.2, Apple HIG-ээс нэгтгэсэн) | — |
 | `dimensional-drawing` | UI элементийн зай, радиус, давхаргыг техникийн зураг маягаар баримтжуулах | [enesozturk/dimensional-drawing](https://github.com/enesozturk/dimensional-drawing) @ `5c45743` | MIT |
 | `dimensional-drawing-motion` | Дээрх зургийг ~10 секундийн бичлэг болгох | [enesozturk/dimensional-drawing](https://github.com/enesozturk/dimensional-drawing) @ `5c45743` | MIT |
 
