@@ -44,6 +44,17 @@
 | `break-ui` | Урт нэр, хоосон утга, латин бус бичиг зэрэг хамгийн хүнд өгөгдлөөр UI-г шалгана |
 | `mobile-native` | Вэб системийг утсанд жинхэнэ апп шиг мэдрэмжтэй болгоно |
 
+### [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design) @ `0cf73c3`
+
+| Skill | Юунд |
+|---|---|
+| `diagram-design` | Баримт бичгийн диаграм: системийн бүтэц, байгууллагын бүтэц, өгөгдлийн загвар, ажлын урсгал гэх мэт. ERP-ийн дэлгэц доторх графикт `dataviz` болон Ant Design хэрэглэнэ |
+
+Манай өөрчлөлт:
+- Тайлбарт (`description`) энэ төсөлд хэрхэн хэрэглэхийг нэмсэн.
+- `references/style-guide.md`-д "Mongolian labels" хэсэг нэмсэн: Ө, Ү үсгийн шалгалт, том үсэггүй бичих, сумны текстийг 24 тэмдэгт хүртэл зөвшөөрөх.
+- `commands/`, `prompts/` болон repo-гийн туслах файлуудыг хуулаагүй.
+
 ### [enesozturk/dimensional-drawing](https://github.com/enesozturk/dimensional-drawing) @ `5c45743`
 
 | Skill | Юунд |
