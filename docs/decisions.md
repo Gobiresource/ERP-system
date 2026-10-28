@@ -139,3 +139,12 @@ ERP системийн талаар хэрэглэгчтэй тохиролцс�
 **Шалгасан фонт (нэмэлт).** Geist, Geist Mono, Noto Serif нь Ө, Ү үсэгтэй. Inter, Fira Sans, Noto Sans, Roboto, Nunito Sans, PT Sans нь мөн Ө, Ү үсэгтэй.
 - Хүснэгтэд тоо тэгш зэрэгцэх `tnum` боломжтой: Golos Text, Inter, Onest, Manrope, Montserrat, Noto Sans, Roboto, Rubik, Fira Sans.
 - `tnum` боломжгүй: IBM Plex Sans, Commissioner, Nunito Sans, PT Sans.
+
+### Threads (@thestackagen): "Claude-ийг UI дизайнер болгох 10 repo"
+
+Нэвтрэлтгүйгээр зөвхөн эхний 2 төсөл харагдсан. Үлдсэн 8 нь thread-ийн хариултуудад байгаа.
+
+| Төсөл | Юу вэ | Шийдвэр | Шалтгаан |
+|---|---|---|---|
+| `superdesigndev/superdesign-skill` | Superdesign (superdesign.dev) төлбөртэй үүлэн үйлчилгээний skill | Татгалзсан | Тогтмол бус хувилбартай CLI-г (`npx @superdesign/cli@latest`) ажиллуулдаг. Бүртгэлээр нэвтрэх, кредит төлөх шаардлагатай. Кодын мэдээллийг гадагш илгээдэг. Хэрэглэгч сайтыг нь санаа хайхад өөрөө ашиглаж болно |
+| `marvkr/better-design` | better-design.com-ийн MCP үйлчилгээ ба 31 визуал загвар (shadcn/Tailwind) | Татгалзсан (хэрэгсэл болгон) | Алсын MCP, API түлхүүр шаарддаг, агентийн тохиргоог өөрчилдөг. Ant Design биш. Харин 31 загварын token (өнгө, булан, фонт) нь repo-д MIT лицензтэй байгаа. Хэрэглэгчид аль нэг нь таалагдвал Ant Design-ийн theme руу хөрвүүлж болно |
