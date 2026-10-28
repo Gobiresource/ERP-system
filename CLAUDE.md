@@ -20,9 +20,22 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
   - `design-system`: дизайн системийн аудит
   - `design-handoff`: хөгжүүлэгчид хүлээлгэн өгөх тодорхойлолт
 - **`frontend-design`** plugin: хэрэглэгч суулгасан бол frontend код бичихэд.
+- **Jakub Krehel-ийн skill-үүд** (энэ repo):
+  - `better-interface`: дэлгэцийг бүх талаас нь шалгах. Тэр `better-ui`, `better-typography`, `better-colors`, `better-layout`, `better-accessibility`, `better-writing`-ийг ашигладаг.
+  - `interface-review`: өөрчлөлтийг шалгах.
+  - `build-design`: хэрэглэгчийн өгсөн зураг, загварыг код болгох.
+  - `state-machine`: компонентийн бүх төлвийг харах.
+  - `variant`: хэрэглэгчид сонгуулах хувилбарууд хийх.
+  - `explain-interface`: хэрэглэгчийн явуулсан сайт, зураг хэрхэн хийгдсэнийг тайлбарлах.
+- **Emil Kowalski-ийн skill-үүд** (энэ repo):
+  - `emil-design-eng`: өнгөлгөө, хөдөлгөөн.
+  - `break-ui`: урт монгол нэр гэх мэт хүнд өгөгдлөөр шалгах.
+  - `mobile-native`: утсанд апп шиг мэдрэмж өгөх.
 - **`dimensional-drawing`, `dimensional-drawing-motion`** (энэ repo): компонентийн техникийн зураг, түүний хөдөлгөөнт бичлэг.
 - **`dataviz`:** график, самбар.
 - **Playwright ба Chromium** (урьдчилан суусан): дэлгэцийг компьютер, утасны хэмжээнд, гэрэл ба харанхуй горимд screenshot авч шалгана.
+
+Гадны skill манай `erp-ui-guidelines` эсвэл `docs/decisions.md`-тэй зөрчилдвөл манайх давуу. Жишээ нь Ant Design-ийг солихгүй, хөдөлгөөнийг цөөн хэрэглэнэ, монгол текстийн дүрмийг баримтална. Дэлгэрэнгүйг `.claude/skills/README.md`-ээс үзнэ.
 
 ## Instagram reel үзэх арга
 
