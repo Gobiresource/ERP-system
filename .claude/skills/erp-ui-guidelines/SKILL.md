@@ -19,6 +19,7 @@ NN/g, IBM Carbon, Shopify Polaris, GOV.UK Design System, W3C WCAG 2.2, Apple HIG
 | Хүртээмж (WCAG 2.2 AA) | [references/accessibility.md](references/accessibility.md) |
 | Ant Design-ийн тохиргоо | [references/antd.md](references/antd.md) |
 | Эх сурвалж, юуг нь авсан | [references/sources.md](references/sources.md) |
+| Гадны төслөөс сурсан зүйл: хөдөлгөөн, дизайны санаа, хийхгүй зүйл | [references/learned.md](references/learned.md) |
 
 ## Суурь зарчим: NN/g-ийн 10 зарчим ERP дээр
 
@@ -48,7 +49,7 @@ NN/g, IBM Carbon, Shopify Polaris, GOV.UK Design System, W3C WCAG 2.2, Apple HIG
 
 ## Эхлэлийн тоон утгууд
 
-Эдгээрийг дизайн систем дээр эцэслэнэ.
+Эдгээрийг дизайн систем дээр эцэслэнэ. Хэрэглэгч Pane загварыг сонгосон тул харагдах байдлын утгуудыг (үсэг, булан, сүүдэр) Pane-ийнхаар шинэчилнэ (`docs/decisions.md`, 2026-10-28).
 
 - **Зай:** 4 px алхамтай — 4, 8, 12, 16, 24, 32, 48, 64. Үүнээс гадуурх утга хэрэглэхгүй.
 - **Өнгөний харьцаа 60-30-10:** 60% нь саармаг дэвсгэр, 30% нь хоёрдогч гадаргуу, 10%-иас бага нь онцлох өнгө (гол товч, холбоос, сонгогдсон төлөв). Төлөвийн өнгө (амжилт, анхааруулга, алдаа) онцлох өнгөнд тооцогдохгүй.
