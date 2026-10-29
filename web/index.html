@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="mn">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ERP</title>
+    <script>
+      // Paint the right light/dark background before the app loads.
+      try {
+        var s = JSON.parse(localStorage.getItem('erp:v1') || 'null');
+        var t = s && s.settings && s.settings.theme;
+        var host = document.documentElement.dataset.theme;
+        var dark = t === 'dark' || (t !== 'light' && (host ? host === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches));
+        document.documentElement.dataset.mode = dark ? 'dark' : 'light';
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
