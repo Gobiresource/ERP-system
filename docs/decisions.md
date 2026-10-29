@@ -356,5 +356,17 @@ Pane-ийн "Нүүр" дэлгэцийг дагаж хийсэн загвар. 
 
 Тиймээс одоохондоо зөвхөн дэлгэцийн текст, жишээ өгөгдөл илгээнэ. Компанийн жинхэнэ баримт илгээх бол төлбөртэй хувилбар руу шилжинэ.
 
-**Хүлээгдэж буй:** хэрэглэгч түлхүүрээ орчны тохиргоонд нэмэх.
+**Өөрчлөгдсөн (2026-10-29):** хэрэглэгч API түлхүүрийн оронд өөрийн $20-ын Google бүртгэлтэй Antigravity CLI-г ашиглахаар шийдсэн. `tools/gemini.mjs`-ийг хассан.
+
+**Antigravity CLI (`agy`)-г шалгасан байдал**
+- Google-ийн хаалттай програм. Нэг файлтай програм бөгөөд албан ёсны суулгагчаар суулгана ([Installation & auth](https://antigravity.google/docs/cli/install)).
+- Google бүртгэлээр хөтчөөр нэвтэрнэ. Хөтөчгүй орчинд нэвтрэх URL нээгээд кодоо буцааж хуулдаг.
+- `agy -p "…"` нь асуултыг ажиллуулаад хариуг энгийн текстээр буцаана ([Hermes skill docs](https://hermes-agent.nousresearch.com/docs/user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-antigravity-cli)).
+- Энэ нь файл уншиж, тушаал ажиллуулж чаддаг агент. Тиймээс хоосон түр хавтаснаас ажиллуулна.
+- Telemetry-г Settings → Account → "Enable Telemetry"-ээс унтраана ([Hands-on with Antigravity CLI](https://codelabs.developers.google.com/antigravity-cli-hands-on?hl=en)).
+- Өгөгдөл: хувийн (Free, Pro, Ultra) бүртгэлийн мэдээллийг Google анхнаасаа сургалтад ашигладаг гэж хэрэглэгчид мэдээлсэн. Албан ёсны татгалзах арга олдсонгүй ([Antigravity data training opt out](https://discuss.ai.google.dev/t/antigravity-data-training-opt-out/125236)). Тиймээс зөвхөн дэлгэцийн текст, жишээ өгөгдөл илгээнэ.
+- Энэ cloud орчноос `antigravity.google` хаалттай. Мөн хэрэглэгчийн Google нэвтрэлтийг cloud-д хадгалах нь зохисгүй. Тиймээс `agy` хэрэглэгчийн компьютер дээр ажиллана.
+- Cloud session тэр компьютерийг Remote Control-оор ашиглана. Энэ нь зөвхөн Mac, Linux дээр, Git repo-ийн үндсэн хавтсанд ажилладаг. Windows дээр бол тэр компьютер дээр Claude Code session нээнэ.
+
+**Хүлээгдэж буй:** хэрэглэгч `agy`-г суулгаж нэвтрэх, компьютерээ холбох. Ямар компьютер (Mac, Windows) хэрэглэдгийг асуусан.
 
