@@ -24,6 +24,15 @@ export const seen = (d: Doc, me: Id) => d.to === 'all' || d.to.includes(me)
 
 /** Colours a folder can have, in the order the office is offered them */
 export const FOLDER_HUES: Hue[] = ['blue', 'green', 'pink', 'teal', 'purple', 'orange', 'indigo', 'yellow']
+/**
+ * Each folder colour as the top and bottom of its picture (from the user's glass folder, glass-folder.zip), and a deep
+ * shade the glass takes on under the name, so white text reads at 4.5:1
+ */
+export const FOLDER_COLORS: Record<Hue, [string, string, string]> = {
+  green: ['#3fd49a', '#05935f', '#047051'], purple: ['#b39cfb', '#8b5cf6', '#6d28d9'], blue: ['#6aaefb', '#2563eb', '#1d4ed8'],
+  orange: ['#fbc138', '#dc7a06', '#9a4a04'], pink: ['#fb8398', '#e11d48', '#be123c'], teal: ['#3ddcc5', '#0d9488', '#0f6e67'],
+  indigo: ['#8f98fa', '#4f46e5', '#4338ca'], yellow: ['#f2d046', '#c08a00', '#7c5c00'],
+}
 
 /** The folders the office starts with, and which kinds of document go in each */
 const START: [string, Hue, DocKind[]][] = [

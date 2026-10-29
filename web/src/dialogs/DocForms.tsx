@@ -6,7 +6,7 @@ import '../styles/screens/docs.css'
 import type { BoardFile, Doc, DocKind, DocRequest, Hue } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
-import { DOC_HUE, DOC_KIND, DOC_KINDS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, folderFor, isOpen, stepsOf } from '../lib/docs'
+import { DOC_HUE, DOC_KIND, DOC_KINDS, FOLDER_COLORS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, folderFor, isOpen, stepsOf } from '../lib/docs'
 import { docBlob, downloadDoc, requestPdf } from '../lib/paper'
 import { drawPage, viewPdf } from '../lib/pdf'
 import { putFile } from '../lib/files'
@@ -434,7 +434,7 @@ export function FolderForm({ id }: { id?: string }) {
         <legend className="field__label">Өнгө</legend>
         <div className="swatches">
           {FOLDER_HUES.map(h => (
-            <label key={h} className={`swatch hue--${h}`}>
+            <label key={h} className="swatch" style={{ background: `linear-gradient(160deg, ${FOLDER_COLORS[h][0]}, ${FOLDER_COLORS[h][1]})` }}>
               <input type="radio" name="fo-hue" checked={f.hue === h} onChange={() => setF({ ...f, hue: h })} />
               <span className="sr-only">{HUE_NAME[h]}</span>
             </label>
@@ -445,4 +445,4 @@ export function FolderForm({ id }: { id?: string }) {
   )
 }
 
-const HUE_NAME: Record<Hue, string> = { blue: 'Цэнхэр', green: 'Ногоон', pink: 'Ягаан', teal: 'Цайвар ногоон', purple: 'Нил ягаан', orange: 'Улбар шар', indigo: 'Хөх', yellow: 'Шар' }
+const HUE_NAME: Record<Hue, string> = { blue: 'Цэнхэр', green: 'Ногоон', pink: 'Ягаан', teal: 'Оюу', purple: 'Нил ягаан', orange: 'Улбар шар', indigo: 'Хөх', yellow: 'Шар' }

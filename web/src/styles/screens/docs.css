@@ -13,13 +13,8 @@
 
 /* The documents page */
 .dsearch { max-width: 520px; height: 46px; margin-bottom: var(--gap); }
-.docs-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); align-items: start; gap: var(--gap); }
-.docs-main, .docs-side { display: grid; gap: var(--gap); min-width: 0; }
-@media (width <= 1100px) {
-  .docs-grid { display: flex; flex-direction: column; align-items: stretch; }
-  .docs-main, .docs-side { display: contents; }
-  .docs-req { order: -1; }
-}
+/* My requests' progress sits under the folders */
+.docs-req { max-width: 760px; margin-top: calc(var(--gap) + 8px); }
 .dgroup .card__head { margin-bottom: 6px; }
 @media (width > 600px) { .docs-req .card__head { flex-wrap: nowrap; } }
 .dlist > li + li { border-top: 1px solid var(--sep); }
@@ -31,7 +26,6 @@
 .drow__text small { font-size: 13px; color: var(--text-2); }
 .drow__new { flex: none; padding: 4px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font: 650 12px/1.1 var(--font); }
 .drow > .ibtn { color: var(--text-2); }
-.dlist__none { padding: 6px 8px 4px; font-size: 14px; color: var(--text-2); }
 
 /* Requests: status words, and a dot for each step */
 .rpill { display: inline-flex; flex: none; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: var(--fill); color: var(--text-2); font: 650 12.5px/1 var(--font); white-space: nowrap; }
@@ -202,111 +196,90 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
   .player__wait { animation: none; }
 }
 
-/* Folders (src/screens/docs/Folders.tsx): a back with a tab, the newest papers peeking out, a frosted front with its own
-   tab (shapes: the fd-back and fd-front clip paths). Pointing at a folder or focusing it tips the front forward and fans
-   the papers (--lean 0 → 1). The look comes from a reel the user chose (learned.md §18). */
-.folder-shapes { position: absolute; width: 0; height: 0; }
-.docs-grid:has(> .docs-side:empty) { grid-template-columns: minmax(0, 1fr); }
-/* On a narrow screen the folders come first, the requests after them */
-@media (width <= 1100px) { .docs-grid:has(.folders) .docs-req { order: 0; } }
-.folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 34px 26px; padding-top: 18px; }
-.folder, .dpaper { --paper: #fdfdfc; }
-[data-mode="dark"] :is(.folder, .dpaper) { --paper: #2c2d36; }
-.folder {
-  --lean: 0;
-  position: relative; aspect-ratio: 5 / 4;
-  filter: drop-shadow(0 14px 22px rgb(16 20 40 / .13)) drop-shadow(0 2px 4px rgb(16 20 40 / .08));
+/* Folders (src/screens/docs/Folders.tsx): the user's own glass folder (glass-folder.zip). The picture is one SVG; name,
+   count and marks sit on it in white. Pointing at a folder or focusing it lifts it and its papers (--up 0 → 1). */
+.folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 26px 22px; padding-top: 6px; }
+.folder { --up: 0; position: relative; container-type: inline-size; }
+@media (hover: hover) { .folder:hover { --up: 1; } }
+.folder:has(.folder__open:focus-visible) { --up: 1; }
+.folder__card {
+  position: relative; display: block; border-radius: 9.5% / 10.1%;
+  box-shadow: 0 22px 44px -24px var(--to);
+  transform: translateY(calc(var(--up) * -6px)); transition: transform .5s var(--ease);
 }
-[data-mode="dark"] .folder { filter: drop-shadow(0 14px 24px rgb(0 0 0 / .45)); }
-@media (hover: hover) { .folder:hover { --lean: 1; } }
-.folder:has(.folder__open:focus-visible) { --lean: 1; }
-
-.folder__back { position: absolute; inset: 0; clip-path: url(#fd-back); }
-.folder__papers { position: absolute; inset: 13% 5% 21%; isolation: isolate; }
-.fpaper {
-  position: absolute; inset: 0; display: grid; align-content: start; gap: 3px; padding: 9px 7%;
-  border-radius: 8px; background: var(--paper); color: var(--text);
-  box-shadow: 0 0 0 1px rgb(16 20 40 / .06), 0 2px 6px rgb(16 20 40 / .12);
-  transition: transform .3s var(--ease);
+.folder__art { display: block; width: 100%; height: auto; }
+.fsheet { transition: transform .5s var(--ease); }
+.fsheet--1 { transform: translateY(calc(var(--up) * -8px)); }
+.fsheet--2 { transform: translateY(calc(var(--up) * -16px)); }
+.fsheet--3 { transform: translateY(calc(var(--up) * -24px)); }
+.folder__label {
+  position: absolute; right: calc(7% + 36px); bottom: 7%; left: 7%; display: grid; gap: 3px;
+  color: #fff; text-shadow: 0 1px 10px rgb(0 0 0 / .18); pointer-events: none;
 }
-.fpaper b { overflow: hidden; font-size: 13px; font-weight: 640; text-overflow: ellipsis; white-space: nowrap; }
-.fpaper small { font-size: 11.5px; color: var(--text-2); }
-.fpaper i { display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: var(--fill-2); }
-.fpaper i:nth-of-type(2) { width: 84%; }
-.fpaper i:nth-of-type(3) { width: 62%; }
-/* The newest paper sits at the back and highest, so its name shows above the others even at rest */
-.fpaper:nth-child(1) { z-index: 1; transform: translate(calc(var(--lean) * -4%), calc(var(--lean) * -24%)) rotate(calc(var(--lean) * -6deg)); }
-.fpaper:nth-child(2) { z-index: 2; transform: translate(calc(var(--lean) * 1%), calc(13% - var(--lean) * 26%)) rotate(calc(var(--lean) * -1deg)); }
-.fpaper:nth-child(3) { z-index: 3; transform: translate(calc(var(--lean) * 5%), calc(26% - var(--lean) * 25%)) rotate(calc(var(--lean) * 5deg)); }
-
-.folder__front {
-  position: absolute; inset: 27% 0 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 3px;
-  padding: 0 calc(8% + 44px) 7% 6%;
-  clip-path: url(#fd-front);
-  background: color-mix(in srgb, var(--glass-solid) 68%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
-  transform: perspective(700px) rotateX(calc(var(--lean) * -13deg)); transform-origin: 50% 100%;
-  transition: transform .3s var(--ease);
+.folder__name {
+  display: -webkit-box; overflow: hidden; font-size: clamp(16px, 9cqi, 24px); font-weight: 700; line-height: 1.15; letter-spacing: -.01em;
+  -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: balance;
 }
-.folder__front .drow__new { position: absolute; top: 25%; left: 6%; }
-.folder__name { font-size: 18px; font-weight: 650; line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
-/* A little stronger than --text-2: the glass under it carries colour */
-.folder__count { font-size: 13.5px; color: color-mix(in srgb, var(--text) 80%, transparent); font-variant-numeric: tabular-nums; }
-.folder__open { position: absolute; inset: 0; z-index: 4; border-radius: 18px; }
-.folder__open:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 5px; }
-.folder__add {
-  position: absolute; right: 5%; bottom: 7%; z-index: 5;
-  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px;
-  background: var(--text); color: var(--glass-solid); box-shadow: 0 4px 12px rgb(0 0 0 / .22);
-  transition: transform .15s var(--ease);
+.folder__meta { font-size: clamp(12px, 5.2cqi, 13.5px); font-weight: 560; }
+.fchip {
+  position: absolute; top: 6%; left: 6%; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 7px;
+  border-radius: 999px; background: rgb(225 29 72 / .92); color: #fff; font: 650 12px/1.2 var(--font); font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 10px rgb(0 0 0 / .15); pointer-events: none;
 }
-.folder__add:active { transform: scale(.94); }
-.folder__add:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 3px; }
-
-/* Өнгөлөг: an abstract picture in the folder's colours on the back, different for each folder */
-.folder.hue--blue { --hue2: var(--pink); --hue3: var(--indigo); }
-.folder.hue--green { --hue2: var(--yellow); --hue3: var(--teal); }
-.folder.hue--pink { --hue2: var(--orange); --hue3: var(--purple); }
-.folder.hue--teal { --hue2: var(--blue); --hue3: var(--green); }
-.folder.hue--purple { --hue2: var(--pink); --hue3: var(--blue); }
-.folder.hue--orange { --hue2: var(--yellow); --hue3: var(--pink); }
-.folder.hue--indigo { --hue2: var(--teal); --hue3: var(--purple); }
-.folder.hue--yellow { --hue2: var(--orange); --hue3: var(--green); }
-.folders--art .folder__back {
-  background:
-    radial-gradient(55% 70% at var(--fx) var(--fy), color-mix(in oklab, var(--hue2) 75%, white), transparent 70%),
-    radial-gradient(60% 80% at calc(100% - var(--fx)) 85%, var(--hue3), transparent 72%),
-    repeating-linear-gradient(var(--fang), var(--hue) 0 8%, color-mix(in oklab, var(--hue) 70%, white) 8% 10%, transparent 10% 16%, color-mix(in oklab, var(--hue) 60%, #101020) 16% 22%),
-    conic-gradient(from var(--fang) at var(--fx) 75%, var(--hue2), var(--hue), var(--hue3), var(--hue2));
-  filter: blur(5px) saturate(1.25);
+.fchip .ico { width: 13px; height: 13px; }
+.folder__open { position: absolute; inset: 0; z-index: 1; border-radius: 9.5% / 10.1%; }
+.folder__open:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 4px; }
+.folder__edit {
+  position: absolute; right: 5%; bottom: 6%; z-index: 2; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  color: #fff; transform: translateY(calc(var(--up) * -6px)); transition: transform .5s var(--ease), background .2s;
 }
-/* Тайван: one soft colour on the back, a more solid front */
-.folders--calm .folder__back { background: linear-gradient(165deg, color-mix(in srgb, var(--hue) 48%, var(--glass-solid)), color-mix(in srgb, var(--hue) 24%, var(--glass-solid))); }
-.folders--calm .folder__front { background: color-mix(in srgb, var(--glass-solid) 80%, transparent); }
-
+.folder__edit:hover { background: rgb(255 255 255 / .2); }
+.folder__edit:focus-visible { outline: 2.5px solid #fff; outline-offset: 1px; }
+.folder__edit .ico { width: 22px; height: 22px; filter: drop-shadow(0 1px 4px rgb(0 0 0 / .25)); }
+.folder-add {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; aspect-ratio: 400 / 376;
+  padding: 16px; border: 2px dashed color-mix(in srgb, var(--text) 18%, transparent); border-radius: 9.5% / 10.1%;
+  background: color-mix(in srgb, var(--glass-solid) 40%, transparent); color: var(--text-2); text-align: center;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.folder-add:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: var(--glass-solid); color: var(--accent-ink); }
+.folder-add:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 4px; }
+.folder-add__plus { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--fill); transition: background .2s, color .2s; }
+.folder-add__plus .ico { width: 24px; height: 24px; }
+.folder-add:hover .folder-add__plus { background: var(--accent); color: #fff; }
+.folder-add b { font-size: 15px; font-weight: 650; }
+.folder-add small { font-size: 13px; }
 @media (width <= 600px) {
-  .folders { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 14px; }
-  .folder__front { padding: 0 8% 9%; }
-  .folder__name { font-size: 14.5px; }
-  .folder__count { font-size: 12px; }
-  .folder__add { display: none; }
-  .fpaper b { font-size: 11px; }
-  .fpaper small, .fpaper i { display: none; }
+  .folders { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
+  .folder__label { right: calc(7% + 30px); }
+  .folder__edit { width: 32px; height: 32px; }
+  .folder__edit .ico { width: 19px; height: 19px; }
+  .fchip { padding: 2px 7px 2px 6px; font-size: 11px; }
+  .folder-add__plus { width: 44px; height: 44px; }
+  .folder-add small { display: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .folder { --lean: 0 !important; }
-  .folder__front { transition: background-color .2s; }
-  .folder:is(:hover, :has(.folder__open:focus-visible)) .folder__front { background: color-mix(in srgb, var(--glass-solid) 52%, transparent); }
+@media (prefers-reduced-motion: reduce) { .folder { --up: 0 !important; } }
+
+/* Documents by kind, a filter under the search */
+.dkinds { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 var(--gap); }
+.kchip {
+  display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 12px; border-radius: 999px;
+  background: var(--glass-solid); box-shadow: inset 0 0 0 1px var(--sep); color: var(--text); font: 600 14px/1 var(--font);
+  transition: background .2s, box-shadow .2s;
 }
+.kchip .ico { width: 17px; height: 17px; color: var(--accent-ink); }
+.kchip__n { font-weight: 500; color: var(--text-2); }
+.kchip:hover { background: var(--fill-hover); }
+.kchip[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.kchip:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
 
 /* One folder's page */
 .dback { display: inline-flex; align-items: center; gap: 2px; margin: -6px 0 10px -6px; padding: 6px 12px 6px 6px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--accent-ink); transition: background .2s; }
 .dback:hover { background: var(--fill-hover); }
-.dfolder { display: grid; place-items: center; flex: none; width: 56px; height: 56px; border-radius: 16px; background: color-mix(in srgb, var(--hue) 18%, var(--glass-solid)); color: color-mix(in srgb, var(--hue) 70%, #000); }
-[data-mode="dark"] .dfolder { background: color-mix(in srgb, var(--hue) 26%, var(--glass-solid)); color: color-mix(in srgb, var(--hue) 70%, #fff); }
-.dfolder .ico { width: 28px; height: 28px; }
+.dfolder { flex: none; width: 76px; }
 .papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 18px; }
-.dpaper { position: relative; }
+.dpaper { --paper: #fdfdfc; position: relative; }
+[data-mode="dark"] .dpaper { --paper: #2c2d36; }
 .dpaper__open {
   display: grid; align-content: start; justify-items: start; gap: 6px; width: 100%; height: 100%; min-height: 230px; padding: 18px 18px 52px;
   border-radius: 6px 6px 6px 6px; background: var(--paper); color: var(--text); text-align: left;
@@ -342,7 +315,7 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 
 /* A folder's colour */
 .swatches { display: flex; flex-wrap: wrap; gap: 12px; }
-.swatch { position: relative; width: 42px; height: 42px; border-radius: 13px; background: var(--hue); cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
+.swatch { position: relative; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
 .swatch input { position: absolute; opacity: 0; pointer-events: none; }
 .swatch:has(input:checked) { box-shadow: 0 0 0 3px var(--glass-solid), 0 0 0 5.5px var(--text); }
 .swatch:has(input:focus-visible) { outline: 2.5px solid var(--accent-ink); outline-offset: 6px; }

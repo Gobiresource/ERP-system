@@ -5,7 +5,7 @@ import '../styles/screens/docs.css'
 import type { DocKind, DocRequest } from '../lib/types'
 import { DOC_HUE, REQ_STATUS, stepsOf } from '../lib/docs'
 import { SubNav } from '../ui/SubNav'
-import DocsPick from './docs/DocsPick'
+import Folders from './docs/Folders'
 import FolderPage from './docs/Folder'
 import Requests from './docs/Requests'
 import Pdf from './docs/Pdf'
@@ -15,20 +15,20 @@ export default function Docs({ id }: { id?: string }) {
   // #docs-pdf, or #docs-pdf-<board>-<card> to edit a PDF that sits on a board
   if (id === 'pdf' || id?.startsWith('pdf-')) return <Pdf from={id.slice(4) || undefined} />
   if (id?.startsWith('folder-')) return <FolderPage key={id} id={id.slice(7)} />
-  return <DocsPick />
+  return <Folders />
 }
 
 const TABS = [['', 'Бичиг баримт'], ['requests', 'Хүсэлт'], ['pdf', 'PDF засах']] as const
 
 export const DocsNav = ({ at }: { at: (typeof TABS)[number][0] }) => <SubNav label="Бичиг хэрэг" base="docs" tabs={TABS} at={at} />
 
-const ICON: Record<DocKind, typeof Stamp> = {
+export const KIND_ICON: Record<DocKind, typeof Stamp> = {
   contract: FilePen, order: Stamp, certificate: FileCheck, rule: BookOpenText, decision: ScrollText, letter: Mail, form: ClipboardList, template: FileText,
 }
 
 /** The kind of a document as a coloured tile */
 export function DocTile({ kind }: { kind: DocKind }) {
-  const Icon = ICON[kind]
+  const Icon = KIND_ICON[kind]
   return <span className={`dtile hue--${DOC_HUE[kind]}`} aria-hidden="true"><Icon className="ico" /></span>
 }
 

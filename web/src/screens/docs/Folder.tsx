@@ -14,7 +14,8 @@ import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
 import { DocTile, DocsNav } from '../Docs'
-import { isNew } from './Papers'
+import { isNew } from './Parts'
+import { FolderArt } from './Folders'
 
 export default function FolderPage({ id }: { id: string }) {
   const s = useApp()
@@ -48,7 +49,7 @@ export default function FolderPage({ id }: { id: string }) {
       <PageHead
         title={f.name}
         sub={docs.length ? `${docs.length} бичиг баримт` : 'Хоосон'}
-        lead={<span className={`dfolder hue--${f.hue}`} aria-hidden="true"><FolderOpen className="ico" /></span>}
+        lead={<span className="dfolder" aria-hidden="true"><FolderArt id={`fh-${f.id}`} hue={f.hue} /></span>}
         actions={
           <>
             <button ref={pop.anchor} type="button" className="ibtn ibtn--glass" aria-label={`${f.name}, үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
