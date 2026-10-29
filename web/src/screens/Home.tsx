@@ -61,7 +61,7 @@ export default function Home() {
                 {next.start.startsWith(t) ? `Дараагийн тов: ${hm(parse(next.start))}` : `Дараагийн тов: ${dueLabel(next.start.slice(0, 10))}`}
               </button>
             ) : (
-              <button type="button" className="btn btn--accent" onClick={() => go('calendar')}><CalendarClock className="ico" />Хуанли</button>
+              <button type="button" className="btn btn--accent" onClick={() => go('calendar')}><CalendarClock className="ico" />Календарь</button>
             )}
           </>
         }
@@ -126,7 +126,7 @@ function UpNext() {
     <section className="card glass w-next" aria-labelledby="next-t" data-enter>
       <div className="card__head">
         <h2 className="card__title" id="next-t">Дараагийн тов</h2>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={() => go('calendar')}>Хуанли</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => go('calendar')}>Календарь</button>
       </div>
       {!next ? <p className="tp-none">Ойрын үед тов алга.</p> : (
         <div className="next-wrap">

@@ -4,7 +4,7 @@ import type { Page } from '../lib/router'
 export const NAV: { page: Page; label: string; icon: typeof House; key: string }[] = [
   { page: 'home', label: 'Нүүр', icon: House, key: 'H' },
   { page: 'tasks', label: 'Ажил', icon: SquareCheck, key: 'T' },
-  { page: 'calendar', label: 'Хуанли', icon: CalendarDays, key: 'C' },
+  { page: 'calendar', label: 'Календарь', icon: CalendarDays, key: 'C' },
   { page: 'projects', label: 'Төсөл', icon: Folder, key: 'P' },
   { page: 'insights', label: 'Тайлан', icon: ChartColumn, key: 'I' },
   { page: 'team', label: 'Баг', icon: Users, key: 'M' },

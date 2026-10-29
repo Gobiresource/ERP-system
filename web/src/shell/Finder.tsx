@@ -69,7 +69,7 @@ function FinderDialog() {
     add(sc.events.filter(x => has(x.title, x.where)).map(x => {
       const d = parse(x.start)
       return {
-        id: x.id, group: 'Хуанли', title: x.title, sub: `${dueLabel(x.start.slice(0, 10))}, ${hm(d)}`,
+        id: x.id, group: 'Календарь', title: x.title, sub: `${dueLabel(x.start.slice(0, 10))}, ${hm(d)}`,
         lead: <span className="lead"><CalendarDays className="ico" /></span>, run: () => open({ kind: 'event', id: x.id }),
       }
     }))

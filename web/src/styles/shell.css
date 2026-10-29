@@ -272,7 +272,7 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
   .tabbar__track { position: relative; display: flex; height: 100%; }
   .tabbar__lens { position: absolute; top: 0; left: 0; border-radius: 999px; background: var(--lens); box-shadow: var(--lens-glow); pointer-events: none; opacity: 0; }
   .tab {
-    position: relative; flex: 1; min-width: 0; display: grid; place-items: center; align-content: center; gap: 2px;
+    position: relative; flex: 1 1 auto; min-width: 0; display: grid; place-items: center; align-content: center; gap: 2px;
     border-radius: 999px; color: color-mix(in srgb, var(--text-2), var(--text) 35%); font: 600 11px/1 var(--font);
   }
   .tab .ico { width: 23px; height: 23px; }
