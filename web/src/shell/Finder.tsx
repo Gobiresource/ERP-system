@@ -5,7 +5,7 @@ import { scoped, useApp } from '../lib/store'
 import { open, setFinder, useUi } from '../lib/ui'
 import { go } from '../lib/router'
 import { dueLabel, hm, parse, short } from '../lib/format'
-import { gsap, reduced } from '../lib/motion'
+import { enter } from '../lib/motion'
 import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
 import { NAV } from './nav'
 
@@ -43,7 +43,7 @@ function FinderDialog() {
   useLayoutEffect(() => {
     const d = ref.current!
     d.showModal()
-    if (!reduced()) gsap.from(d, { y: -12, scale: 0.97, opacity: 0, duration: 0.4, ease: 'back.out(1.7)', clearProps: 'transform,opacity' })
+    enter([d], { opacity: 0, transform: 'translateY(-12px) scale(.97)' }, { duration: 0.4, ease: 'back.out(1.7)' })
   }, [])
 
   const hits = useMemo(() => {

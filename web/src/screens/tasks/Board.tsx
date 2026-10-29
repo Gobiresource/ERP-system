@@ -43,8 +43,9 @@ export function Board({ tasks }: { tasks: Task[] }) {
     return m
   }, [tasks])
 
+  // Only the cards on screen pop in; the others are simply there when scrolled to
   useLayoutEffect(() => {
-    popIn(board.current!.querySelectorAll('.tk-card'))
+    popIn([...board.current!.querySelectorAll('.tk-card')].filter(c => c.getBoundingClientRect().top < innerHeight))
   }, [])
 
   // Cards make room for the dragged one

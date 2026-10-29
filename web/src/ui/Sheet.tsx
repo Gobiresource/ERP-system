@@ -1,6 +1,6 @@
 import { createContext, use, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
-import { gsap, reduced } from '../lib/motion'
+import { enter, leave } from '../lib/motion'
 
 const SheetContext = createContext<() => void>(() => {})
 /** Closes the surrounding window with its animation */
@@ -26,21 +26,17 @@ export function Sheet({ kind = 'modal', label, onClose, children, wide, closeBut
   useLayoutEffect(() => {
     const d = ref.current!
     if (!d.open) d.showModal()
-    if (reduced()) return
-    const from = phone() ? { yPercent: 100, duration: 0.5, ease: 'power3.out' }
-      : kind === 'drawer' ? { x: 60, opacity: 0, duration: 0.5, ease: 'power3.out' }
-      : { scale: 0.92, opacity: 0, duration: 0.5, ease: 'back.out(1.6)' }
-    gsap.from(d, { ...from, clearProps: 'transform,opacity' })
+    if (phone()) enter([d], { transform: 'translateY(100%)' }, { duration: 0.5, ease: 'power3.out' })
+    else if (kind === 'drawer') enter([d], { opacity: 0, transform: 'translateX(60px)' }, { duration: 0.5, ease: 'power3.out' })
+    else enter([d], { opacity: 0, transform: 'scale(.92)' }, { duration: 0.5, ease: 'back.out(1.6)' })
   }, [kind])
 
   const requestClose = () => {
     const d = ref.current
     if (!d || closing.current) return
     closing.current = true
-    const done = () => { d.close(); onClose() }
-    if (reduced()) return done()
-    const to = phone() ? { yPercent: 100 } : kind === 'drawer' ? { x: 60, opacity: 0 } : { scale: 0.95, opacity: 0 }
-    gsap.to(d, { ...to, duration: 0.28, ease: 'power3.in', onComplete: done })
+    const to = phone() ? { transform: 'translateY(100%)' } : kind === 'drawer' ? { opacity: 0, transform: 'translateX(60px)' } : { opacity: 0, transform: 'scale(.95)' }
+    leave(d, to, { duration: 0.28, ease: 'power3.in' }).then(() => { d.close(); onClose() })
   }
 
   return (

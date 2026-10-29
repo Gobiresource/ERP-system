@@ -2,7 +2,7 @@
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import '../styles/charts.css'
 import type { Hue } from '../lib/types'
-import { gsap, reduced } from '../lib/motion'
+import { enter, gsap, reduced } from '../lib/motion'
 
 export type Tone = 'accent' | 'muted' | 'ink' | Hue
 const stroke = (t: Tone) => (t === 'accent' ? 'var(--accent-ink)' : t === 'muted' ? 'var(--text-3)' : t === 'ink' ? 'var(--text)' : `var(--${t})`)
@@ -209,8 +209,7 @@ export function Bars({ values, labels, hi, tone = 'accent', label, unit, names =
   const [hover, setHover] = useState<number | null>(null)
   const max = Math.max(1, ...values.map(v => v ?? 0)) * 1.15
   useLayoutEffect(() => {
-    if (reduced() || !box.current) return
-    gsap.from(box.current.querySelectorAll('.bars__bar'), { scaleY: 0, transformOrigin: '50% 100%', duration: 1.1, ease: 'power3.out', stagger: 0.08, clearProps: 'transform' })
+    if (box.current) enter(box.current.querySelectorAll('.bars__bar'), { transform: 'scaleY(0)' }, { duration: 1.1, ease: 'power3.out', stagger: 0.08 })
   }, [])
   return (
     <div className="bars" ref={box} onPointerLeave={() => setHover(null)}>
@@ -268,8 +267,7 @@ export function Columns({ values, labels, tone = 'purple', unit, label, height =
   const max = niceMax(Math.max(1, ...values))
   const tick = Math.max(1, Math.ceil(values.length / 8))
   useLayoutEffect(() => {
-    if (reduced() || !box.current) return
-    gsap.from(box.current.querySelectorAll('.hb__bar'), { scaleY: 0, transformOrigin: '50% 100%', duration: 1.1, ease: 'power3.out', stagger: 0.02, clearProps: 'transform' })
+    if (box.current) enter(box.current.querySelectorAll('.hb__bar'), { transform: 'scaleY(0)' }, { duration: 1.1, ease: 'power3.out', stagger: 0.02 })
   }, [values.length])
   return (
     <div className="hb" ref={box} style={{ height }} onPointerLeave={() => setHover(null)}>

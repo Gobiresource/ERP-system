@@ -1,4 +1,4 @@
-import type { Dialog } from '../lib/ui'
+import { useUi } from '../lib/ui'
 import { Shortcuts } from '../shell/Shortcuts'
 import { PersonDrawer } from './PersonDrawer'
 import { Invite } from './Invite'
@@ -8,8 +8,9 @@ import { NewProject } from './NewProject'
 import { EventDrawer } from './EventDrawer'
 import { NewEvent } from './NewEvent'
 
-/** Shows the window that is open right now (one at a time) */
-export function Dialogs({ dialog }: { dialog: Dialog }) {
+/** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
+export function Dialogs() {
+  const { dialog } = useUi()
   if (!dialog) return null
   switch (dialog.kind) {
     case 'shortcuts': return <Shortcuts />

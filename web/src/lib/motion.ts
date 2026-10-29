@@ -10,15 +10,45 @@ export { gsap, Flip }
 const query = window.matchMedia('(prefers-reduced-motion: reduce)')
 export const reduced = () => query.matches
 
-/** Page entrance: title letters rise, then cards and rows fade up, numbers count up. */
+const linearOk = CSS.supports('transition-timing-function', 'linear(0, 1)')
+const curves = new Map<string, string>()
+/** A GSAP ease as a CSS timing function, sampled from GSAP itself so the curve stays the same */
+function easing(name: string) {
+  let c = curves.get(name)
+  if (!c) {
+    const f = gsap.parseEase(name)
+    c = linearOk ? `linear(${Array.from({ length: 41 }, (_, i) => Math.round(f(i / 40) * 1e4) / 1e4).join(', ')})` : 'cubic-bezier(.22, 1, .36, 1)'
+    curves.set(name, c)
+  }
+  return c
+}
+
+/**
+ * Animates from `from` to the element's own style. The browser runs it off the main thread and nothing is
+ * measured, so many elements can enter at once without the page stalling. Times are in seconds, as in GSAP.
+ */
+export function enter(targets: Iterable<Element>, from: Keyframe, o: { duration: number; ease: string; delay?: number; stagger?: number }) {
+  if (reduced()) return []
+  return Array.from(targets, (el, i) => el.animate([{ ...from, offset: 0 }], {
+    duration: o.duration * 1000, delay: ((o.delay ?? 0) + i * (o.stagger ?? 0)) * 1000, easing: easing(o.ease), fill: 'backwards',
+  }))
+}
+
+/** Animates from the element's own style to `to`, off the main thread. Resolves when it has finished. */
+export function leave(el: Element, to: Keyframe, o: { duration: number; ease: string }) {
+  if (reduced()) return Promise.resolve()
+  return el.animate([{ ...to, offset: 1 }], { duration: o.duration * 1000, easing: easing(o.ease), fill: 'forwards' }).finished.then(() => {})
+}
+
+/** Page entrance: title letters rise, then cards and rows fade up, numbers count up. Returns a stop function. */
 export function enterPage(root: HTMLElement) {
-  if (reduced()) return
-  const tl = gsap.timeline()
-  tl.from(root.querySelectorAll('.head__title .ch'), { yPercent: 115, rotation: 6, duration: 0.85, ease: 'power4.out', stagger: 0.022 }, 0)
-  tl.from(root.querySelectorAll('.head__sub, .head__stats > *, .head__actions > *'), { opacity: 0, y: 8, duration: 0.55, ease: 'power3.out', stagger: 0.035 }, 0.08)
-  tl.from(root.querySelectorAll('[data-enter]'), { opacity: 0, y: 14, scale: 0.98, duration: 0.6, ease: 'power3.out', stagger: 0.05, clearProps: 'transform,opacity' }, 0.12)
+  const anims = [
+    ...enter(root.querySelectorAll('.head__title .ch'), { transform: 'translateY(115%) rotate(6deg)' }, { duration: 0.85, ease: 'power4.out', stagger: 0.022 }),
+    ...enter(root.querySelectorAll('.head__sub, .head__stats > *, .head__actions > *'), { opacity: 0, transform: 'translateY(8px)' }, { duration: 0.55, ease: 'power3.out', delay: 0.08, stagger: 0.035 }),
+    ...enter(root.querySelectorAll('[data-enter]'), { opacity: 0, transform: 'translateY(14px) scale(.98)' }, { duration: 0.6, ease: 'power3.out', delay: 0.12, stagger: 0.05 }),
+  ]
   root.querySelectorAll<HTMLElement>('[data-count]').forEach(el => countUp(el))
-  return tl
+  return () => anims.forEach(a => a.cancel())
 }
 
 /** Counts a number up from 0. The element keeps its final text from React. */
@@ -37,9 +67,8 @@ export function countUp(el: HTMLElement) {
 }
 
 /** Cards appearing on the task board */
-export function popIn(targets: gsap.TweenTarget, stagger = 0.03) {
-  if (reduced()) return
-  gsap.from(targets, { opacity: 0, y: 14, scale: 0.94, duration: 0.55, ease: 'back.out(1.6)', stagger, clearProps: 'transform,opacity' })
+export function popIn(targets: Iterable<Element>, stagger = 0.03) {
+  enter(targets, { opacity: 0, transform: 'translateY(14px) scale(.94)' }, { duration: 0.55, ease: 'back.out(1.6)', stagger })
 }
 
 /** The check mark when a task is completed, with a ripple */
@@ -96,7 +125,6 @@ export function usePageEnter(ref: RefObject<HTMLElement | null>) {
     const el = ref.current
     if (!el) return
     if (document.body.dataset.navigated) el.querySelector<HTMLElement>('#page-title')?.focus({ preventScroll: true })
-    const tl = enterPage(el)
-    return () => void tl?.kill()
+    return enterPage(el)
   }, [ref])
 }

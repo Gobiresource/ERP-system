@@ -4,7 +4,7 @@ import '../styles/screens/team.css'
 import type { Person } from '../lib/types'
 import { scoped, useApp } from '../lib/store'
 import { open } from '../lib/ui'
-import { gsap, reduced, usePageEnter } from '../lib/motion'
+import { enter, usePageEnter } from '../lib/motion'
 import { localTime, teamHue, workload } from '../lib/derive'
 import { collator, short } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
@@ -32,9 +32,9 @@ export default function Team() {
 
   // Workload bars grow in
   useLayoutEffect(() => {
-    if (reduced() || !grid.current) return
-    const tw = gsap.from(grid.current.querySelectorAll('.mload__bar i'), { scaleX: 0, duration: 1.1, ease: 'power3.out', stagger: 0.04, delay: 0.2 })
-    return () => void tw.revert()
+    if (!grid.current) return
+    const anims = enter(grid.current.querySelectorAll('.mload__bar i'), { transform: 'scaleX(0)' }, { duration: 1.1, ease: 'power3.out', stagger: 0.04, delay: 0.2 })
+    return () => anims.forEach(a => a.cancel())
   }, [team])
 
   return (

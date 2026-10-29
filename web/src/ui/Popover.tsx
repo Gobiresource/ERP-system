@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { Check } from 'lucide-react'
-import { gsap, reduced } from '../lib/motion'
+import { enter } from '../lib/motion'
 
 export interface PopState<T extends HTMLElement = HTMLButtonElement> {
   anchor: RefObject<T | null>
@@ -71,12 +71,8 @@ export function Popover({ state, children, label, placement = 'bottom-end', clas
     left = Math.min(Math.max(12, left), vw - w - 12)
     el.style.top = `${Math.max(12, top)}px`
     el.style.left = `${left}px`
-    if (!reduced()) {
-      gsap.fromTo(el, { opacity: 0, scale: 0.96, y: top > r.top ? -6 : 6 }, {
-        opacity: 1, scale: 1, y: 0, duration: 0.32, ease: 'back.out(1.8)', clearProps: 'transform,opacity',
-        transformOrigin: `${placement.endsWith('end') ? 'right' : 'left'} ${top > r.top ? 'top' : 'bottom'}`,
-      })
-    }
+    el.style.transformOrigin = `${placement.endsWith('end') ? 'right' : 'left'} ${top > r.top ? 'top' : 'bottom'}`
+    enter([el], { opacity: 0, transform: `translateY(${top > r.top ? -6 : 6}px) scale(.96)` }, { duration: 0.32, ease: 'back.out(1.8)' })
     el.querySelector<HTMLElement>('[role^="menuitem"], button, a, input')?.focus()
   }, [open, anchor, placement])
 

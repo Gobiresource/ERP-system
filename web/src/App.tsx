@@ -1,6 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, type ComponentType, type LazyExoticComponent } from 'react'
+import { useEffect, useRef, type ComponentType } from 'react'
 import { useApp } from './lib/store'
-import { useUi } from './lib/ui'
 import { useRoute, type Page } from './lib/router'
 import { applyAppearance } from './lib/theme'
 import { Wallpaper } from './shell/Wallpaper'
@@ -11,20 +10,21 @@ import { TabBar } from './shell/TabBar'
 import { Finder } from './shell/Finder'
 import { Dialogs } from './dialogs/Dialogs'
 import { pageLabel } from './shell/nav'
+import Home from './screens/Home'
+import Tasks from './screens/Tasks'
+import Calendar from './screens/Calendar'
+import Projects from './screens/Projects'
+import Insights from './screens/Insights'
+import Team from './screens/Team'
+import Settings from './screens/Settings'
 
-const SCREENS: Record<Page, LazyExoticComponent<ComponentType<{ id?: string }>>> = {
-  home: lazy(() => import('./screens/Home')),
-  tasks: lazy(() => import('./screens/Tasks')),
-  calendar: lazy(() => import('./screens/Calendar')),
-  projects: lazy(() => import('./screens/Projects')),
-  insights: lazy(() => import('./screens/Insights')),
-  team: lazy(() => import('./screens/Team')),
-  preferences: lazy(() => import('./screens/Settings')),
+// All screens ship in one file: a page change never waits for the network (about 100 KB more on first load)
+const SCREENS: Record<Page, ComponentType<{ id?: string }>> = {
+  home: Home, tasks: Tasks, calendar: Calendar, projects: Projects, insights: Insights, team: Team, preferences: Settings,
 }
 
 export function App() {
   const s = useApp()
-  const ui = useUi()
   const route = useRoute()
   const main = useRef<HTMLElement>(null)
   const first = useRef(true)
@@ -52,12 +52,10 @@ export function App() {
       <Toolbar />
       <Island />
       <main id="main" className="main" ref={main} tabIndex={-1}>
-        <Suspense fallback={null}>
-          <Screen key={`${route.page}-${route.id ?? ''}-${s.company}`} id={route.id} />
-        </Suspense>
+        <Screen key={`${route.page}-${route.id ?? ''}-${s.company}`} id={route.id} />
       </main>
       <TabBar />
-      <Dialogs dialog={ui.dialog} />
+      <Dialogs />
       <Finder />
     </div>
   )

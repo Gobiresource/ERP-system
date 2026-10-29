@@ -4,7 +4,7 @@ import '../styles/screens/calendar.css'
 import type { CalEvent, Hue } from '../lib/types'
 import { scoped, useApp, type Scoped } from '../lib/store'
 import { open } from '../lib/ui'
-import { gsap, reduced, usePageEnter } from '../lib/motion'
+import { enter, usePageEnter } from '../lib/motion'
 import { addDays, duration, hm, monthDay, parse, today, weekStart, weekday, weekdayShort, ymd, ymdhm } from '../lib/format'
 import { eventEnd, thisWeek } from '../lib/derive'
 import { PageHead } from '../ui/PageHead'
@@ -55,9 +55,9 @@ export default function Calendar() {
   // Slide between months or weeks; events pop in
   useLayoutEffect(() => {
     const el = stage.current
-    if (!el || reduced()) return
-    if (dir.current) gsap.fromTo(el, { x: 56 * dir.current, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: 'expo.out', clearProps: 'transform,opacity' })
-    gsap.from(el.querySelectorAll('.cal-ev, .cal-blk'), { scale: 0.8, opacity: 0, duration: 0.5, ease: 'back.out(2.2)', stagger: 0.008, clearProps: 'transform,opacity' })
+    if (!el) return
+    if (dir.current) enter([el], { opacity: 0, transform: `translateX(${56 * dir.current}px)` }, { duration: 0.6, ease: 'expo.out' })
+    enter(el.querySelectorAll('.cal-ev, .cal-blk'), { opacity: 0, transform: 'scale(.8)' }, { duration: 0.5, ease: 'back.out(2.2)', stagger: 0.008 })
     dir.current = 0
   }, [view, cursor])
 
