@@ -5,7 +5,7 @@ import type { DocType, Employee } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { ALERT_DAYS, CONTRACT, EMP_STATUS, MOVE, MOVE_HUE, ageOn, alertsOf, dots, fileScore, fileState, hrScoped, readRegNo, tenure, whenEnds, type FileState } from '../../lib/hr'
+import { ALERT_DAYS, CONTRACT, MOVE, MOVE_HUE, ageOn, alertsOf, dots, fileScore, fileState, hrScoped, readRegNo, tenure, whenEnds, type FileState } from '../../lib/hr'
 import { addDays, daysFromToday, short, today, ymd } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
@@ -98,72 +98,66 @@ export default function EmployeePage({ id }: { id: string }) {
   )
 }
 
-function Tile({ label, children, wide }: { label: string; children?: React.ReactNode; wide?: boolean }) {
+function Row({ label, children }: { label: string; children?: React.ReactNode }) {
   return (
-    <div className={wide ? 'is-wide' : undefined}>
+    <div className="erow">
       <dt>{label}</dt>
       <dd>{children || <span className="muted">Бөглөөгүй</span>}</dd>
     </div>
   )
 }
 
+/** One sheet of ruled rows, a topic per heading: reads like the paper form, not a wall of boxes */
 function General({ e }: { e: Employee }) {
   const hr = hrScoped(useApp())
   const reg = readRegNo(e.regNo)
   const prob = e.probationEnd ? daysFromToday(e.probationEnd) : null
   return (
-    <div className="emp-grid">
-      <section className="card glass" aria-labelledby="eg-p" data-enter>
-        <div className="card__head"><h2 className="card__title" id="eg-p">Хувийн мэдээлэл</h2></div>
-        <dl className="meta">
-          <Tile label="Ургийн овог">{e.clan}</Tile>
-          <Tile label="Эцэг/эхийн нэр">{e.family}</Tile>
-          <Tile label="Нэр">{e.given}</Tile>
-          <Tile label="Регистрийн дугаар"><span className="tnum">{e.regNo}</span></Tile>
-          <Tile label="Төрсөн огноо">{reg && <span className="tnum">{dots(ymd(reg.birth))}</span>}</Tile>
-          <Tile label="Нас, хүйс">{reg && `${ageOn(reg.birth)} нас, ${reg.male ? 'эрэгтэй' : 'эмэгтэй'}`}</Tile>
-          <Tile label="Утас"><span className="tnum">{e.phone}</span></Tile>
-          <Tile label="Имэйл">{e.email}</Tile>
-          <Tile label="Хаяг" wide>{e.address}</Tile>
-          <Tile label="Боловсрол">{e.education}</Tile>
-          <Tile label="Мэргэжил">{e.profession}</Tile>
+    <section className="card glass esheet" aria-label="Ажилтны мэдээлэл" data-enter>
+      <div>
+        <h2 className="esheet__h">Хувийн мэдээлэл</h2>
+        <dl>
+          <Row label="Ургийн овог">{e.clan}</Row>
+          <Row label="Эцэг/эхийн нэр">{e.family}</Row>
+          <Row label="Нэр">{e.given}</Row>
+          <Row label="Регистрийн дугаар"><span className="tnum">{e.regNo}</span></Row>
+          <Row label="Төрсөн огноо">{reg && <span className="tnum">{dots(ymd(reg.birth))}</span>}</Row>
+          <Row label="Нас, хүйс">{reg && `${ageOn(reg.birth)} нас, ${reg.male ? 'эрэгтэй' : 'эмэгтэй'}`}</Row>
+          <Row label="Утас"><span className="tnum">{e.phone}</span></Row>
+          <Row label="Имэйл">{e.email}</Row>
+          <Row label="Хаяг">{e.address}</Row>
+          <Row label="Боловсрол">{e.education}</Row>
+          <Row label="Мэргэжил">{e.profession}</Row>
         </dl>
-      </section>
-      <div className="emp-col">
-        <section className="card glass" aria-labelledby="eg-w" data-enter>
-          <div className="card__head"><h2 className="card__title" id="eg-w">Ажлын мэдээлэл</h2></div>
-          <dl className="meta">
-            <Tile label="Ажилтны код"><span className="tnum">{e.code}</span></Tile>
-            <Tile label="Төлөв">{EMP_STATUS[e.status]}</Tile>
-            <Tile label="Хэлтэс">{hr.dept(e.dept)?.name}</Tile>
-            <Tile label="Албан тушаал">{hr.position(e.position)?.name}</Tile>
-            <Tile label="Ажилд орсон огноо"><span className="tnum">{dots(e.hired)}</span></Tile>
-            <Tile label="Туршилтын хугацаа">
-              {e.probationEnd ? <span className="tnum">{dots(e.probationEnd)}{prob !== null && prob >= 0 ? ` хүртэл` : ''}</span> : e.moves.some(m => m.kind === 'confirmed') ? 'Дууссан' : e.status === 'probation' ? null : 'Туршилтгүй'}
-            </Tile>
-          </dl>
-        </section>
-        <section className="card glass" aria-labelledby="eg-c" data-enter>
-          <div className="card__head"><h2 className="card__title" id="eg-c">Хөдөлмөрийн гэрээ</h2></div>
-          <dl className="meta">
-            <Tile label="Төрөл">{CONTRACT[e.contract.kind]}</Tile>
-            <Tile label="Дугаар"><span className="tnum">{e.contract.no}</span></Tile>
-            <Tile label="Эхэлсэн огноо"><span className="tnum">{dots(e.contract.start)}</span></Tile>
-            <Tile label="Дуусах огноо">{e.contract.end ? <span className="tnum">{dots(e.contract.end)}</span> : CONTRACT.open}</Tile>
-          </dl>
-        </section>
-        <section className="card glass" aria-labelledby="eg-e" data-enter>
-          <div className="card__head"><h2 className="card__title" id="eg-e">Яаралтай үед холбоо барих хүн</h2></div>
-          {e.contact ? (
-            <dl className="meta">
-              <Tile label="Нэр">{e.contact.name}</Tile>
-              <Tile label="Хамаарал">{e.contact.relation}</Tile>
-              <Tile label="Утас" wide><span className="tnum">{e.contact.phone}</span></Tile>
-            </dl>
-          ) : <p className="muted">Бөглөөгүй</p>}
-        </section>
       </div>
-    </div>
+      <div>
+        <h2 className="esheet__h">Ажлын мэдээлэл</h2>
+        <dl>
+          <Row label="Ажилтны код"><span className="tnum">{e.code}</span></Row>
+          <Row label="Хэлтэс">{hr.dept(e.dept)?.name}</Row>
+          <Row label="Албан тушаал">{hr.position(e.position)?.name}</Row>
+          <Row label="Ажилд орсон огноо"><span className="tnum">{dots(e.hired)}</span></Row>
+          <Row label="Туршилтын хугацаа">
+            {e.probationEnd ? <span className="tnum">{dots(e.probationEnd)}{prob !== null && prob >= 0 ? ` хүртэл` : ''}</span> : e.moves.some(m => m.kind === 'confirmed') ? 'Дууссан' : e.status === 'probation' ? null : 'Туршилтгүй'}
+          </Row>
+        </dl>
+        <h2 className="esheet__h">Хөдөлмөрийн гэрээ</h2>
+        <dl>
+          <Row label="Төрөл">{CONTRACT[e.contract.kind]}</Row>
+          <Row label="Дугаар"><span className="tnum">{e.contract.no}</span></Row>
+          <Row label="Эхэлсэн огноо"><span className="tnum">{dots(e.contract.start)}</span></Row>
+          <Row label="Дуусах огноо">{e.contract.end ? <span className="tnum">{dots(e.contract.end)}</span> : CONTRACT.open}</Row>
+        </dl>
+        <h2 className="esheet__h">Яаралтай үед холбоо барих хүн</h2>
+        {e.contact ? (
+          <dl>
+            <Row label="Нэр">{e.contact.name}</Row>
+            <Row label="Хамаарал">{e.contact.relation}</Row>
+            <Row label="Утас"><span className="tnum">{e.contact.phone}</span></Row>
+          </dl>
+        ) : <p className="muted esheet__none">Бөглөөгүй</p>}
+      </div>
+    </section>
   )
 }
 
