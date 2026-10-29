@@ -68,7 +68,7 @@ function CreateMenu() {
         <MenuItem icon={<SquareCheck className="ico" />} onSelect={pick(() => open({ kind: 'newTask' }))}>Шинэ ажил</MenuItem>
         <MenuItem icon={<CalendarPlus className="ico" />} onSelect={pick(() => open({ kind: 'newEvent' }))}>Шинэ тов</MenuItem>
         <MenuItem icon={<FolderPlus className="ico" />} onSelect={pick(() => open({ kind: 'newProject' }))}>Шинэ төсөл</MenuItem>
-        <MenuItem icon={<MessageSquarePlus className="ico" />} onSelect={pick(() => open({ kind: 'newChat' }))}>Шинэ чат</MenuItem>
+        <MenuItem icon={<MessageSquarePlus className="ico" />} onSelect={pick(() => open({ kind: 'newChat' }))}>Шинэ зурвас</MenuItem>
         <hr />
         <MenuItem icon={<Moon className="ico" />} onSelect={pick(() => focus.start(minutes))}>{minutes} минут төвлөрөх</MenuItem>
       </Menu>

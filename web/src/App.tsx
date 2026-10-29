@@ -56,7 +56,8 @@ export function App() {
       <Toolbar />
       <Island />
       <main id="main" className="main" ref={main} tabIndex={-1}>
-        <Screen key={`${route.page}-${route.id ?? ''}-${s.company}`} id={route.id} />
+        {/* A page starts afresh for each record and company. Зурвас stays: changing chats keeps the list where it was. */}
+        <Screen key={route.page === 'chat' ? 'chat' : `${route.page}-${route.id ?? ''}-${s.company}`} id={route.id} />
       </main>
       <TabBar />
       <Dialogs />

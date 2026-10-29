@@ -1,4 +1,4 @@
-// Чат: a chat's name, unread messages, my chats in order, and the demo chats (docs/decisions.md, 2026-10-29).
+// Зурвас (chat): a chat's name, unread messages, my chats in order, and the demo chats (docs/decisions.md, 2026-10-29).
 import type { Chat, ChatRef, Message, Person, State } from './types'
 import { short } from './format'
 

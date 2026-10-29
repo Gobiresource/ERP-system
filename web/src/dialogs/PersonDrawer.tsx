@@ -43,7 +43,7 @@ export function PersonDrawer({ id }: { id: string }) {
 
         {!me && (
           <button type="button" className="btn btn--accent prof__chat" onClick={() => { close(); go('chat', actions.directChat(p.id).id) }}>
-            <MessageSquare className="ico" />Чатлах
+            <MessageSquare className="ico" />Зурвас бичих
           </button>
         )}
 

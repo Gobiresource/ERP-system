@@ -32,7 +32,7 @@ export function Sidebar() {
                 <span className="nav__count">{open}<span className="sr-only"> дуусаагүй ажил</span></span>
               )}
               {n.page === 'chat' && fresh > 0 && (
-                <span className="nav__count">{fresh}<span className="sr-only"> шинэ мессеж</span></span>
+                <span className="nav__count">{fresh}<span className="sr-only"> шинэ зурвас</span></span>
               )}
             </a>
           ))}

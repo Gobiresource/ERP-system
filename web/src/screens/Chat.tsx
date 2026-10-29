@@ -1,8 +1,8 @@
-// Чат: my chats on the left, one chat on the right (messages by day and a box to write in). A message can name people
-// (@), point to a task, a meeting or a document in Бичиг хэрэг, and carry files and pictures (docs/decisions.md,
-// 2026-10-29). On a phone the list and a chat are two views. The demo has no server: other people's messages are made up.
+// Зурвас (the chat): my chats on the left, one chat on the right (messages by day and a box to write in). A message can
+// name people (@), point to a task, a meeting or a document in Бичиг хэрэг, and carry files and pictures
+// (docs/decisions.md, 2026-10-29). On a phone the list and a chat are two views. The demo has no server: other people's messages are made up.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from 'react'
-import { CalendarDays, ChevronLeft, Download, MessagesSquare, Paperclip, Plus, Search, Send, Settings, SquareCheck, SquarePen, User, X } from 'lucide-react'
+import { AtSign, CalendarDays, ChevronLeft, Download, FileText, Image as ImageIcon, MessagesSquare, Paperclip, Plus, Search, Send, Settings, SquareCheck, SquarePen, User, X } from 'lucide-react'
 import '../styles/screens/chat.css'
 import type { BoardFile, Chat, ChatRef, Message } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
@@ -27,13 +27,13 @@ export default function ChatPage({ id }: { id?: string }) {
   useLayoutEffect(() => { if (!id && document.body.dataset.navigated) document.getElementById('page-title')?.focus({ preventScroll: true }) }, [id])
   return (
     <div className={`chatpage${id ? ' has-chat' : ''}`}>
-      <PageHead title="Чат" actions={<button type="button" className="btn btn--accent" onClick={() => open({ kind: 'newChat' })}><SquarePen className="ico" />Шинэ чат</button>} />
-      <div className="chat glass">
+      <PageHead title="Зурвас" actions={<button type="button" className="btn btn--accent" onClick={() => open({ kind: 'newChat' })}><SquarePen className="ico" />Шинэ зурвас</button>} />
+      <div className="chat">
         <ChatList chats={chats} at={chat?.id} />
         {chat ? <Thread key={chat.id} chat={chat} /> : (
           <section className="chat__thread chat__none">
-            {id && <a className="ibtn ibtn--glass ct__back" href="#chat" aria-label="Бүх чат"><ChevronLeft className="ico" /></a>}
-            <Empty icon={<MessagesSquare className="ico" />} title={id ? 'Чат олдсонгүй' : 'Чатаа сонгоно уу'} text={id ? 'Устгагдсан эсвэл та энэ чатад байхгүй байна.' : 'Зүүн талаас чатаа сонгоно уу эсвэл шинэ чат эхлүүлнэ үү.'} />
+            {id && <a className="ibtn ibtn--glass ct__back" href="#chat" aria-label="Бүх зурвас"><ChevronLeft className="ico" /></a>}
+            <Empty icon={<MessagesSquare className="ico" />} title={id ? 'Зурвас олдсонгүй' : 'Зурвас сонгоно уу'} text={id ? 'Устгагдсан эсвэл та гишүүн биш байна.' : 'Зүүн талаас сонгоно уу эсвэл шинэ зурвас бичнэ үү.'} />
           </section>
         )}
       </div>
@@ -53,15 +53,15 @@ function ChatList({ chats, at }: { chats: Chat[]; at?: string }) {
   const t = lower(q.trim())
   const shown = chats.filter(c => !t || lower(chatName(c, s.people, s.me)).includes(t))
   return (
-    <section className="chat__list" aria-label="Миний чат">
+    <section className="chat__list" aria-label="Миний зурвас">
       <label className="tk-find chat__find">
         <Search className="ico" />
-        <span className="sr-only">Чат хайх</span>
-        <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Чат хайх" />
+        <span className="sr-only">Хүн, бүлэг хайх</span>
+        <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Хүн, бүлэг хайх" />
       </label>
       {shown.length ? (
         <ul className="clist">{shown.map(c => <ChatItem key={c.id} c={c} on={c.id === at} />)}</ul>
-      ) : <p className="clist__none">{t ? 'Илэрц алга' : 'Чат алга'}</p>}
+      ) : <p className="clist__none">{t ? 'Илэрц алга' : 'Зурвас алга'}</p>}
     </section>
   )
 }
@@ -86,11 +86,11 @@ function ChatItem({ c, on }: { c: Chat; on: boolean }) {
         {other ? <Avatar person={other} size="md" presence /> : <ChatMark chat={c} />}
         <span className="citem__main">
           <b>{name}</b>
-          <small>{last ? `${last.by === s.me ? 'Та: ' : ''}${preview(last)}` : 'Мессеж алга'}</small>
+          <small>{last ? `${last.by === s.me ? 'Та: ' : ''}${preview(last)}` : 'Зурвас алга'}</small>
         </span>
         <span className="citem__side">
           <time className="tnum">{when}</time>
-          {n > 0 && <span className="citem__n tnum">{n}<span className="sr-only"> шинэ мессеж</span></span>}
+          {n > 0 && <span className="citem__n tnum">{n}<span className="sr-only"> шинэ зурвас</span></span>}
         </span>
       </a>
     </li>
@@ -108,14 +108,24 @@ function Thread({ chat }: { chat: Chat }) {
   // Opening a chat reads it; so does a message that comes while it is open
   useEffect(() => { if (fresh) actions.readChat(chat.id) }, [fresh, chat.id])
   // The newest message at the bottom, in view
-  useLayoutEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight }, [msgs.length])
+  // How many messages there were when the chat opened: later ones glide in
+  const [seenCount] = useState(msgs.length)
+  const opened = useRef(false)
+  useLayoutEffect(() => {
+    const el = log.current
+    if (!el) return
+    // Opening: straight to the newest. Later: a short glide, unless less motion is asked for.
+    const glide = opened.current && !matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({ top: el.scrollHeight, behavior: glide ? 'smooth' : 'auto' })
+    opened.current = true
+  }, [msgs.length])
   // Coming from another page or chat, focus goes to the chat's name (not the box: a phone would open its keyboard)
   useLayoutEffect(() => { if (document.body.dataset.navigated) title.current?.focus({ preventScroll: true }) }, [])
 
   return (
     <section className="chat__thread" aria-labelledby="ct-name">
       <header className="ct__head">
-        <a className="ibtn ibtn--glass ct__back" href="#chat" aria-label="Бүх чат"><ChevronLeft className="ico" /></a>
+        <a className="ibtn ibtn--glass ct__back" href="#chat" aria-label="Бүх зурвас"><ChevronLeft className="ico" /></a>
         {other ? <Avatar person={other} size="md" presence /> : <ChatMark chat={chat} />}
         <div className="ct__titles">
           <h2 id="ct-name" ref={title} tabIndex={-1}>{chatName(chat, s.people, s.me)}</h2>
@@ -127,8 +137,8 @@ function Thread({ chat }: { chat: Chat }) {
           <button type="button" className="ibtn ibtn--glass" aria-label={`${short(other)}: мэдээлэл харах`} title="Мэдээлэл харах" onClick={() => open({ kind: 'person', id: other.id })}><User className="ico" /></button>
         )}
       </header>
-      <div className="cmsgs" ref={log} role="log" aria-label="Мессеж" tabIndex={0}>
-        {msgs.length === 0 && <p className="cmsgs__none">Мессеж алга. Бичихдээ @ дарж хүн, ажил, тов, бичиг баримтыг дурдана.</p>}
+      <div className="cmsgs" ref={log} role="log" aria-label="Зурвас" tabIndex={0}>
+        {msgs.length === 0 && <p className="cmsgs__none">Зурвас алга. + дарж хавсаргана, @ дарж хүн дурдана.</p>}
         {msgs.map((m, i) => {
           const prev = msgs[i - 1]
           const day = ymd(new Date(m.at))
@@ -138,7 +148,7 @@ function Thread({ chat }: { chat: Chat }) {
           return (
             <Fragment key={m.id}>
               {newDay && <p className="cday"><span>{dueLabel(day)}</span></p>}
-              <Bubble m={m} first={first} group={chat.kind === 'group'} />
+              <Bubble m={m} first={first} group={chat.kind === 'group'} fresh={i >= seenCount} />
             </Fragment>
           )
         })}
@@ -148,14 +158,14 @@ function Thread({ chat }: { chat: Chat }) {
   )
 }
 
-function Bubble({ m, first, group }: { m: Message; first: boolean; group: boolean }) {
+function Bubble({ m, first, group, fresh }: { m: Message; first: boolean; group: boolean; fresh?: boolean }) {
   const s = useApp()
   const mine = m.by === s.me
   const by = s.people.find(p => p.id === m.by)
   const who = mine ? 'Та' : by ? short(by) : 'Устгагдсан ажилтан'
   const cards = m.refs.filter(r => r.kind !== 'person')
   return (
-    <div className={`cmsg${mine ? ' is-mine' : ''}${first ? ' is-first' : ''}`}>
+    <div className={`cmsg${mine ? ' is-mine' : ''}${first ? ' is-first' : ''}${fresh ? ' is-fresh' : ''}`}>
       {!mine && <span className="cmsg__face">{first && by && <Avatar person={by} size="sm" />}</span>}
       <div className="cmsg__body">
         {!mine && group && first ? <b className="cmsg__who">{who}</b> : <span className="sr-only">{who}:</span>}
@@ -225,68 +235,95 @@ function FileView({ f }: { f: BoardFile }) {
   )
 }
 
-interface Option { key: string; group: string; label: string; sub: string; ref?: ChatRef; file?: true }
+/** What the box's panel shows: people for @ (at: where the @ is in the text), what + can attach, or one kind to pick from */
+type Panel = { kind: 'people'; q: string; at: number } | { kind: 'attach' } | { kind: 'task' | 'event' | 'doc'; q: string }
+interface Row { key: string; icon: ReactNode; label: string; sub: string; ref: ChatRef }
+const TITLE = { task: 'Ажил', event: 'Тов', doc: 'Бичиг баримт' } as const
 
-/** The box to write in. @ opens a list to name a person or point to a task, a meeting or a document; + opens the same
- * list with files and pictures from this device at the top. */
+/**
+ * The box to write in. @ (typed, or the @ button) lists the chat's people to name. + shows what can be attached, each
+ * with its own picture: a picture or a file from this device, or a task, a meeting or a document picked from its list.
+ */
 function Composer({ chat }: { chat: Chat }) {
   const s = useApp()
   const sc = scoped(s)
   const [text, setText] = useState('')
   const [refs, setRefs] = useState<ChatRef[]>([])
   const [files, setFiles] = useState<BoardFile[]>([])
-  // at: where the @ is in the text; -1 when the list was opened with +
-  const [menu, setMenu] = useState<{ q: string; at: number } | null>(null)
+  const [panel, setPanel] = useState<Panel | null>(null)
   const [active, setActive] = useState(0)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const box = useRef<HTMLTextAreaElement>(null)
   const pick = useRef<HTMLInputElement>(null)
 
-  const options = useMemo(() => {
-    if (!menu) return []
-    const t = lower(menu.q)
+  const rows = useMemo((): Row[] => {
+    if (!panel || panel.kind === 'attach') return []
+    const t = lower(panel.q)
     const has = (x: string) => !t || lower(x).includes(t)
-    const out: Option[] = menu.at < 0 ? [{ key: 'file', group: 'Төхөөрөмжөөс', label: 'Файл, зураг', sub: '25 MB хүртэл', file: true }] : []
-    const add = (group: string, list: Omit<Option, 'group'>[]) => out.push(...list.filter(o => has(o.label)).slice(0, 5).map(o => ({ ...o, group })))
-    add('Хүн', s.people.filter(p => p.id !== s.me && chat.members.includes(p.id)).sort((a, b) => collator.compare(a.given, b.given))
-      .map(p => ({ key: `p${p.id}`, label: short(p), sub: p.role, ref: { kind: 'person', id: p.id, label: short(p) } })))
-    add('Ажил', [...sc.tasks].sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || a.due.localeCompare(b.due))
-      .map(x => ({ key: `t${x.id}`, label: x.title, sub: `${STATUS[x.status]}, ${dueLabel(x.due)}`, ref: { kind: 'task', id: x.id, label: x.title } })))
-    add('Тов', sc.events.filter(e => e.start.slice(0, 10) >= today()).sort((a, b) => a.start.localeCompare(b.start))
-      .map(e => ({ key: `e${e.id}`, label: e.title, sub: `${dueLabel(e.start.slice(0, 10))} ${hm(parse(e.start))}`, ref: { kind: 'event', id: e.id, label: e.title } })))
-    add('Бичиг баримт', s.docs.filter(d => d.company === s.company && seen(d, s.me))
-      .map(d => ({ key: `d${d.id}`, label: d.name, sub: DOC_KIND[d.kind], ref: { kind: 'doc', id: d.id, label: d.name } })))
-    return out
-  }, [menu, s, sc, chat.members])
-  const current = Math.min(active, Math.max(0, options.length - 1))
+    const icon = (i: ReactNode) => <span className="cpick__ico" aria-hidden="true">{i}</span>
+    if (panel.kind === 'people') {
+      return s.people.filter(p => p.id !== s.me && chat.members.includes(p.id) && has(short(p))).sort((a, b) => collator.compare(a.given, b.given))
+        .map(p => ({ key: `p${p.id}`, icon: <Avatar person={p} size="sm" />, label: short(p), sub: p.role, ref: { kind: 'person', id: p.id, label: short(p) } }))
+    }
+    if (panel.kind === 'task') {
+      return [...sc.tasks].filter(x => has(x.title)).sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || a.due.localeCompare(b.due))
+        .map(x => ({ key: `t${x.id}`, icon: icon(<SquareCheck className="ico" />), label: x.title, sub: `${STATUS[x.status]}, ${dueLabel(x.due)}`, ref: { kind: 'task', id: x.id, label: x.title } }))
+    }
+    if (panel.kind === 'event') {
+      return sc.events.filter(e => e.start.slice(0, 10) >= today() && has(e.title)).sort((a, b) => a.start.localeCompare(b.start))
+        .map(e => ({ key: `e${e.id}`, icon: icon(<CalendarDays className="ico" />), label: e.title, sub: `${KIND[e.kind]}, ${dueLabel(e.start.slice(0, 10))} ${hm(parse(e.start))}`, ref: { kind: 'event', id: e.id, label: e.title } }))
+    }
+    return s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name))
+      .map(d => ({ key: `d${d.id}`, icon: <DocTile kind={d.kind} />, label: d.name, sub: DOC_KIND[d.kind], ref: { kind: 'doc', id: d.id, label: d.name } }))
+  }, [panel, s, sc, chat.members])
+  const current = Math.min(active, Math.max(0, rows.length - 1))
+
+  const close = () => {
+    setPanel(null)
+    box.current?.focus()
+  }
 
   const type = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value
     setText(v)
     setError('')
-    // Grows with the text, up to about six lines
-    e.target.style.height = 'auto'
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`
+    // Grows with the text, up to about six lines. Measured only when it may have to grow or shrink: each measure makes
+    // the browser lay the page out again, which a fast typist feels.
+    const el = e.target
+    if (el.scrollHeight > el.clientHeight || v.length < text.length) {
+      el.style.height = 'auto'
+      el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+    }
     const caret = e.target.selectionStart ?? v.length
     const m = /(^|\s)@([^\s@]{0,30})$/.exec(v.slice(0, caret))
     if (m) {
-      setMenu({ q: m[2], at: caret - m[2].length - 1 })
+      setPanel({ kind: 'people', q: m[2], at: caret - m[2].length - 1 })
       setActive(0)
-    } else if (menu && menu.at >= 0) setMenu(null)
+    } else if (panel?.kind === 'people') setPanel(null)
   }
 
-  const choose = (o: Option) => {
-    setMenu(null)
-    if (o.file) return pick.current?.click()
-    const r = o.ref!
-    let v = text
-    const named = r.kind === 'person' ? `@${r.label} ` : ''
-    if (menu && menu.at >= 0) v = v.slice(0, menu.at) + named + v.slice(menu.at + 1 + menu.q.length)
-    else if (named) v = `${v}${v && !/\s$/.test(v) ? ' ' : ''}${named}`
-    setText(v)
+  /** The @ button: puts an @ where the cursor is and lists the people */
+  const mention = () => {
+    const el = box.current
+    if (!el) return
+    const caret = el.selectionStart ?? text.length
+    const before = text.slice(0, caret)
+    const glue = before && !/\s$/.test(before) ? ' ' : ''
+    const at = caret + glue.length
+    setText(`${before}${glue}@${text.slice(caret)}`)
+    setPanel({ kind: 'people', q: '', at })
+    setActive(0)
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(at + 1, at + 1) })
+  }
+
+  const choose = (r: ChatRef) => {
+    if (panel?.kind === 'people') {
+      const end = panel.at + 1 + panel.q.length
+      setText(`${text.slice(0, panel.at)}@${r.label} ${text.slice(end)}`)
+    }
     setRefs(rs => (rs.some(x => x.kind === r.kind && x.id === r.id) ? rs : [...rs, r]))
-    box.current?.focus()
+    close()
   }
 
   const send = () => {
@@ -299,27 +336,40 @@ function Composer({ chat }: { chat: Chat }) {
     setText('')
     setRefs([])
     setFiles([])
-    setMenu(null)
+    setPanel(null)
   }
 
+  /** Arrows move in the list, Enter or Tab picks, Esc closes; in the box, Enter sends */
+  const listKeys = (e: KeyboardEvent<HTMLElement>) => {
+    if (rows.length && ['ArrowDown', 'ArrowUp', 'Enter', 'Tab'].includes(e.key)) {
+      e.preventDefault()
+      if (e.key === 'ArrowDown') setActive((current + 1) % rows.length)
+      else if (e.key === 'ArrowUp') setActive((current - 1 + rows.length) % rows.length)
+      else choose(rows[current].ref)
+      return true
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      close()
+      return true
+    }
+    return false
+  }
   const key = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (menu && options.length && ['ArrowDown', 'ArrowUp', 'Enter', 'Tab'].includes(e.key)) {
-      e.preventDefault()
-      if (e.key === 'ArrowDown') setActive((current + 1) % options.length)
-      else if (e.key === 'ArrowUp') setActive((current - 1 + options.length) % options.length)
-      else choose(options[current])
-      return
-    }
-    if (menu && e.key === 'Escape') {
-      e.preventDefault()
-      return setMenu(null)
-    }
+    if (panel?.kind === 'people' && listKeys(e)) return
+    if (panel && e.key === 'Escape') return close()
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       send()
     }
   }
 
+  const files_ = (accept: string) => {
+    setPanel(null)
+    if (!pick.current) return
+    pick.current.accept = accept
+    pick.current.click()
+  }
   const attach = async (e: ChangeEvent<HTMLInputElement>) => {
     const list = [...(e.target.files ?? [])]
     e.target.value = ''
@@ -340,34 +390,60 @@ function Composer({ chat }: { chat: Chat }) {
   }
 
   const cards = refs.filter(r => r.kind !== 'person')
+  const list = panel && panel.kind !== 'attach' && (
+    <div className="cpick" role="listbox" id="cpick" aria-label={panel.kind === 'people' ? 'Хүн дурдах' : TITLE[panel.kind]}>
+      {rows.length === 0 && <p className="cpick__none">Илэрц алга</p>}
+      {rows.map((r, i) => (
+        <button key={r.key} type="button" role="option" id={`cp-${r.key}`} className="cpick__row" aria-selected={i === current} tabIndex={-1}
+          onMouseDown={e => e.preventDefault()} onClick={() => choose(r.ref)}>
+          {r.icon}
+          <span className="cpick__main"><b>{r.label}</b><small>{r.sub}</small></span>
+        </button>
+      ))}
+    </div>
+  )
   return (
     <form className="ccompose" onSubmit={e => { e.preventDefault(); send() }}>
-      {menu && (
-        <div className="cmenu" role="listbox" id="cmenu" aria-label="Дурдах зүйл">
-          {options.length === 0 && <p className="cmenu__none">Илэрц алга</p>}
-          {options.map((o, i) => (
-            <Fragment key={o.key}>
-              {(i === 0 || options[i - 1].group !== o.group) && <p className="cmenu__group" aria-hidden="true">{o.group}</p>}
-              <button type="button" role="option" id={`cm-${o.key}`} className="cmenu__opt" aria-selected={i === current}
-                onMouseDown={e => e.preventDefault()} onClick={() => choose(o)} tabIndex={-1}>
-                <b>{o.label}</b><small>{o.sub}</small>
-              </button>
-            </Fragment>
-          ))}
+      {panel && (
+        <div className="cpanel" onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); close() } }}>
+          {panel.kind === 'attach' && (
+            <div className="ctiles" role="group" aria-label="Хавсаргах">
+              <button type="button" className="ctile" onClick={() => files_('image/*')}><span className="ctile__ico hue--blue"><ImageIcon className="ico" /></span>Зураг</button>
+              <button type="button" className="ctile" onClick={() => files_('')}><span className="ctile__ico hue--purple"><Paperclip className="ico" /></span>Файл</button>
+              <button type="button" className="ctile" onClick={() => { setPanel({ kind: 'task', q: '' }); setActive(0) }}><span className="ctile__ico hue--green"><SquareCheck className="ico" /></span>Ажил</button>
+              <button type="button" className="ctile" onClick={() => { setPanel({ kind: 'event', q: '' }); setActive(0) }}><span className="ctile__ico hue--orange"><CalendarDays className="ico" /></span>Тов</button>
+              <button type="button" className="ctile" onClick={() => { setPanel({ kind: 'doc', q: '' }); setActive(0) }}><span className="ctile__ico hue--teal"><FileText className="ico" /></span>Бичиг баримт</button>
+            </div>
+          )}
+          {panel.kind === 'people' && <p className="cpanel__title">Хүн дурдах</p>}
+          {(panel.kind === 'task' || panel.kind === 'event' || panel.kind === 'doc') && (
+            <div className="cpanel__head">
+              <button type="button" className="ibtn ibtn--sm" aria-label="Буцах" onClick={() => setPanel({ kind: 'attach' })}><ChevronLeft className="ico" /></button>
+              <b>{TITLE[panel.kind]}</b>
+              <label className="tk-find cpanel__find">
+                <Search className="ico" />
+                <span className="sr-only">{TITLE[panel.kind]} хайх</span>
+                <input type="search" ref={el => el?.focus({ preventScroll: true })} value={panel.q} placeholder="Хайх"
+                  onChange={e => { setPanel({ kind: panel.kind, q: e.target.value }); setActive(0) }}
+                  onKeyDown={listKeys} aria-controls="cpick" aria-activedescendant={rows[current] ? `cp-${rows[current].key}` : undefined} />
+              </label>
+            </div>
+          )}
+          {list}
         </div>
       )}
       {(cards.length > 0 || files.length > 0 || busy) && (
         <ul className="cdraft" aria-label="Хавсаргасан">
           {cards.map(r => (
             <li key={`${r.kind}-${r.id}`}>
-              {r.kind === 'task' ? <SquareCheck className="ico" /> : r.kind === 'event' ? <CalendarDays className="ico" /> : <Paperclip className="ico" />}
+              {r.kind === 'task' ? <SquareCheck className="ico" /> : r.kind === 'event' ? <CalendarDays className="ico" /> : <FileText className="ico" />}
               <span>{r.label}</span>
               <button type="button" className="ibtn ibtn--sm" aria-label={`${r.label}: хасах`} onClick={() => setRefs(rs => rs.filter(x => x !== r))}><X className="ico" /></button>
             </li>
           ))}
           {files.map(f => (
             <li key={f.id}>
-              <Paperclip className="ico" />
+              {f.type.startsWith('image/') ? <ImageIcon className="ico" /> : <Paperclip className="ico" />}
               <span>{f.name}</span>
               <button type="button" className="ibtn ibtn--sm" aria-label={`${f.name}: хасах`} onClick={() => setFiles(fs => fs.filter(x => x !== f))}><X className="ico" /></button>
             </li>
@@ -376,13 +452,16 @@ function Composer({ chat }: { chat: Chat }) {
         </ul>
       )}
       <div className="ccompose__row">
-        <button type="button" className="ibtn ibtn--glass" aria-label="Хавсаргах" title="Хавсаргах" aria-expanded={!!menu && menu.at < 0} aria-controls="cmenu"
-          onClick={() => setMenu(menu && menu.at < 0 ? null : { q: '', at: -1 })}>
+        <button type="button" className="ibtn ibtn--glass" aria-label="Хавсаргах" title="Хавсаргах" aria-expanded={!!panel && panel.kind !== 'people'}
+          onClick={() => (panel && panel.kind !== 'people' ? close() : setPanel({ kind: 'attach' }))}>
           <Plus className="ico" />
         </button>
-        <textarea ref={box} className="ccompose__box" rows={1} value={text} onChange={type} onKeyDown={key} aria-label="Мессеж"
-          placeholder="Мессеж бичих" aria-controls={menu ? 'cmenu' : undefined} aria-expanded={!!menu}
-          aria-activedescendant={menu && options[current] ? `cm-${options[current].key}` : undefined} />
+        <button type="button" className="ibtn ibtn--glass" aria-label="Хүн дурдах" title="Хүн дурдах" aria-expanded={panel?.kind === 'people'} onClick={mention}>
+          <AtSign className="ico" />
+        </button>
+        <textarea ref={box} className="ccompose__box" rows={1} value={text} onChange={type} onKeyDown={key} aria-label="Зурвас" placeholder="Зурвас бичих"
+          aria-controls={panel?.kind === 'people' ? 'cpick' : undefined} aria-expanded={panel?.kind === 'people'}
+          aria-activedescendant={panel?.kind === 'people' && rows[current] ? `cp-${rows[current].key}` : undefined} />
         <button type="submit" className="csend" aria-label="Илгээх" title="Илгээх"><Send className="ico" /></button>
       </div>
       {error && <p className="field__error" role="alert">{error}</p>}

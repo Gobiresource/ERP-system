@@ -1,4 +1,4 @@
-// Чат windows: start a chat (one person, or a group of several), change a group's name and people, see a picture.
+// Зурвас (chat) windows: start one (one person, or a group of several), change a group's name and people, see a picture.
 import { useState } from 'react'
 import { Download } from 'lucide-react'
 import type { BoardFile, Hue, Id } from '../lib/types'
@@ -29,7 +29,7 @@ export function NewChat() {
   const [errors, setErrors] = useState<Errors>({})
   const submit = () => {
     if (!f.members.length) {
-      setErrors({ 'nc-people': 'Чатлах хүнээ сонгоно уу.' })
+      setErrors({ 'nc-people': 'Хэнд бичихээ сонгоно уу.' })
       return false
     }
     const names = people.filter(p => f.members.includes(p.id)).map(short).join(', ')
@@ -39,9 +39,9 @@ export function NewChat() {
     return true
   }
   return (
-    <FormSheet title="Шинэ чат" sub="Нэг хүн сонговол хоёр хүний чат, олон хүн сонговол бүлэг үүснэ." submit="Эхлүүлэх" onSubmit={submit} onClose={close} errors={errors}>
+    <FormSheet title="Шинэ зурвас" sub="Нэг хүн сонговол хувийн зурвас, олон хүн сонговол бүлэг үүснэ." submit="Бичих" onSubmit={submit} onClose={close} errors={errors}>
       <fieldset className="field field--wide" id="nc-people" tabIndex={-1} aria-describedby={errors['nc-people'] ? 'nc-people-error' : undefined}>
-        <legend className="field__label">Хэнтэй чатлах</legend>
+        <legend className="field__label">Хэнд бичих</legend>
         <PeoplePick people={people} value={f.members} onToggle={id => { setF({ ...f, members: toggle(f.members, id) }); setErrors({}) }} />
         {errors['nc-people'] && <span className="field__error" id="nc-people-error">{errors['nc-people']}</span>}
       </fieldset>
