@@ -1,14 +1,14 @@
 // HR overview: headcount, alerts, recent movement and who works here
 import { useLayoutEffect, useRef, useState } from 'react'
-import { ArrowRight, Cake, CircleCheck, FileClock, FileWarning, Hourglass } from 'lucide-react'
+import { ArrowRight, Cake, CircleCheck, FileClock, FileWarning, Hourglass, UsersRound } from 'lucide-react'
 import type { Employee } from '../../lib/types'
 import { useApp } from '../../lib/store'
 import { enter, usePageEnter } from '../../lib/motion'
 import { ALERT_DAYS, EMP_STATUS, MOVE, ageOn, alertsOf, current, dots, fileScore, hrScoped, readRegNo, whenEnds, type AlertKind } from '../../lib/hr'
-import { monthDay, short } from '../../lib/format'
+import { monthDay, short, ymd } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
-import { DataTable, Ring } from '../../ui/charts'
+import { Ring } from '../../ui/charts'
 import { EmpAvatar, HrNav } from '../Hr'
 
 const ALERT_ICON: Record<AlertKind, typeof FileClock> = { contract: FileClock, probation: Hourglass, file: FileWarning }
@@ -43,7 +43,6 @@ export default function Overview() {
         <Alerts alerts={alerts} />
         <Headcount />
         <Movement />
-        <Recent staff={staff} />
         <Makeup staff={staff} />
         <Birthdays staff={staff} />
       </div>
@@ -74,7 +73,7 @@ function Alerts({ alerts }: { alerts: ReturnType<typeof alertsOf> }) {
                 <a className={`hr-alert${a.days < 0 ? ' is-late' : ''}`} href={`#hr-${a.employee.id}`}>
                   <span className="lead"><Icon className="ico" /></span>
                   <span className="hr-alert__what"><b>{a.what}</b><small>{short(a.employee)}, {hr.position(a.employee.position)?.name}</small></span>
-                  <span className="hr-alert__when"><b className="tnum">{dots(a.date)}</b><small>{whenEnds(a.days)}</small></span>
+                  <span className="hr-when"><b className="tnum">{dots(a.date)}</b><small>{whenEnds(a.days)}</small></span>
                 </a>
               </li>
             )
@@ -135,74 +134,50 @@ function Headcount() {
   )
 }
 
-/** Hires above the line, leavers below, for the last 12 months */
+/** Who joined and who left in the last 12 months, newest first. With one or two people a month, names say more than a chart. */
 function Movement() {
   const hr = hrScoped(useApp())
+  const [all, setAll] = useState(false)
   const now = new Date()
-  const months = Array.from({ length: 12 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - 11 + i, 1))
-  const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  const count = (dates: string[]) => months.map(m => dates.filter(x => x.startsWith(key(m))).length)
-  const ins = count(hr.employees.map(e => e.hired))
-  const outs = count(hr.employees.flatMap(e => e.moves.filter(m => m.kind === 'left').map(m => m.date)))
-  const max = Math.max(1, ...ins, ...outs)
-  const name = (m: Date) => `${m.getFullYear()} оны ${m.getMonth() + 1}-р сар`
-  const box = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
-    if (!box.current) return
-    const up = enter(box.current.querySelectorAll('.hr-mov__in i'), { transform: 'scaleY(0)' }, { duration: 1, ease: 'power3.out', stagger: 0.04, delay: 0.25 })
-    const down = enter(box.current.querySelectorAll('.hr-mov__out i'), { transform: 'scaleY(0)' }, { duration: 1, ease: 'power3.out', stagger: 0.04, delay: 0.35 })
-    return () => [...up, ...down].forEach(a => a.cancel())
-  }, [])
-  const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
+  const from = ymd(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()))
+  const within = (d: string) => d > from && d <= ymd(now)
+  const events = [
+    ...hr.employees.filter(e => within(e.hired)).map(e => ({ e, date: e.hired, joined: true, note: undefined as string | undefined })),
+    ...hr.employees.flatMap(e => e.moves.filter(m => m.kind === 'left' && within(m.date)).map(m => ({ e, date: m.date, joined: false, note: m.note }))),
+  ].sort((a, b) => b.date.localeCompare(a.date))
+  const joined = events.filter(x => x.joined).length
+  const shown = all ? events : events.slice(0, 6)
   return (
-    <section className="card glass span-7 hr-movcard" aria-labelledby="hrm-t" data-enter>
+    <section className="card glass span-7" aria-labelledby="hrm-t" data-enter>
       <div className="card__head">
         <div>
-          <h2 className="card__title" id="hrm-t">Ажилд орсон, гарсан</h2>
-          <p className="card__sub">Сүүлийн 12 сар</p>
+          <h2 className="card__title" id="hrm-t">Ажилд орсон, ажлаас гарсан</h2>
+          <p className="card__sub">Сүүлийн 12 сар: {joined} орсон, {events.length - joined} гарсан</p>
         </div>
-        <ul className="hr-key" aria-label="Тайлбар">
-          <li><i className="hr-key__in" />{MOVE.hired} <b className="tnum">{sum(ins)}</b></li>
-          <li><i className="hr-key__out" />Гарсан <b className="tnum">{sum(outs)}</b></li>
+      </div>
+      {events.length === 0 ? (
+        <Empty icon={<UsersRound className="ico" />} title="Сүүлийн 12 сард орсон, гарсан хүн алга" />
+      ) : (
+        <ul className="hr-people">
+          {shown.map(({ e, date, joined, note }) => {
+            const pos = hr.position(e.position)?.name ?? ''
+            return (
+              <li key={`${e.id}-${joined}`}>
+                <a href={`#hr-${e.id}`} className="hr-person">
+                  <EmpAvatar e={e} size="md" />
+                  <span><b>{short(e)}</b><small>{joined ? (e.status === 'probation' ? `${pos}, ${EMP_STATUS.probation.toLowerCase()}` : pos) : note ?? pos}</small></span>
+                  <span className="hr-when"><b className="tnum">{dots(date)}</b><small className={joined ? 'is-in' : 'is-out'}>{joined ? MOVE.hired : EMP_STATUS.left}</small></span>
+                </a>
+              </li>
+            )
+          })}
         </ul>
-      </div>
-      <div className="hr-mov" ref={box} aria-hidden="true">
-        {months.map((m, i) => (
-          <div className="hr-mov__col" key={i} title={`${name(m)}: ${ins[i]} орсон, ${outs[i]} гарсан`}>
-            <span className="hr-mov__in">{ins[i] > 0 && <i style={{ height: `${(ins[i] / max) * 78}%` }}><b className="tnum">{ins[i]}</b></i>}</span>
-            <span className="hr-mov__out">{outs[i] > 0 && <i style={{ height: `${(outs[i] / max) * 78}%` }}><b className="tnum">{outs[i]}</b></i>}</span>
-            <span className="hr-mov__lab">{m.getMonth() + 1}</span>
-          </div>
-        ))}
-      </div>
-      <DataTable caption="Сар бүр ажилд орсон, гарсан ажилтны тоо" head={['Сар', 'Орсон', 'Гарсан']} rows={months.map((m, i) => [name(m), ins[i], outs[i]])} />
-    </section>
-  )
-}
-
-function Recent({ staff }: { staff: Employee[] }) {
-  const hr = hrScoped(useApp())
-  const list = [...staff].sort((a, b) => b.hired.localeCompare(a.hired)).slice(0, 5)
-  return (
-    <section className="card glass span-5" aria-labelledby="hrr-t" data-enter>
-      <div className="card__head">
-        <div>
-          <h2 className="card__title" id="hrr-t">Сүүлд ажилд орсон</h2>
-          <p className="card__sub">Шинэ ажилтан</p>
-        </div>
-        <a className="btn btn--ghost btn--sm" href="#hr-employees">Бүгдийг харах</a>
-      </div>
-      <ul className="hr-people">
-        {list.map(e => (
-          <li key={e.id}>
-            <a href={`#hr-${e.id}`} className="hr-person">
-              <EmpAvatar e={e} size="md" />
-              <span><b>{short(e)}</b><small>{hr.position(e.position)?.name}{e.status === 'probation' ? `, ${EMP_STATUS.probation.toLowerCase()}` : ''}</small></span>
-              <span className="hr-person__aside tnum">{dots(e.hired)}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
+      )}
+      {events.length > 6 && (
+        <button type="button" className="btn btn--ghost btn--sm hr-more" aria-expanded={all} onClick={() => setAll(!all)}>
+          {all ? 'Хураах' : `Бүгдийг харах (${events.length})`}
+        </button>
+      )}
     </section>
   )
 }
@@ -220,7 +195,7 @@ function Makeup({ staff }: { staff: Employee[] }) {
   const avg = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 0
   const pct = (n: number) => Math.round((100 * n) / Math.max(1, people.length))
   return (
-    <section className="card glass span-7" aria-labelledby="hrk-t" data-enter>
+    <section className="card glass span-5" aria-labelledby="hrk-t" data-enter>
       <div className="card__head">
         <div>
           <h2 className="card__title" id="hrk-t">Нас, хүйс</h2>
@@ -255,7 +230,7 @@ function Birthdays({ staff }: { staff: Employee[] }) {
     .filter((x): x is { e: Employee; birth: Date } => !!x.birth && x.birth.getMonth() === now.getMonth())
     .sort((a, b) => a.birth.getDate() - b.birth.getDate())
   return (
-    <section className="card glass span-5" aria-labelledby="hrb-t" data-enter>
+    <section className="card glass span-12 hr-bdays" aria-labelledby="hrb-t" data-enter>
       <div className="card__head">
         <div>
           <h2 className="card__title" id="hrb-t">Энэ сарын төрсөн өдөр</h2>

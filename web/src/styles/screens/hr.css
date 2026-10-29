@@ -14,6 +14,7 @@
 .hr-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
 .hr-grid > .span-7 { grid-column: span 7; }
 .hr-grid > .span-5 { grid-column: span 5; }
+.hr-grid > .span-12 { grid-column: 1 / -1; }
 @media (width <= 1180px) { .hr-grid > .span-7, .hr-grid > .span-5 { grid-column: 1 / -1; } }
 
 .hr-alerts { display: grid; }
@@ -24,16 +25,18 @@
 .hr-alert.is-late .lead { color: var(--bad-ink); background: color-mix(in srgb, var(--danger) 13%, transparent); }
 .hr-alert__what { display: grid; flex: 1; min-width: 0; }
 .hr-alert__what b { font-size: 14.5px; font-weight: 600; }
-.hr-alert__what small, .hr-alert__when small { overflow: hidden; font-size: 13px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
-.hr-alert__when { display: grid; justify-items: end; flex: none; text-align: right; }
-.hr-alert__when b { font-size: 14px; font-weight: 600; }
-.hr-alert.is-late .hr-alert__when small { font-weight: 600; color: var(--bad-ink); }
+.hr-alert__what small, .hr-when small { overflow: hidden; font-size: 13px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+.hr-when { display: grid; justify-items: end; flex: none; text-align: right; }
+.hr-when b { font-size: 14px; font-weight: 600; }
+.hr-when .is-in { font-weight: 600; color: var(--ok-ink); }
+.hr-when .is-out { font-weight: 600; color: var(--bad-ink); }
+.hr-alert.is-late .hr-when small { font-weight: 600; color: var(--bad-ink); }
 .hr-more { margin-top: 8px; }
 @media (width <= 600px) {
   /* The date goes under the name, so the name keeps the width */
   .hr-alert { flex-wrap: wrap; row-gap: 2px; }
   .hr-alert__what { flex-basis: calc(100% - 48px); }
-  .hr-alert__when { display: flex; flex-wrap: wrap; gap: 0 8px; margin-left: 48px; text-align: left; }
+  .hr-alert .hr-when { display: flex; flex-wrap: wrap; gap: 0 8px; margin-left: 48px; text-align: left; }
 }
 
 .hr-fill { display: flex; align-items: center; gap: 22px; margin-bottom: 14px; }
@@ -49,28 +52,6 @@
 .hr-bar { position: relative; height: 8px; overflow: hidden; border-radius: 999px; background: var(--well); }
 .hr-bar i { position: absolute; inset: 0; border-radius: inherit; transform-origin: 0 50%; background: var(--accent-ink); }
 
-.hr-key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--text-2); }
-.hr-key li { display: flex; align-items: center; gap: 7px; }
-.hr-key b { color: var(--text); }
-.hr-key i { width: 12px; height: 12px; border-radius: 4px; }
-.hr-key__in { background: var(--green); }
-.hr-key__out { background: var(--pink); }
-
-/* Hires above the line, leavers below */
-.hr-movcard { display: flex; flex-direction: column; }
-.hr-mov { display: grid; flex: 1; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; min-height: 196px; }
-.hr-mov__col { display: grid; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) 22px; min-width: 0; }
-.hr-mov__in, .hr-mov__out { position: relative; display: flex; justify-content: center; }
-.hr-mov__in { align-items: flex-end; border-bottom: 1.5px solid var(--sep); }
-.hr-mov__out { align-items: flex-start; }
-.hr-mov i { position: relative; display: block; width: min(100%, 26px); min-height: 18px; }
-.hr-mov__in i { border-radius: 7px 7px 2px 2px; background: var(--green); transform-origin: 50% 100%; }
-.hr-mov__out i { border-radius: 2px 2px 7px 7px; background: var(--pink); transform-origin: 50% 0; }
-.hr-mov i b { position: absolute; left: 50%; font-size: 12px; font-weight: 700; line-height: 1; color: var(--text); transform: translateX(-50%); }
-.hr-mov__in i b { bottom: calc(100% + 4px); }
-.hr-mov__out i b { top: calc(100% + 4px); }
-.hr-mov__lab { align-self: end; font-size: 12px; font-weight: 600; color: var(--text-2); text-align: center; }
-
 .hr-people { display: grid; gap: 2px; }
 .hr-person { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 6px; border-radius: 16px; }
 .hr-person:hover { background: var(--fill-hover); }
@@ -78,6 +59,7 @@
 .hr-person b { font-size: 14.5px; font-weight: 600; }
 .hr-person small { font-size: 13px; color: var(--text-2); text-wrap: pretty; }
 .hr-person__aside { flex: none; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.hr-bdays .hr-people { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .hr-person.is-today { background: color-mix(in srgb, var(--pink) 12%, transparent); }
 
 .hr-sex { margin-bottom: 18px; }
