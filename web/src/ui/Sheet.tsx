@@ -7,11 +7,12 @@ const SheetContext = createContext<() => void>(() => {})
 export const useCloseSheet = () => use(SheetContext)
 
 /**
- * A window on top of the page (native <dialog>): `modal` in the middle, `drawer` on the right.
- * On phones both become a sheet from the bottom. Esc, the close button and a click outside close it.
+ * A window on top of the page (native <dialog>): `modal` in the middle, `drawer` on the right, `full` over the whole
+ * screen (a file to look at). On phones modal and drawer become a sheet from the bottom. Esc, the close button and a
+ * click outside close it.
  */
 export function Sheet({ kind = 'modal', label, onClose, children, wide, closeButton = true }: {
-  kind?: 'modal' | 'drawer'
+  kind?: 'modal' | 'drawer' | 'full'
   label: string
   onClose: () => void
   children: ReactNode
@@ -27,7 +28,8 @@ export function Sheet({ kind = 'modal', label, onClose, children, wide, closeBut
     const d = ref.current!
     if (!d.open) d.showModal()
     d.querySelector<HTMLElement>('[data-autofocus]')?.focus()
-    if (phone()) enter([d], { transform: 'translateY(100%)' }, { duration: 0.5, ease: 'power3.out' })
+    if (kind === 'full') enter([d], { opacity: 0 }, { duration: 0.25, ease: 'power2.out' })
+    else if (phone()) enter([d], { transform: 'translateY(100%)' }, { duration: 0.5, ease: 'power3.out' })
     else if (kind === 'drawer') enter([d], { opacity: 0, transform: 'translateX(60px)' }, { duration: 0.5, ease: 'power3.out' })
     else enter([d], { opacity: 0, transform: 'scale(.92)' }, { duration: 0.5, ease: 'back.out(1.6)' })
   }, [kind])
@@ -36,14 +38,14 @@ export function Sheet({ kind = 'modal', label, onClose, children, wide, closeBut
     const d = ref.current
     if (!d || closing.current) return
     closing.current = true
-    const to = phone() ? { transform: 'translateY(100%)' } : kind === 'drawer' ? { opacity: 0, transform: 'translateX(60px)' } : { opacity: 0, transform: 'scale(.95)' }
-    leave(d, to, { duration: 0.28, ease: 'power3.in' }).then(() => { d.close(); onClose() })
+    const to = kind === 'full' ? { opacity: 0 } : phone() ? { transform: 'translateY(100%)' } : kind === 'drawer' ? { opacity: 0, transform: 'translateX(60px)' } : { opacity: 0, transform: 'scale(.95)' }
+    leave(d, to, { duration: kind === 'full' ? 0.18 : 0.28, ease: 'power3.in' }).then(() => { d.close(); onClose() })
   }
 
   return (
     <dialog
       ref={ref}
-      className={`${kind}${wide ? ' modal--wide' : ''} glass glass--thick`}
+      className={kind === 'full' ? 'viewer' : `${kind}${wide ? ' modal--wide' : ''} glass glass--thick`}
       aria-label={label}
       onCancel={e => { e.preventDefault(); requestClose() }}
       onClick={e => { if (e.target === ref.current) requestClose() }}

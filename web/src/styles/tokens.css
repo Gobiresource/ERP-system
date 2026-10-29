@@ -58,6 +58,8 @@
   --av-ring: rgb(255 255 255 / .9);
   --well: rgb(118 118 140 / .14);
   --scrim: rgb(20 24 50 / .16);
+  /* Behind a file looked at over the whole screen (dialogs/Viewer.tsx) */
+  --view-bg: #d9dde7;
   --gel-hi: rgb(255 255 255 / .72);
   --gel-lo: rgb(255 255 255 / .34);
   --gel-rim: #fff;
@@ -122,6 +124,7 @@
   --av-ring: rgb(30 32 44 / .95);
   --well: rgb(150 150 175 / .16);
   --scrim: rgb(0 0 0 / .4);
+  --view-bg: #121317;
   --gel-hi: rgb(255 255 255 / .2);
   --gel-lo: rgb(255 255 255 / .07);
   --gel-rim: rgb(255 255 255 / .4);

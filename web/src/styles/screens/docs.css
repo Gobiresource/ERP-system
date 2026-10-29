@@ -77,14 +77,7 @@
 }
 
 /* Document window */
-.dview__head { display: flex; align-items: center; gap: 14px; margin: 0 52px 16px 0; }
-.dview__head .dtile { width: 46px; height: 56px; }
-.dview__head .muted { margin-top: 4px; font-size: 14px; }
-.dview__pages { display: grid; gap: 12px; max-height: min(64dvh, 900px); overflow: auto; padding: 12px; border-radius: 18px; background: var(--fill); }
-.dview__pages img { display: block; width: 100%; height: auto; border-radius: 4px; background: #fff; box-shadow: 0 1px 3px rgb(20 20 50 / .2); }
-.dview__wait { display: grid; place-items: center; min-height: 240px; color: var(--text-2); }
 .dview__note { padding: 16px; border-radius: 16px; background: var(--fill); }
-.dview__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 
 /* Forms: two big choices, people to share with, a file to pick */
 fieldset.field { margin: 0; padding: 0; border: 0; }

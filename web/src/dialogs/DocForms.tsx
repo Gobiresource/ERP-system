@@ -1,14 +1,13 @@
-// Бичиг хэрэг windows: look at a document, add one (HR and the office), ask the office for one, and one request with what
-// the office does with it.
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { Download, FileDown, Paperclip, Printer, Sparkles } from 'lucide-react'
+// Бичиг хэрэг windows: look at a document, add or change one (HR and the office), ask the office for one, and one request
+// with what the office does with it.
+import { useRef, useState, type ChangeEvent } from 'react'
+import { Download, FileDown, Paperclip, Printer, Sparkles, SquarePen } from 'lucide-react'
 import '../styles/screens/docs.css'
-import type { BoardFile, Doc, DocKind, DocRequest, Hue } from '../lib/types'
+import type { BoardFile, DocKind, DocRequest, Hue } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
 import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, isOpen, stepsOf } from '../lib/docs'
 import { docBlob, downloadDoc, requestPdf } from '../lib/paper'
-import { drawPage, viewPdf } from '../lib/pdf'
 import { putFile } from '../lib/files'
 import { cid } from '../lib/draft'
 import { addDaysYmd, dateDots, daysFromToday, dueLabel, hm, short, today } from '../lib/format'
@@ -17,86 +16,43 @@ import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 import { Avatar } from '../ui/bits'
 import { PeoplePick } from '../ui/PeoplePick'
 import { DocTile, ReqPill } from '../screens/Docs'
+import { EditPdf, Tool, Viewer, isPdfName } from './Viewer'
 
 const MB25 = 25 * 1024 * 1024
 
+/** A document over the whole screen, with what can be done with it */
 export function DocSheet({ id }: { id: string }) {
-  const d = useApp().docs.find(x => x.id === id)
-  return (
-    <Sheet label={d?.name ?? 'Бичиг баримт'} onClose={close} wide>
-      {d ? <Viewer d={d} /> : <p className="dview__note">Бичиг баримт олдсонгүй.</p>}
-    </Sheet>
-  )
-}
-
-/** The document's pages as pictures; a file that cannot be shown here can still be saved */
-function Viewer({ d }: { d: Doc }) {
   const s = useApp()
+  const d = s.docs.find(x => x.id === id)
+  if (!d) {
+    return (
+      <Sheet label="Бичиг баримт" onClose={close}>
+        <p className="dview__note">Бичиг баримт олдсонгүй.</p>
+      </Sheet>
+    )
+  }
   const by = s.people.find(p => p.id === d.by)
-  const [pages, setPages] = useState<string[] | null>(null)
-  const [note, setNote] = useState<string | null>(null)
-
-  useEffect(() => {
-    let live = true
-    const urls: string[] = []
-    const show = (list: string[]) => live && setPages([...list])
-    ;(async () => {
-      try {
-        const blob = await docBlob(d)
-        if (!blob) return live && setNote('Файл олдсонгүй. Өөр төхөөрөмж эсвэл хөтөч дээр нэмсэн байж магадгүй.')
-        if (blob.type.startsWith('image/')) {
-          urls.push(URL.createObjectURL(blob))
-          return show(urls)
-        }
-        if (blob.type !== 'application/pdf' && !/\.pdf$/i.test(d.file?.name ?? '')) return live && setNote('Энэ файлыг энд харах боломжгүй. Татаад нээнэ үү.')
-        const view = await viewPdf(blob)
-        for (let i = 0; i < Math.min(view.numPages, 30) && live; i++) {
-          const canvas = await drawPage({ view }, i, 1400)
-          const b = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/jpeg', 0.9))
-          if (b) urls.push(URL.createObjectURL(b))
-          show(urls)
-        }
-        view.loadingTask.destroy()
-      } catch {
-        if (live) setNote('Файлыг нээж чадсангүй.')
-      }
-    })()
-    return () => {
-      live = false
-      urls.forEach(u => URL.revokeObjectURL(u))
-    }
-    // Drawing a demo document gives it a file; that must not start it again
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d.id])
-
+  const sub = [DOC_KIND[d.kind], `Нэмсэн: ${by ? `${short(by)}, ` : ''}${dateDots(new Date(d.added))}`, d.updated && `Зассан: ${dateDots(new Date(d.updated))}`].filter(Boolean).join(' · ')
   return (
-    <div className="dview">
-      <header className="dview__head">
-        <DocTile kind={d.kind} />
-        <div>
-          <h2 className="sheet__title">{d.name}</h2>
-          <p className="muted">{DOC_KIND[d.kind]}, {dateDots(new Date(d.added))}{by ? `, ${short(by)}` : ''}</p>
-        </div>
-      </header>
-      {note ? <p className="dview__note">{note}</p> : (
-        <div className="dview__pages">
-          {pages?.length ? pages.map((u, i) => <img key={u} src={u} alt={`${i + 1}-р хуудас`} />) : <span className="dview__wait" role="status">Нээж байна…</span>}
-        </div>
-      )}
-      <div className="dview__actions">
-        <button type="button" className="btn btn--accent" onClick={() => downloadDoc(d)}><Download className="ico" />Татах</button>
-      </div>
-    </div>
+    <Viewer name={d.name} sub={sub} load={() => docBlob(d)} tools={
+      <>
+        {/* A demo document has no file until it is drawn, as a PDF */}
+        {(!d.file || isPdfName(d.file)) && <EditPdf from={`doc-${d.id}`} />}
+        <Tool icon={SquarePen} label="Мэдээлэл засах" onClick={() => open({ kind: 'docEdit', id: d.id })} />
+        <Tool icon={Download} label="Татах" onClick={() => downloadDoc(d)} />
+      </>
+    } />
   )
 }
 
-/** HR and the office add a document to a company's folder and say who sees it */
-export function DocAdd({ company }: { company?: string }) {
+/** HR and the office add a document to a company's folder and say who sees it; with `id`, change one (its file too) */
+export function DocAdd({ company, id }: { company?: string; id?: string }) {
   const s = useApp()
-  const into = company ?? s.company
+  const was = id ? s.docs.find(d => d.id === id) : undefined
+  const into = was?.company ?? company ?? s.company
   const people = s.people.filter(p => p.companies.includes(into))
-  const [f, setF] = useState({ name: '', kind: 'form' as DocKind, all: true, people: [] as string[] })
-  const [file, setFile] = useState<BoardFile | null>(null)
+  const [f, setF] = useState({ name: was?.name ?? '', kind: was?.kind ?? ('form' as DocKind), all: !was || was.to === 'all', people: was && was.to !== 'all' ? was.to : [] })
+  const [file, setFile] = useState<BoardFile | null>(was?.file ?? null)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const drop = (k: string) => setErrors(({ [k]: _, ...rest }) => rest)
@@ -121,13 +77,21 @@ export function DocAdd({ company }: { company?: string }) {
   }
   const submit = () => {
     const e: Errors = {}
-    if (!file) e['da-file'] = saving ? 'Файл хадгалагдаж дуусахыг хүлээнэ үү.' : 'Файлаа сонгоно уу.'
+    if (saving) e['da-file'] = 'Файл хадгалагдаж дуусахыг хүлээнэ үү.'
+    else if (!file && !was) e['da-file'] = 'Файлаа сонгоно уу.'
     if (!f.name.trim()) e['da-name'] = 'Бичиг баримтын нэрийг бичнэ үү.'
     if (!f.all && !f.people.length) e['da-to'] = 'Хэнд харагдахыг сонгоно уу.'
     setErrors(e)
     if (Object.keys(e).length) return false
-    actions.addDoc({ name: f.name.trim(), kind: f.kind, company: into, file: file!, to: f.all ? 'all' : f.people })
-    toast('Бичиг баримт нэмэгдлээ.')
+    const doc = { name: f.name.trim(), kind: f.kind, to: f.all ? ('all' as const) : f.people }
+    if (was) {
+      // A demo document not yet drawn has no file: it keeps none until one is chosen
+      actions.updateDoc(was.id, { ...doc, ...(file ? { file } : {}), updated: new Date().toISOString() })
+      toast('Өөрчлөлт хадгалагдлаа.')
+    } else {
+      actions.addDoc({ ...doc, company: into, file: file! })
+      toast('Бичиг баримт нэмэгдлээ.')
+    }
     return true
   }
   const toggle = (id: string) => {
@@ -136,12 +100,17 @@ export function DocAdd({ company }: { company?: string }) {
   }
 
   return (
-    <FormSheet title="Бичиг баримт нэмэх" sub="Хүний нөөц, бичиг хэргийн ажилтан нэмнэ. Сонгосон ажилтанд харагдана." submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors} wide>
-      <Field id="da-file" label="Файл" hint="PDF, зураг эсвэл Word, 25 MB хүртэл" error={errors['da-file']} wide>
+    // Changing a document goes back to it, saved or not
+    <FormSheet
+      title={was ? 'Мэдээлэл засах' : 'Бичиг баримт нэмэх'}
+      sub={was ? `${was.name}. Хүний нөөц, бичиг хэргийн ажилтан засна.` : 'Хүний нөөц, бичиг хэргийн ажилтан нэмнэ. Сонгосон ажилтанд харагдана.'}
+      submit={was ? 'Хадгалах' : 'Нэмэх'} onSubmit={submit} onClose={was ? () => open({ kind: 'doc', id: was.id }) : close} errors={errors} wide
+    >
+      <Field id="da-file" label="Файл" hint={was ? 'Шинэ файл сонговол одоогийнхыг солино. 25 MB хүртэл' : 'PDF, зураг эсвэл Word, 25 MB хүртэл'} error={errors['da-file']} wide>
         <span className="dfilepick">
           <input type="file" {...fieldAria('da-file', errors['da-file'], true)} onChange={pick} />
-          <span className="btn btn--glass btn--sm" aria-hidden="true"><Paperclip className="ico" />Файл сонгох</span>
-          <span className="dfilepick__name">{saving ? 'Хадгалж байна…' : file?.name ?? 'Файл сонгоогүй'}</span>
+          <span className="btn btn--glass btn--sm" aria-hidden="true"><Paperclip className="ico" />{was ? 'Файл солих' : 'Файл сонгох'}</span>
+          <span className="dfilepick__name">{saving ? 'Хадгалж байна…' : file?.name ?? (was ? `${was.name}.pdf` : 'Файл сонгоогүй')}</span>
         </span>
       </Field>
       <Field id="da-name" label="Нэр" error={errors['da-name']}>

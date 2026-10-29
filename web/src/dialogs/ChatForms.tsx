@@ -1,13 +1,11 @@
-// Зурвас (chat) windows: start one (one person, or a group of several), change a group's name and people, see a picture,
-// see who has read a message.
+// Зурвас (chat) windows: start one (one person, or a group of several), change a group's name and people, see who has
+// read a message.
 import { useState } from 'react'
-import { Download } from 'lucide-react'
-import type { BoardFile, Hue, Id, Person } from '../lib/types'
+import type { Hue, Id, Person } from '../lib/types'
 import { actions, useApp } from '../lib/store'
 import { close, toast } from '../lib/ui'
 import { go } from '../lib/router'
 import { collator, short } from '../lib/format'
-import { getFile, saveBlob, useFileUrl } from '../lib/files'
 import { FOLDER_HUES } from '../lib/docs'
 import { Sheet } from '../ui/Sheet'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
@@ -89,18 +87,6 @@ export function ChatGroup({ id }: { id: string }) {
 }
 
 /** A picture sent in a chat, big, with a way to save it */
-export function Picture({ file }: { file: BoardFile }) {
-  const url = useFileUrl(file.id)
-  return (
-    <Sheet label={file.name} onClose={close} wide>
-      <div className="cbig">
-        {url ? <img src={url} alt={file.name} /> : <p className="dview__note">{url === null ? 'Зураг олдсонгүй.' : 'Нээж байна…'}</p>}
-        <button type="button" className="btn btn--accent" onClick={() => getFile(file.id).then(b => b && saveBlob(file.name, b))}><Download className="ico" />Татах</button>
-      </div>
-    </Sheet>
-  )
-}
-
 /** Who has read one of my messages and who has not yet, with each one's reaction */
 export function Readers({ id }: { id: Id }) {
   const s = useApp()

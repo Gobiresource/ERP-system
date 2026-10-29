@@ -279,6 +279,8 @@ export interface Doc {
   to: 'all' | Id[]
   by: Id
   added: string // ISO
+  /** Last changed: its details or its file */
+  updated?: string // ISO
 }
 
 // Чат: two people (direct) or a named group. One list for the whole group of companies, not for one ХХК.

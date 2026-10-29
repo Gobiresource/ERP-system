@@ -2,7 +2,7 @@
 // name people (@), point to a task, a meeting or a document in Бичиг хэрэг, and carry files and pictures
 // (docs/decisions.md, 2026-10-29). On a phone the list and a chat are two views. The demo has no server: other people's messages are made up.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
-import { AtSign, CalendarDays, Check, CheckCheck, ChevronLeft, Download, FileText, Image as ImageIcon, MessagesSquare, MoreHorizontal, Paperclip, Plus, Search, Send, Settings, Smile, SquareCheck, SquarePen, Trash2, User, X } from 'lucide-react'
+import { AtSign, CalendarDays, Check, CheckCheck, ChevronLeft, Download, FileText, Image as ImageIcon, Maximize2, MessagesSquare, MoreHorizontal, Paperclip, Plus, Search, Send, Settings, Smile, SquareCheck, SquarePen, Trash2, User, X } from 'lucide-react'
 import '../styles/screens/chat.css'
 import type { BoardFile, Chat, ChatRef, Id, Message, State } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
@@ -11,10 +11,11 @@ import { chatName, myChats, unread } from '../lib/chat'
 import { DOC_KIND, seen } from '../lib/docs'
 import { collator, dueLabel, hm, parse, short, today, ymd } from '../lib/format'
 import { getFile, putFile, saveBlob, useFileUrl } from '../lib/files'
-import { cid } from '../lib/draft'
+import { cid, fileSize } from '../lib/draft'
 import { Avatar, AvatarStack, Empty, KIND, PRESENCE, PresenceLabel, STATUS } from '../ui/bits'
 import { PageHead } from '../ui/PageHead'
 import { DocTile } from './Docs'
+import { isPdfName } from '../dialogs/Viewer'
 
 const MB25 = 25 * 1024 * 1024
 const lower = (s: string) => s.toLocaleLowerCase('mn')
@@ -323,24 +324,23 @@ function RefCard({ r }: { r: ChatRef }) {
   )
 }
 
-const size = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`)
-
-/** A picture shows itself and opens bigger; another file can be saved */
+/** A picture shows itself; it and a PDF open over the whole screen. Another file can be saved. */
 function FileView({ f }: { f: BoardFile }) {
   const pic = f.type.startsWith('image/')
   const url = useFileUrl(pic ? f.id : '')
   if (pic) {
     return (
-      <button type="button" className="cpic" onClick={() => open({ kind: 'picture', file: f })} aria-label={`${f.name}: томоор харах`}>
+      <button type="button" className="cpic" onClick={() => open({ kind: 'file', file: f })} aria-label={`${f.name}: томоор харах`}>
         {url ? <img src={url} alt="" /> : <span className="cpic__wait" />}
       </button>
     )
   }
+  const pdf = isPdfName(f)
   return (
-    <button type="button" className="cref" onClick={() => getFile(f.id).then(b => b && saveBlob(f.name, b))}>
-      <span className="cref__ico"><Paperclip className="ico" /></span>
-      <span className="cref__main"><b>{f.name}</b><small>{size(f.size)}, татах</small></span>
-      <Download className="ico cref__dl" />
+    <button type="button" className="cref" onClick={() => (pdf ? open({ kind: 'file', file: f }) : getFile(f.id).then(b => b && saveBlob(f.name, b)))}>
+      <span className="cref__ico">{pdf ? <FileText className="ico" /> : <Paperclip className="ico" />}</span>
+      <span className="cref__main"><b>{f.name}</b><small>{fileSize(f.size)}, {pdf ? 'харах' : 'татах'}</small></span>
+      {pdf ? <Maximize2 className="ico cref__dl" /> : <Download className="ico cref__dl" />}
     </button>
   )
 }

@@ -1,0 +1,55 @@
+/* A file over the whole screen (dialogs/Viewer.tsx): a bar on top, the pages one under another in the middle, zoom and
+   the page number at the bottom. Solid surfaces only: a blur over a page this size would make scrolling heavy. */
+.viewer { position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; overflow: hidden; background: var(--view-bg); }
+.viewer::backdrop { background: transparent; }
+.viewer .sheet__inner { height: 100%; padding: 0; }
+.viewer .grabber { display: none; }
+.fview { display: flex; flex-direction: column; height: 100%; }
+
+.fview__bar {
+  display: flex; flex: none; align-items: center; gap: 12px;
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 10px max(14px, env(safe-area-inset-left, 0px));
+  background: var(--glass-solid); box-shadow: 0 1px 0 var(--sep);
+}
+.fview__title { flex: 1; min-width: 0; }
+.fview__title h2 { overflow: hidden; font: 650 16px/1.3 var(--font); text-overflow: ellipsis; white-space: nowrap; }
+.fview__title p { overflow: hidden; font-size: 12.5px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+.fview__tools { display: flex; flex: none; gap: 8px; }
+
+.fview__body { position: relative; flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; container-type: inline-size; }
+.fview__body:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: -3px; }
+/* As wide as the screen, or wider when zoomed in, so a page larger than the screen scrolls sideways instead of
+   being cut off on the left */
+.fview__pages {
+  --fit: min(100cqw - 48px, 880px);
+  display: flex; flex-direction: column; align-items: center; gap: 16px; box-sizing: border-box; width: max-content; min-width: 100%;
+  padding: 24px 24px 96px;
+}
+.fview__page {
+  display: block; width: calc(var(--fit) * var(--z)); height: auto; border-radius: 3px; background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 10px 30px -12px rgb(0 0 0 / .35);
+}
+.fview__page.is-wait { aspect-ratio: 1 / var(--r); }
+/* A picture fits the screen but never grows past its own size until zoomed */
+.fview__pages:has(> .fview__pic) { justify-content: center; min-height: 100%; }
+.fview__pic { display: block; width: calc(min(var(--fit), var(--nat, 880px)) * var(--z)); height: auto; border-radius: 6px; }
+.fview__note { max-width: 46ch; margin: auto; padding: 24px; color: var(--text-2); text-align: center; }
+
+.fview__hud {
+  position: absolute; bottom: max(16px, env(safe-area-inset-bottom, 0px)); left: 50%; display: flex; align-items: center; gap: 2px;
+  padding: 4px; border-radius: 999px; background: var(--glass-solid); translate: -50% 0;
+  box-shadow: 0 0 0 1px var(--sep), 0 14px 32px -12px rgb(0 0 0 / .4);
+}
+.fview__at { padding: 0 10px 0 12px; font-size: 13px; font-weight: 650; color: var(--text-2); white-space: nowrap; }
+.fview__z { min-width: 56px; height: 32px; padding: 0 6px; border-radius: 999px; font: 650 13px/1 var(--font); }
+@media (hover: hover) { .fview__z:hover { background: var(--fill-hover); } }
+.fview__z:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
+
+@media (width <= 760px) {
+  .fview__bar { gap: 8px; padding-right: max(10px, env(safe-area-inset-right, 0px)); padding-left: max(10px, env(safe-area-inset-left, 0px)); }
+  .fview__tools { gap: 6px; }
+  /* Only the icon on a phone; the word stays for screen readers and in the tooltip */
+  .fview__tool { width: 44px; padding: 0; }
+  .fview__lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .fview__pages { --fit: calc(100cqw - 24px); gap: 10px; padding: 12px 12px 88px; }
+}

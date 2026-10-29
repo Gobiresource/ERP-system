@@ -3,14 +3,14 @@
 // A card: click to select, drag to move, double-click or Enter to edit, Delete to remove, arrows to nudge, Ctrl+Z to step back.
 // Pictures and files go to the browser's file store (lib/files.ts); a card keeps only the file's id.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
-import { ArrowLeft, Copy, Download, ExternalLink, File as FileIcon, Heading1, Image as ImageIcon, Link2, ListChecks, Maximize, Minus, Paperclip, Pencil, Plus, Redo2, StickyNote, Trash2, Undo2, X } from 'lucide-react'
+import { ArrowLeft, Copy, Download, ExternalLink, Eye, File as FileIcon, Heading1, Image as ImageIcon, Link2, ListChecks, Maximize, Minus, Paperclip, Pencil, Plus, Redo2, StickyNote, Trash2, Undo2, X } from 'lucide-react'
 import type { CardKind, Draft, DraftCard } from '../../lib/types'
 import { actions, getState, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
 import { enter, popIn, settle, usePageEnter } from '../../lib/motion'
 import { COLOURED, KIND, PAPER, SIZE, cardSummary, cid, fileSize, host, newCard, safeUrl } from '../../lib/draft'
 import { getFile, putFile, saveBlob, useFileUrl } from '../../lib/files'
-import { toast } from '../../lib/ui'
+import { open, toast } from '../../lib/ui'
 import { PageHead } from '../../ui/PageHead'
 
 type View = Draft['view']
@@ -614,6 +614,7 @@ function Desk({ d }: { d: Draft }) {
       {selected && (
         <SelDock label={`${KIND[selected.kind]}: үйлдэл`}>
           {EDITABLE.includes(selected.kind) && <DockBtn icon={Pencil} label="Засах" onClick={() => openCard(selected)} />}
+          {(isPdf(selected) || selected.kind === 'image') && selected.file && <DockBtn icon={Eye} label="Харах" onClick={() => open({ kind: 'file', file: selected.file! })} />}
           {isPdf(selected) && <DockBtn icon={Pencil} label="PDF засах" onClick={() => openCard(selected)} />}
           {selected.kind === 'file' && <DockBtn icon={Download} label="Татах" onClick={() => download(selected)} />}
           {COLOURED.includes(selected.kind) && (

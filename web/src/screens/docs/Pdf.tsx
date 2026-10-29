@@ -1,7 +1,8 @@
-// PDF tool: join files, turn, reorder and delete pages, sign, then save to the device or onto a board.
+// PDF tool: join files, turn, reorder and delete pages, sign, then save to the device, onto a board or back into the
+// document it was opened on.
 // Everything happens in the browser (lib/pdf.ts): the file never leaves the device.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent as RPointerEvent } from 'react'
-import { ArrowLeft, ArrowRight, Download, FilePlus2, FileUp, RotateCw, Signature, StickyNote, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Download, FilePlus2, FileText, FileUp, RotateCw, Signature, StickyNote, Trash2, X } from 'lucide-react'
 import type { Draft } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
@@ -9,7 +10,9 @@ import { flip, usePageEnter } from '../../lib/motion'
 import { cid, newCard } from '../../lib/draft'
 import { getFile, putFile, saveBlob } from '../../lib/files'
 import { OpenError, buildPdf, drawPage, openPdf, type Page, type Sign, type Source } from '../../lib/pdf'
-import { toast } from '../../lib/ui'
+import { open as openDialog, toast } from '../../lib/ui'
+import { seen } from '../../lib/docs'
+import { docBlob } from '../../lib/paper'
 import { PageHead } from '../../ui/PageHead'
 import { Sheet, useCloseSheet } from '../../ui/Sheet'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
@@ -49,14 +52,18 @@ export default function Pdf({ from }: { from?: string }) {
   const pick = useRef<HTMLInputElement>(null)
   const savePop = usePopover()
 
-  // Opened from a file on a board: #docs-pdf-<board>-<card>
-  const [boardId, cardId] = from?.split('-') ?? []
-  const board = s.drafts.find(d => d.id === boardId && d.company === s.company && d.owner === s.me)
-  const card = board?.cards.find(c => c.id === cardId && c.file)
+  // Opened on a file: on a board (#docs-pdf-<board>-<card>), a document (#docs-pdf-doc-<id>) or one sent in Зурвас
+  // (#docs-pdf-file-<id>)
+  const [a, b] = from?.split('-') ?? []
+  const board = s.drafts.find(d => d.id === a && d.company === s.company && d.owner === s.me)
+  const card = board?.cards.find(c => c.id === b && c.file)
+  const doc = a === 'doc' ? s.docs.find(d => d.id === b && seen(d, s.me)) : undefined
+  const sentIn = a === 'file' ? s.messages.find(m => m.files.some(f => f.id === b)) : undefined
+  const sent = sentIn?.files.find(f => f.id === b)
   const mine = s.drafts.filter(d => d.company === s.company && d.owner === s.me).sort((a, b) => b.updated.localeCompare(a.updated))
   const onBoards = mine.flatMap(d => d.cards.filter(c => c.kind === 'file' && c.file && (c.file.type === 'application/pdf' || /\.pdf$/i.test(c.file.name))).map(c => ({ d, c })))
   const first = sources.current.get(pages[0]?.src ?? '')
-  const fileName = `${base(card?.file?.name ?? first?.name ?? 'баримт')}.pdf`
+  const fileName = `${base(card?.file?.name ?? sent?.name ?? doc?.name ?? first?.name ?? 'баримт')}.pdf`
 
   const open = async (files: { blob: Blob; name: string }[]) => {
     setError(null)
@@ -82,12 +89,14 @@ export default function Pdf({ from }: { from?: string }) {
     if (pdfs.length) open(pdfs.map(f => ({ blob: f, name: f.name })))
   }
 
-  // The file of the board card
+  // The file it was opened on
   useEffect(() => {
-    if (!card?.file) return
+    const name = card?.file?.name ?? sent?.name ?? `${doc?.name}.pdf`
+    const file = card?.file ? getFile(card.file.id) : sent ? getFile(sent.id) : doc ? docBlob(doc) : null
+    if (!file) return
     let live = true
-    getFile(card.file.id)
-      .then(b => { if (live) b ? open([{ blob: b, name: card.file!.name }]) : setError('Файл олдсонгүй. Өөр төхөөрөмж эсвэл хөтөч дээр нэмсэн байж магадгүй.') })
+    file
+      .then(b => { if (live) b ? open([{ blob: b, name }]) : setError('Файл олдсонгүй. Өөр төхөөрөмж эсвэл хөтөч дээр нэмсэн байж магадгүй.') })
       .catch(() => live && setError('Файлыг уншиж чадсангүй.'))
     return () => { live = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,6 +195,22 @@ export default function Pdf({ from }: { from?: string }) {
     forget(d.id)
     toast(`Файл ${d.name} самбарт хадгалагдлаа.`)
   }
+  /** Back into the document it was opened on, then to the document */
+  const toDoc = async () => {
+    savePop.close()
+    const blob = doc && (await build(pages))
+    if (!doc || !blob) return
+    const file = { id: `f${cid()}`, name: fileName, type: 'application/pdf', size: blob.size, pages: pages.length }
+    try {
+      await putFile(file.id, blob)
+    } catch {
+      return setError('Энэ хөтөч файл хадгалах боломжгүй байна.')
+    }
+    actions.updateDoc(doc.id, { file, updated: new Date().toISOString() })
+    toast(`${doc.name} хадгалагдлаа.`)
+    go('docs', `folder-${doc.company}`)
+    openDialog({ kind: 'doc', id: doc.id })
+  }
 
   // Drag a page to a new place. With a finger, hold it a moment first, so that a swipe still scrolls.
   const startDrag = (e: RPointerEvent<HTMLElement>, key: string) => {
@@ -263,15 +288,18 @@ export default function Pdf({ from }: { from?: string }) {
       <DocsNav at="pdf" />
       <PageHead
         title="PDF засах"
-        sub={card && board ? `${card.file!.name}, ${board.name} самбараас` : 'Файл нэгтгэх, хуудас эргүүлэх, зөөх, устгах, гарын үсэг зурах. Файл төхөөрөмжөөс гарахгүй.'}
+        sub={card && board ? `${card.file!.name}, ${board.name} самбараас` : doc ? `${doc.name}, Бичиг хэргээс` : sent ? `${sent.name}, Зурваснаас` : 'Файл нэгтгэх, хуудас эргүүлэх, зөөх, устгах, гарын үсэг зурах. Файл төхөөрөмжөөс гарахгүй.'}
         actions={pages.length > 0 && (
           <>
             {card && board && <a className="btn btn--glass" href={`#draft-${board.id}`}><ArrowLeft className="ico" />Самбар руу буцах</a>}
+            {doc && <a className="btn btn--glass" href={`#docs-folder-${doc.company}`}><ArrowLeft className="ico" />Хавтас руу буцах</a>}
+            {sentIn && <a className="btn btn--glass" href={`#chat-${sentIn.chat}`}><ArrowLeft className="ico" />Зурвас руу буцах</a>}
             <button type="button" className="btn btn--glass" onClick={() => pick.current?.click()}><FilePlus2 className="ico" />Файл нэмэх</button>
             <button ref={savePop.anchor} type="button" className="btn btn--accent" aria-haspopup="menu" aria-expanded={savePop.open} onClick={savePop.toggle} disabled={!!busy}>
               <Download className="ico" />Хадгалах
             </button>
             <Menu state={savePop} label="Хадгалах">
+              {doc && <MenuItem icon={<FileText className="ico" />} onSelect={toDoc}>Бичиг баримтад хадгалах</MenuItem>}
               <MenuItem icon={<Download className="ico" />} onSelect={() => download()}>Төхөөрөмж рүү татах</MenuItem>
               {(card && board ? [board] : mine.slice(0, 4)).map(d => (
                 <MenuItem key={d.id} icon={<StickyNote className="ico" />} onSelect={() => toBoard(d)}>{d.name} самбарт хадгалах</MenuItem>
