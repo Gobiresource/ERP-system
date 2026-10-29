@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { AtSign, Bell, CalendarClock, Check, ChevronRight, Contrast, Database, Download, Flag, Hourglass, Inbox, Layers, Mail, Minus, Moon, Palette, Play, Plus, RotateCcw, Shield, Square, Sun, SunMoon, Timer, User, BadgeCheck, Droplet } from 'lucide-react'
+import { AtSign, Bell, CalendarClock, Check, ChevronRight, Contrast, Database, Download, Flag, Hourglass, Inbox, Layers, Mail, Minus, Moon, Palette, Play, Plus, RotateCcw, Shield, Smile, Square, Sun, SunMoon, Timer, User, BadgeCheck, Droplet } from 'lucide-react'
 import '../styles/screens/settings.css'
 import type { Accent, Settings as Prefs, Wall } from '../lib/types'
 import { actions, getState, scoped, useApp } from '../lib/store'
-import { clock, short, today } from '../lib/format'
+import { clock, initials, short, today } from '../lib/format'
 import { focus, focusLeft, toast, useUi } from '../lib/ui'
 import { applyAppearance } from '../lib/theme'
 import { gsap, reduced, useLens, usePageEnter } from '../lib/motion'
@@ -11,6 +11,7 @@ import { downloadCsv } from '../lib/insights'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { Avatar, PRIO, STATUS } from '../ui/bits'
+import { AVATARS, avatarOf, avatarUrl } from '../ui/avatars'
 import { WaveArt } from '../shell/Wallpaper'
 
 const WALLS: [Wall, string][] = [['ash', 'Үнс'], ['sand', 'Элс'], ['sage', 'Шарилж'], ['aurora', 'Туяа'], ['smoke', 'Утаа'], ['tide', 'Давалгаа'], ['bloom', 'Цэцэг'], ['ember', 'Цог'], ['grove', 'Төгөл'], ['dusk', 'Бүрэнхий']]
@@ -130,12 +131,29 @@ function InlineField({ id, icon, hue, label, value, onSave, validate, type = 'te
 function Profile() {
   const s = useApp()
   const me = scoped(s).me
-  const save = (patch: Partial<typeof me>) => actions.setProfile({ given: me.given, family: me.family, email: me.email, role: me.role, ...patch })
+  const save = actions.setProfile
+  const emoji = avatarOf(me)
   return (
     <Group id="set-profile" title="Профайл" sub="Хамт ажиллагсад таныг ингэж харна">
       <div className="me-card">
         <Avatar person={me} size="xl" presence />
         <div className="me-card__text"><b>{short(me)}</b><span>{me.role}</span><small>{me.email}</small></div>
+      </div>
+      <div className="cell cell--block">
+        <Icon icon={Smile} hue="orange" />
+        <div className="cell__main">
+          <div className="cell__text"><b>Дүрс</b><small>Таны нэрийн хажууд харагдана</small></div>
+          <div className="avpick" role="group" aria-label="Дүрс сонгох">
+            <button type="button" className="avpick__opt" aria-pressed={!emoji} title="Нэрийн үсэг" onClick={() => save({ avatar: 'letters' })}>
+              <span className={`av av--md hue--${me.hue}`} aria-hidden="true">{initials(me)}</span><span className="sr-only">Нэрийн үсэг</span>
+            </button>
+            {AVATARS.map(([key, label]) => (
+              <button key={key} type="button" className="avpick__opt" aria-pressed={emoji === avatarUrl(key)} title={label} onClick={() => save({ avatar: key })}>
+                <span className={`av av--md av--emoji hue--${me.hue}`} aria-hidden="true"><img src={avatarUrl(key)} alt="" /></span><span className="sr-only">{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <InlineField id="pf-given" icon={User} hue="blue" label="Нэр" value={me.given} onSave={v => save({ given: v })} validate={v => (v ? null : 'Нэр хоосон байж болохгүй.')} />
       <InlineField id="pf-family" icon={User} hue="indigo" label="Овог" value={me.family} onSave={v => save({ family: v })} validate={v => (v ? null : 'Овог хоосон байж болохгүй.')} />

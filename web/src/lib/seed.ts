@@ -43,6 +43,10 @@ export function seed(): State {
     person('u13', 'Үүрцайх', 'Лхагва', 'Агуулахын эрхлэгч', 'Үйл ажиллагаа', ['c2'], 'away', 'teal', 'uurtsaikh'),
     person('u14', 'Ганзориг', 'Мөнх', 'Мэдээллийн технологийн инженер', 'Үйл ажиллагаа', ['c1'], 'focus', 'indigo', 'ganzorig'),
   ]
+  // A different emoji for everyone in the demo; each person can change theirs in Settings
+  const emoji = ['horse-face', 'grinning-face', 'fox', 'smiling-face-with-sunglasses', 'panda', 'smiling-face-with-smiling-eyes', 'owl',
+    'star-struck', 'rabbit-face', 'winking-face', 'two-hump-camel', 'hugging-face', 'wolf', 'cowboy-hat-face']
+  people.forEach((p, i) => { p.avatar = emoji[i] })
 
   const ms = (list: [string, number, boolean][]) => list.map(([name, off, done]) => ({ id: uid('m'), name, date: day(off), done }))
   const projects: Project[] = [

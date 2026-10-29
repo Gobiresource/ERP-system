@@ -27,6 +27,8 @@ export interface Person {
   capacity: number
   /** Only for people outside Ulaanbaatar time */
   tz?: { city: string; offset: number }
+  /** Emoji key from ui/avatars.ts, or 'letters' for initials. Unset: an emoji picked from the id */
+  avatar?: string
 }
 
 export type TaskStatus = 'todo' | 'doing' | 'review' | 'done'

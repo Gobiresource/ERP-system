@@ -230,6 +230,10 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .av--lg { width: 48px; height: 48px; font-size: 17px; }
 .av--xl { width: 96px; height: 96px; font-size: 34px; }
 .av--more { background: var(--glass-solid); color: var(--text-2); font-size: 12px; }
+/* Emoji avatar: the person's emoji on a soft bubble of their colour */
+.av--emoji { background: radial-gradient(circle at 32% 24%, color-mix(in srgb, var(--hue, var(--indigo)) 10%, #fff), color-mix(in srgb, var(--hue, var(--indigo)) 30%, #fff)); }
+[data-mode="dark"] .av--emoji { background: radial-gradient(circle at 32% 24%, color-mix(in srgb, var(--hue, var(--indigo)) 50%, #555564), color-mix(in srgb, var(--hue, var(--indigo)) 34%, #34343f)); }
+.av--emoji img { width: 74%; height: 74%; object-fit: contain; pointer-events: none; }
 .av-stack { display: inline-flex; align-items: center; }
 .av-stack > .av { box-shadow: 0 0 0 2px var(--av-ring); }
 .av-stack > .av + .av { margin-left: -5px; }

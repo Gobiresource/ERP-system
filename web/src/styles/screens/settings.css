@@ -47,6 +47,11 @@ label.cell__text { cursor: pointer; }
 .me-card__text b { overflow: hidden; font: 700 clamp(20px, .8vw + 14px, 26px)/1.15 var(--font); letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
 .me-card__text span { font-size: 15px; font-weight: 560; color: var(--text-2); }
 .me-card__text small { overflow: hidden; font-size: 13.5px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+.avpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.avpick__opt { display: grid; place-items: center; height: 46px; border-radius: 50%; }
+.avpick__opt .av { transition: transform .3s var(--spring); }
+.avpick__opt:hover .av { transform: scale(1.08); }
+.avpick__opt[aria-pressed="true"] .av { outline: 2.5px solid var(--accent-ink); outline-offset: 2.5px; }
 .cell__input {
   flex: 160px; width: auto; min-width: 0; max-width: 300px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 12px;
   background: none; color: var(--text-2); font-size: 15px; text-align: right; transition: background .2s, color .2s, box-shadow .2s;

@@ -139,7 +139,7 @@ export const actions = {
   markAllRead: () => set(s => ({ ...s, notices: s.notices.map(n => (n.company === s.company ? { ...n, read: true } : n)) })),
 
   setSettings: (patch: Partial<Settings>) => set(s => ({ ...s, settings: { ...s.settings, ...patch } })),
-  setProfile: (patch: Pick<Person, 'given' | 'family' | 'email' | 'role'>) =>
+  setProfile: (patch: Partial<Pick<Person, 'given' | 'family' | 'email' | 'role' | 'avatar'>>) =>
     set(s => ({ ...s, people: s.people.map(p => (p.id === s.me ? { ...p, ...patch } : p)) })),
   logFocus: (minutes: number) => set(s => ({ ...s, focusLog: [...s.focusLog, { at: new Date().toISOString(), minutes }] })),
 

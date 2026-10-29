@@ -4,6 +4,7 @@ import { Boxes, Building, ClipboardList, FileText, Flag, GraduationCap, Handshak
 import type { CalEvent, EventKind, Hue, Person, Presence, Priority, Project, ProjectIcon, ProjectStatus, TaskStatus } from '../lib/types'
 import type { Scoped } from '../lib/store'
 import { initials, short } from '../lib/format'
+import { avatarOf } from './avatars'
 
 export const PRIO: Record<Priority, string> = { low: 'Бага', medium: 'Дунд', high: 'Өндөр', urgent: 'Яаралтай' }
 export const STATUS: Record<TaskStatus, string> = { todo: 'Хийх', doing: 'Хийж байна', review: 'Хянаж байна', done: 'Дууссан' }
@@ -53,10 +54,11 @@ export function Prio({ prio, always }: { prio: Priority; always?: boolean }) {
   )
 }
 
-export function Avatar({ person, size = 'sm', presence }: { person: Pick<Person, 'given' | 'family' | 'hue' | 'presence'>; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; presence?: boolean }) {
+export function Avatar({ person, size = 'sm', presence }: { person: Pick<Person, 'id' | 'given' | 'family' | 'hue' | 'presence' | 'avatar'>; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; presence?: boolean }) {
+  const emoji = avatarOf(person)
   const av = (
-    <span className={`av av--${size} hue--${person.hue}`} title={short(person)} aria-hidden="true">
-      {initials(person)}
+    <span className={`av av--${size} hue--${person.hue}${emoji ? ' av--emoji' : ''}`} title={short(person)} aria-hidden="true">
+      {emoji ? <img src={emoji} alt="" draggable={false} /> : initials(person)}
     </span>
   )
   if (!presence) return av
