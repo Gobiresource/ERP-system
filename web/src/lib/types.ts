@@ -312,6 +312,10 @@ export interface Message {
   refs: ChatRef[]
   /** Files and pictures sent with it, in the browser's file store */
   files: BoardFile[]
+  /** Each person's reaction: one emoji */
+  reactions?: Record<Id, string>
+  /** Taken back by its writer: what it said is gone for everyone */
+  recalled?: boolean
 }
 
 export type ReqStatus = 'sent' | 'working' | 'ready' | 'done' | 'declined'

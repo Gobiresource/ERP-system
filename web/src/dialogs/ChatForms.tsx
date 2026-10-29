@@ -1,7 +1,8 @@
-// Зурвас (chat) windows: start one (one person, or a group of several), change a group's name and people, see a picture.
+// Зурвас (chat) windows: start one (one person, or a group of several), change a group's name and people, see a picture,
+// see who has read a message.
 import { useState } from 'react'
 import { Download } from 'lucide-react'
-import type { BoardFile, Hue, Id } from '../lib/types'
+import type { BoardFile, Hue, Id, Person } from '../lib/types'
 import { actions, useApp } from '../lib/store'
 import { close, toast } from '../lib/ui'
 import { go } from '../lib/router'
@@ -11,6 +12,7 @@ import { FOLDER_HUES } from '../lib/docs'
 import { Sheet } from '../ui/Sheet'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 import { PeoplePick } from '../ui/PeoplePick'
+import { Avatar, PRESENCE } from '../ui/bits'
 
 /** Everyone who works in one of my companies, but me */
 function usePeople() {
@@ -94,6 +96,40 @@ export function Picture({ file }: { file: BoardFile }) {
       <div className="cbig">
         {url ? <img src={url} alt={file.name} /> : <p className="dview__note">{url === null ? 'Зураг олдсонгүй.' : 'Нээж байна…'}</p>}
         <button type="button" className="btn btn--accent" onClick={() => getFile(file.id).then(b => b && saveBlob(file.name, b))}><Download className="ico" />Татах</button>
+      </div>
+    </Sheet>
+  )
+}
+
+/** Who has read one of my messages and who has not yet, with each one's reaction */
+export function Readers({ id }: { id: Id }) {
+  const s = useApp()
+  const m = s.messages.find(x => x.id === id)
+  const chat = s.chats.find(c => c.id === m?.chat)
+  if (!m || !chat) return null
+  const others = s.people.filter(p => p.id !== s.me && chat.members.includes(p.id)).sort((a, b) => collator.compare(a.given, b.given))
+  const read = others.filter(p => (chat.read[p.id] ?? '') >= m.at)
+  const list = (title: string, people: Person[]) => people.length > 0 && (
+    <section className="creaders">
+      <h3>{title} <span className="tnum">{people.length}</span></h3>
+      <ul>
+        {people.map(p => (
+          <li key={p.id}>
+            <Avatar person={p} size="sm" presence />
+            <span><b>{short(p)}</b><small>{PRESENCE[p.presence]}</small></span>
+            {m.reactions?.[p.id] && <span className="creaders__emoji">{m.reactions[p.id]}</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+  return (
+    <Sheet label="Хэн уншсан" onClose={close}>
+      <div className="creaders__wrap">
+        <h2 className="sheet__title">Хэн уншсан</h2>
+        <p className="creaders__what">{m.text || m.files[0]?.name || m.refs[0]?.label}</p>
+        {list('Уншсан', read)}
+        {list('Уншаагүй', others.filter(p => !read.includes(p)))}
       </div>
     </Sheet>
   )

@@ -267,14 +267,32 @@ export const actions = {
     return chat
   },
   updateChat: (id: Id, patch: Pick<Chat, 'name' | 'members'>) => set(s => ({ ...s, chats: s.chats.map(c => (c.id === id ? { ...c, ...patch } : c)) })),
-  /** Sending also marks the chat read up to now */
+  /** Sending also marks the chat read up to now. Demo: the people who are on (Идэвхтэй) read it 3 seconds later. */
   sendMessage(chat: Id, m: Pick<Message, 'text' | 'refs' | 'files'>) {
     const at = new Date().toISOString()
     const msg: Message = { ...m, id: uid('cm'), chat, by: state.me, at }
     set(s => ({ ...s, messages: [...s.messages, msg], chats: s.chats.map(c => (c.id === chat ? { ...c, read: { ...c.read, [s.me]: at } } : c)) }))
+    const on = state.chats.find(c => c.id === chat)?.members.filter(id => id !== state.me && state.people.find(p => p.id === id)?.presence === 'online') ?? []
+    if (on.length) setTimeout(() => on.forEach(id => actions.readChat(chat, id)), 3000)
     return msg
   },
-  readChat: (chat: Id) => set(s => ({ ...s, chats: s.chats.map(c => (c.id === chat ? { ...c, read: { ...c.read, [s.me]: new Date().toISOString() } } : c)) })),
+  readChat: (chat: Id, who = state.me) => set(s => ({ ...s, chats: s.chats.map(c => (c.id === chat ? { ...c, read: { ...c.read, [who]: new Date().toISOString() } } : c)) })),
+  /** My reaction to a message; the same emoji again takes it off */
+  react: (id: Id, emoji: string) => set(s => ({
+    ...s,
+    messages: s.messages.map(m => {
+      if (m.id !== id) return m
+      const { [s.me]: mine, ...rest } = m.reactions ?? {}
+      return { ...m, reactions: mine === emoji ? rest : { ...rest, [s.me]: emoji } }
+    }),
+  })),
+  /** Takes my message back from everyone. Returns it as it was, for undo. */
+  recallMessage(id: Id) {
+    const was = state.messages.find(m => m.id === id && m.by === state.me)
+    if (was) set(s => ({ ...s, messages: s.messages.map(m => (m.id === id ? { ...m, text: '', refs: [], files: [], reactions: undefined, recalled: true } : m)) }))
+    return was
+  },
+  restoreMessage: (was: Message) => set(s => ({ ...s, messages: s.messages.map(m => (m.id === was.id ? was : m)) })),
 
   // Бичиг хэрэг
   /** Into a company's folder: the current one unless another is given */

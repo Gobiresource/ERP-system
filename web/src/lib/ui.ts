@@ -23,6 +23,7 @@ export type Dialog =
   | { kind: 'newChat' }
   | { kind: 'chatGroup'; id: Id }
   | { kind: 'picture'; file: BoardFile }
+  | { kind: 'readers'; id: Id }
   | null
 
 export interface Note {

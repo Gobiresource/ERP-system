@@ -43,16 +43,22 @@
 .ct__titles h2 { overflow: hidden; font: 650 17px/1.25 var(--font); text-overflow: ellipsis; white-space: nowrap; }
 .ct__titles h2:focus { outline: none; }
 .ct__titles p { overflow: hidden; font-size: 13px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+.ct__sub { display: flex; align-items: center; gap: 6px; }
+.ct__sub .presence-label { flex: none; }
+.ct__sub > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .cmsgs { display: flex; flex: 1; flex-direction: column; gap: 2px; min-height: 0; padding: 14px 18px; overflow-y: auto; contain: content; }
 .cmsgs:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: -3px; }
 .cmsgs__none { margin: auto; color: var(--text-2); }
 .cday { align-self: center; margin: 12px 0 4px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
 .cday span { padding: 3px 10px; border-radius: 999px; background: var(--fill); }
 
-/* A message: mine on the right in the accent's tint, others' on the left with their face */
-.cmsg { display: flex; align-items: flex-end; gap: 8px; max-width: min(80%, 560px); }
+/* A message: mine on the right in the accent's tint, others' on the left with their face. Under it, its reactions and,
+   when open, what can be done with it. */
+.cmsg { display: grid; justify-items: start; gap: 4px; max-width: min(80%, 560px); }
 .cmsg.is-first { margin-top: 8px; }
-.cmsg.is-mine { align-self: flex-end; }
+.cmsg.is-mine { align-self: flex-end; justify-items: end; }
+.cmsg__line { position: relative; display: flex; align-items: flex-end; gap: 8px; min-width: 0; max-width: 100%; }
+.cmsg:not(.is-mine) > .creacts, .cmsg:not(.is-mine) > .cacts { margin-left: 36px; }
 /* A message sent or come while the chat is open rises into place */
 .cmsg.is-fresh { animation: cmsg-in .22s var(--ease) both; }
 @keyframes cmsg-in { from { opacity: 0; transform: translateY(8px); } }
@@ -65,6 +71,43 @@
 .cmsg__name { color: var(--accent-ink); font-weight: 600; }
 .cmsg__name:hover { text-decoration: underline; text-underline-offset: 3px; }
 .cmsg__at { justify-self: end; font-size: 12px; color: var(--text-2); }
+/* A few emoji alone: big, no bubble */
+.cmsg__body.is-big { padding: 0 2px; background: none; box-shadow: none; }
+.cmsg.is-mine .cmsg__body.is-big { background: none; }
+.cmsg__body.is-big .cmsg__text { font-size: 36px; line-height: 1.15; }
+.cmsg__gone { padding: 8px 12px; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--sep); color: var(--text-2); font-size: 14px; font-style: italic; }
+/* The actions button shows beside the message on pointing; on a touch screen a tap on the message opens the actions,
+   and the button stays only for screen readers */
+.cmsg__more { position: absolute; top: 50%; left: calc(100% + 4px); color: var(--text-2); opacity: 0; translate: 0 -50%; transition: opacity .15s; }
+.cmsg.is-mine .cmsg__more { right: calc(100% + 4px); left: auto; }
+@media (hover: hover) { .cmsg:hover .cmsg__more { opacity: 1; } }
+.cmsg__more:focus-visible, .cmsg__more[aria-expanded="true"] { opacity: 1; }
+@media (hover: none) { .cmsg__more { pointer-events: none; } }
+.creacts { position: relative; display: flex; flex-wrap: wrap; gap: 4px; margin-top: -10px; padding: 0 10px; }
+.creact {
+  display: inline-flex; align-items: center; gap: 3px; height: 26px; padding: 0 8px; border-radius: 999px;
+  background: var(--glass-solid); box-shadow: 0 0 0 1px var(--sep), 0 2px 6px -2px rgb(10 20 60 / .18); font-size: 14px;
+}
+.creact .tnum { font-size: 12px; font-weight: 650; color: var(--text-2); }
+.creact[aria-pressed="true"] { background: var(--accent-soft); box-shadow: 0 0 0 1.5px var(--accent-ink); }
+.creact:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
+.cacts {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px; max-width: 100%; padding: 4px; border-radius: 22px;
+  background: var(--glass-solid); box-shadow: 0 0 0 1px var(--sep), 0 14px 32px -14px rgb(10 20 60 / .35);
+}
+.cacts__emoji { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; font-size: 21px; line-height: 1; }
+.cacts__emoji[aria-pressed="true"] { background: var(--accent-soft); }
+.cacts__btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 999px; color: var(--text); font: 600 13.5px/1 var(--font); }
+.cacts__btn .ico { width: 17px; height: 17px; }
+.cacts__btn.is-danger, .cacts__btn.is-danger .ico { color: var(--bad-ink); }
+@media (hover: hover) { .cacts__emoji:hover, .cacts__btn:hover { background: var(--fill-hover); } }
+.cacts button:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: -2px; }
+/* Under my newest message: sent, or read and by whom */
+.cseen { display: inline-flex; align-self: flex-end; align-items: center; gap: 5px; min-height: 24px; margin-top: 2px; padding: 0 4px; border-radius: 8px; color: var(--text-2); font: 600 12px/1 var(--font); }
+.cseen .ico { width: 15px; height: 15px; }
+.cseen .av-stack { margin-left: 2px; }
+button.cseen:hover { color: var(--text); }
+.cseen:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
 
 /* What a message points to, and its files */
 .cref { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 7px 10px 7px 7px; border-radius: 12px; background: var(--fill); color: var(--text); text-align: left; transition: background .2s; }
@@ -85,14 +128,35 @@ button.cref:hover { background: var(--fill-2); }
 .cbig { display: grid; justify-items: center; gap: 14px; padding: 6px; }
 .cbig img { max-width: 100%; max-height: 70dvh; border-radius: 12px; }
 
+/* Who has read a message */
+.creaders__wrap { display: grid; gap: 14px; padding: 4px 4px 8px; }
+.creaders__wrap .sheet__title { padding-right: 44px; }
+.creaders__what { display: -webkit-box; overflow: hidden; color: var(--text-2); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.creaders h3 { display: flex; gap: 6px; margin-bottom: 4px; font-size: 13px; font-weight: 650; color: var(--text-2); }
+.creaders ul { display: grid; gap: 2px; }
+.creaders li { display: flex; align-items: center; gap: 10px; padding: 6px 2px; }
+.creaders li > span:nth-child(2) { display: grid; flex: 1; min-width: 0; }
+.creaders li b { overflow: hidden; font-size: 14.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.creaders li small { font-size: 12.5px; color: var(--text-2); }
+.creaders__emoji { font-size: 20px; }
+
 /* Writing: the box grows with the text; @ or + opens what can be named or attached */
-.ccompose { position: relative; display: grid; gap: 8px; padding: 10px 14px 14px; border-top: 1px solid var(--sep); }
+.ccompose { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 14px 14px; border-top: 1px solid var(--sep); }
 .ccompose__row { display: flex; align-items: flex-end; gap: 8px; }
 .ccompose__box {
   flex: 1; min-width: 0; height: 44px; min-height: 44px; max-height: 160px; padding: 11px 16px; border: 0; border-radius: 22px;
   background: var(--fill); color: var(--text); font: 15px/1.45 var(--font); resize: none;
 }
 .ccompose__box:focus { outline: none; box-shadow: 0 0 0 2.5px var(--accent-ink); }
+/* The emoji button sits in the box's right end */
+.ccompose__field { position: relative; display: flex; flex: 1; min-width: 0; }
+.ccompose__field .ccompose__box { padding-right: 46px; }
+.ccompose__emoji { position: absolute; right: 5px; bottom: 5px; width: 34px; height: 34px; color: var(--text-2); }
+.ccompose__emoji[aria-expanded="true"] { color: var(--accent-ink); }
+.cemoji { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; min-height: 0; overflow-y: auto; }
+.cemoji button { display: grid; place-items: center; height: 42px; border-radius: 12px; font-size: 23px; line-height: 1; }
+@media (hover: hover) { .cemoji button:hover { background: var(--fill-hover); } }
+.cemoji button:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: -2px; }
 .csend { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; transition: filter .2s; }
 .csend:hover { filter: brightness(1.06); }
 .csend:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
