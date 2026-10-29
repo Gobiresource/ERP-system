@@ -1,9 +1,9 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { CalEvent, Company, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, Person, Position, Presence, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { CalEvent, Company, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Folder, Id, Person, Position, Presence, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
-import { seedDocs } from './docs'
+import { intoFolders, seedDocs } from './docs'
 
 const KEY = 'erp:v1'
 
@@ -19,8 +19,9 @@ function load(): State | null {
     }
     // Saved before Ноорог existed
     if (!s.drafts) s = { ...s, drafts: seedDrafts(new Date(), s.me) }
-    // Saved before Бичиг хэрэг existed
+    // Saved before Бичиг хэрэг existed, or before it had folders
     if (!s.docs) s = { ...s, ...seedDocs(new Date()) }
+    if (!s.folders) s = { ...s, ...intoFolders(s.docs, new Date().toISOString()) }
     return s
   } catch {
     return null
@@ -236,7 +237,20 @@ export const actions = {
   },
 
   // Бичиг хэрэг
-  addDoc(d: Pick<Doc, 'name' | 'kind' | 'file' | 'to'>) {
+  addFolder(f: Pick<Folder, 'name' | 'hue'>) {
+    const folder: Folder = { ...f, id: uid('fd'), company: state.company, by: state.me, added: new Date().toISOString() }
+    set(s => ({ ...s, folders: [...s.folders, folder] }))
+    return folder
+  },
+  updateFolder: (id: Id, patch: Pick<Folder, 'name' | 'hue'>) => set(s => ({ ...s, folders: s.folders.map(f => (f.id === id ? { ...f, ...patch } : f)) })),
+  /** Only an empty folder is removed; returns a function that puts it back */
+  removeFolder(id: Id) {
+    const i = state.folders.findIndex(f => f.id === id)
+    const f = state.folders[i]
+    set(s => ({ ...s, folders: s.folders.filter(x => x.id !== id) }))
+    return () => set(s => ({ ...s, folders: [...s.folders.slice(0, i), f, ...s.folders.slice(i)] }))
+  },
+  addDoc(d: Pick<Doc, 'name' | 'kind' | 'file' | 'to' | 'folder'>) {
     const doc: Doc = { ...d, id: uid('dc'), company: state.company, by: state.me, added: new Date().toISOString() }
     set(s => ({ ...s, docs: [doc, ...s.docs] }))
     return doc

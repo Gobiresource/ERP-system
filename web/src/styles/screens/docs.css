@@ -201,3 +201,148 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 @media (prefers-reduced-motion: reduce) {
   .player__wait { animation: none; }
 }
+
+/* Folders (src/screens/docs/Folders.tsx): a back with a tab, the newest papers peeking out, a frosted front with its own
+   tab (shapes: the fd-back and fd-front clip paths). Pointing at a folder or focusing it tips the front forward and fans
+   the papers (--lean 0 → 1). The look comes from a reel the user chose (learned.md §18). */
+.folder-shapes { position: absolute; width: 0; height: 0; }
+.docs-grid:has(> .docs-side:empty) { grid-template-columns: minmax(0, 1fr); }
+/* On a narrow screen the folders come first, the requests after them */
+@media (width <= 1100px) { .docs-grid:has(.folders) .docs-req { order: 0; } }
+.folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 34px 26px; padding-top: 18px; }
+.folder, .dpaper { --paper: #fdfdfc; }
+[data-mode="dark"] :is(.folder, .dpaper) { --paper: #2c2d36; }
+.folder {
+  --lean: 0;
+  position: relative; aspect-ratio: 5 / 4;
+  filter: drop-shadow(0 14px 22px rgb(16 20 40 / .13)) drop-shadow(0 2px 4px rgb(16 20 40 / .08));
+}
+[data-mode="dark"] .folder { filter: drop-shadow(0 14px 24px rgb(0 0 0 / .45)); }
+@media (hover: hover) { .folder:hover { --lean: 1; } }
+.folder:has(.folder__open:focus-visible) { --lean: 1; }
+
+.folder__back { position: absolute; inset: 0; clip-path: url(#fd-back); }
+.folder__papers { position: absolute; inset: 13% 5% 21%; isolation: isolate; }
+.fpaper {
+  position: absolute; inset: 0; display: grid; align-content: start; gap: 3px; padding: 9px 7%;
+  border-radius: 8px; background: var(--paper); color: var(--text);
+  box-shadow: 0 0 0 1px rgb(16 20 40 / .06), 0 2px 6px rgb(16 20 40 / .12);
+  transition: transform .3s var(--ease);
+}
+.fpaper b { overflow: hidden; font-size: 13px; font-weight: 640; text-overflow: ellipsis; white-space: nowrap; }
+.fpaper small { font-size: 11.5px; color: var(--text-2); }
+.fpaper i { display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: var(--fill-2); }
+.fpaper i:nth-of-type(2) { width: 84%; }
+.fpaper i:nth-of-type(3) { width: 62%; }
+/* The newest paper sits at the back and highest, so its name shows above the others even at rest */
+.fpaper:nth-child(1) { z-index: 1; transform: translate(calc(var(--lean) * -4%), calc(var(--lean) * -24%)) rotate(calc(var(--lean) * -6deg)); }
+.fpaper:nth-child(2) { z-index: 2; transform: translate(calc(var(--lean) * 1%), calc(13% - var(--lean) * 26%)) rotate(calc(var(--lean) * -1deg)); }
+.fpaper:nth-child(3) { z-index: 3; transform: translate(calc(var(--lean) * 5%), calc(26% - var(--lean) * 25%)) rotate(calc(var(--lean) * 5deg)); }
+
+.folder__front {
+  position: absolute; inset: 27% 0 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 3px;
+  padding: 0 calc(8% + 44px) 7% 6%;
+  clip-path: url(#fd-front);
+  background: color-mix(in srgb, var(--glass-solid) 68%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
+  transform: perspective(700px) rotateX(calc(var(--lean) * -13deg)); transform-origin: 50% 100%;
+  transition: transform .3s var(--ease);
+}
+.folder__front .drow__new { position: absolute; top: 25%; left: 6%; }
+.folder__name { font-size: 18px; font-weight: 650; line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
+/* A little stronger than --text-2: the glass under it carries colour */
+.folder__count { font-size: 13.5px; color: color-mix(in srgb, var(--text) 80%, transparent); font-variant-numeric: tabular-nums; }
+.folder__open { position: absolute; inset: 0; z-index: 4; border-radius: 18px; }
+.folder__open:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 5px; }
+.folder__add {
+  position: absolute; right: 5%; bottom: 7%; z-index: 5;
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px;
+  background: var(--text); color: var(--glass-solid); box-shadow: 0 4px 12px rgb(0 0 0 / .22);
+  transition: transform .15s var(--ease);
+}
+.folder__add:active { transform: scale(.94); }
+.folder__add:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 3px; }
+
+/* Өнгөлөг: an abstract picture in the folder's colours on the back, different for each folder */
+.folder.hue--blue { --hue2: var(--pink); --hue3: var(--indigo); }
+.folder.hue--green { --hue2: var(--yellow); --hue3: var(--teal); }
+.folder.hue--pink { --hue2: var(--orange); --hue3: var(--purple); }
+.folder.hue--teal { --hue2: var(--blue); --hue3: var(--green); }
+.folder.hue--purple { --hue2: var(--pink); --hue3: var(--blue); }
+.folder.hue--orange { --hue2: var(--yellow); --hue3: var(--pink); }
+.folder.hue--indigo { --hue2: var(--teal); --hue3: var(--purple); }
+.folder.hue--yellow { --hue2: var(--orange); --hue3: var(--green); }
+.folders--art .folder__back {
+  background:
+    radial-gradient(55% 70% at var(--fx) var(--fy), color-mix(in oklab, var(--hue2) 75%, white), transparent 70%),
+    radial-gradient(60% 80% at calc(100% - var(--fx)) 85%, var(--hue3), transparent 72%),
+    repeating-linear-gradient(var(--fang), var(--hue) 0 8%, color-mix(in oklab, var(--hue) 70%, white) 8% 10%, transparent 10% 16%, color-mix(in oklab, var(--hue) 60%, #101020) 16% 22%),
+    conic-gradient(from var(--fang) at var(--fx) 75%, var(--hue2), var(--hue), var(--hue3), var(--hue2));
+  filter: blur(5px) saturate(1.25);
+}
+/* Тайван: one soft colour on the back, a more solid front */
+.folders--calm .folder__back { background: linear-gradient(165deg, color-mix(in srgb, var(--hue) 48%, var(--glass-solid)), color-mix(in srgb, var(--hue) 24%, var(--glass-solid))); }
+.folders--calm .folder__front { background: color-mix(in srgb, var(--glass-solid) 80%, transparent); }
+
+@media (width <= 600px) {
+  .folders { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 14px; }
+  .folder__front { padding: 0 8% 9%; }
+  .folder__name { font-size: 14.5px; }
+  .folder__count { font-size: 12px; }
+  .folder__add { display: none; }
+  .fpaper b { font-size: 11px; }
+  .fpaper small, .fpaper i { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .folder { --lean: 0 !important; }
+  .folder__front { transition: background-color .2s; }
+  .folder:is(:hover, :has(.folder__open:focus-visible)) .folder__front { background: color-mix(in srgb, var(--glass-solid) 52%, transparent); }
+}
+
+/* One folder's page */
+.dback { display: inline-flex; align-items: center; gap: 2px; margin: -6px 0 10px -6px; padding: 6px 12px 6px 6px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--accent-ink); transition: background .2s; }
+.dback:hover { background: var(--fill-hover); }
+.dfolder { display: grid; place-items: center; flex: none; width: 56px; height: 56px; border-radius: 16px; background: color-mix(in srgb, var(--hue) 18%, var(--glass-solid)); color: color-mix(in srgb, var(--hue) 70%, #000); }
+[data-mode="dark"] .dfolder { background: color-mix(in srgb, var(--hue) 26%, var(--glass-solid)); color: color-mix(in srgb, var(--hue) 70%, #fff); }
+.dfolder .ico { width: 28px; height: 28px; }
+.papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 18px; }
+.dpaper { position: relative; }
+.dpaper__open {
+  display: grid; align-content: start; justify-items: start; gap: 6px; width: 100%; height: 100%; min-height: 230px; padding: 18px 18px 52px;
+  border-radius: 6px 6px 6px 6px; background: var(--paper); color: var(--text); text-align: left;
+  box-shadow: 0 0 0 1px rgb(16 20 40 / .07), 0 8px 20px rgb(16 20 40 / .09);
+  transition: box-shadow .2s;
+}
+.dpaper__open:hover { box-shadow: 0 0 0 2px var(--accent-soft), 0 8px 20px rgb(16 20 40 / .09); }
+.dpaper__open:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 3px; }
+.dpaper__open .dtile { margin-bottom: 6px; }
+.dpaper__open b { font-size: 15px; font-weight: 640; line-height: 1.3; text-wrap: pretty; }
+.dpaper__open small { font-size: 13px; color: var(--text-2); }
+.dpaper__lines { display: grid; gap: 7px; width: 100%; margin-top: 10px; }
+.dpaper__lines i { height: 5px; border-radius: 3px; background: var(--fill-2); }
+.dpaper__lines i:nth-child(2) { width: 88%; }
+.dpaper__lines i:nth-child(3) { width: 94%; }
+.dpaper__lines i:nth-child(4) { width: 58%; }
+.dpaper .drow__new { position: absolute; top: 16px; right: 16px; }
+@media (width <= 600px) {
+  .papers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .dpaper__open { min-height: 196px; padding: 14px 14px 46px; }
+  .dpaper__open b { font-size: 14px; }
+}
+.dpaper__dl { position: absolute; right: 10px; bottom: 10px; color: var(--text-2); }
+
+/* Moving a document to another folder, in its window */
+.dview__move { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; font-size: 14px; font-weight: 600; color: var(--text-2); }
+.dview__move select {
+  min-height: 40px; max-width: 16em; padding: 0 36px 0 14px; border: 0; border-radius: 999px; appearance: none;
+  background: var(--fill) linear-gradient(45deg, transparent 50%, currentColor 50%) calc(100% - 20px) 50% / 5px 5px no-repeat;
+  color: var(--text); font: 560 14.5px/1 var(--font);
+}
+.dview__move select:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
+
+/* A folder's colour */
+.swatches { display: flex; flex-wrap: wrap; gap: 12px; }
+.swatch { position: relative; width: 42px; height: 42px; border-radius: 13px; background: var(--hue); cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
+.swatch input { position: absolute; opacity: 0; pointer-events: none; }
+.swatch:has(input:checked) { box-shadow: 0 0 0 3px var(--glass-solid), 0 0 0 5.5px var(--text); }
+.swatch:has(input:focus-visible) { outline: 2.5px solid var(--accent-ink); outline-offset: 6px; }

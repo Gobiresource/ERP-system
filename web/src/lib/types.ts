@@ -265,10 +265,21 @@ export interface Draft {
 
 export type DocKind = 'contract' | 'order' | 'certificate' | 'rule' | 'decision' | 'letter' | 'form' | 'template'
 
+/** A folder the office makes for documents, in one ХХК */
+export interface Folder {
+  id: Id
+  company: Id
+  name: string
+  hue: Hue
+  by: Id
+  added: string // ISO
+}
+
 /** A document in the office's keeping. `to` says who sees it: everyone in the ХХК, or only these users. */
 export interface Doc {
   id: Id
   company: Id
+  folder: Id
   name: string
   kind: DocKind
   /** In the browser's file store. A demo document has none until first opened: it is drawn from `text`. */
@@ -317,6 +328,7 @@ export interface State {
   docTypes: DocType[]
   employees: Employee[]
   drafts: Draft[]
+  folders: Folder[]
   docs: Doc[]
   requests: DocRequest[]
   settings: Settings

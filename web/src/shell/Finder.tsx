@@ -1,6 +1,6 @@
 // Search (Ctrl K): pages, tasks, projects, events, people, boards, documents and HR records of the current company in one list.
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { CalendarDays, ChevronRight, FileText, NotebookPen, Search } from 'lucide-react'
+import { CalendarDays, ChevronRight, FileText, FolderOpen, NotebookPen, Search } from 'lucide-react'
 import { scoped, useApp } from '../lib/store'
 import { open, setFinder, useUi } from '../lib/ui'
 import { go } from '../lib/router'
@@ -86,7 +86,10 @@ function FinderDialog() {
     add(s.drafts.filter(d => d.company === s.company && d.owner === s.me && has(d.name, ...d.cards.map(c => c.text ?? c.file?.name))).map(d => ({
       id: d.id, group: 'Ноорог', title: d.name, sub: `${d.cards.length} зүйл`, lead: <span className="lead"><NotebookPen className="ico" /></span>, run: () => go('draft', d.id),
     })))
-    // Бичиг хэрэг: the documents I can see
+    // Бичиг хэрэг: its folders, and the documents I can see
+    add(s.folders.filter(f => f.company === s.company && has(f.name)).map(f => ({
+      id: f.id, group: 'Хавтас', title: f.name, sub: 'Бичиг хэрэг', lead: <span className="lead"><FolderOpen className="ico" /></span>, run: () => go('docs', `folder-${f.id}`),
+    })))
     add(s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name)).map(d => ({
       id: d.id, group: 'Бичиг баримт', title: d.name, sub: DOC_KIND[d.kind], lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),
     })))

@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Download, FileDown, Paperclip, Printer, Sparkles } from 'lucide-react'
 import '../styles/screens/docs.css'
-import type { BoardFile, Doc, DocKind, DocRequest } from '../lib/types'
+import type { BoardFile, Doc, DocKind, DocRequest, Hue } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
-import { DOC_KIND, DOC_KINDS, PURPOSES, REQ_STATUS, WHAT, isOpen, stepsOf } from '../lib/docs'
-import { docBlob, requestPdf } from '../lib/paper'
+import { DOC_HUE, DOC_KIND, DOC_KINDS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, folderFor, isOpen, stepsOf } from '../lib/docs'
+import { docBlob, downloadDoc, requestPdf } from '../lib/paper'
 import { drawPage, viewPdf } from '../lib/pdf'
-import { putFile, saveBlob } from '../lib/files'
+import { putFile } from '../lib/files'
 import { cid } from '../lib/draft'
 import { addDaysYmd, dateDots, daysFromToday, dueLabel, hm, short, today } from '../lib/format'
 import { Sheet } from '../ui/Sheet'
@@ -23,7 +23,7 @@ export function DocSheet({ id }: { id: string }) {
   const d = useApp().docs.find(x => x.id === id)
   return (
     <Sheet label={d?.name ?? 'Бичиг баримт'} onClose={close} wide>
-      {d ? <Viewer d={d} /> : <p className="dview__note">Баримт олдсонгүй.</p>}
+      {d ? <Viewer d={d} /> : <p className="dview__note">Бичиг баримт олдсонгүй.</p>}
     </Sheet>
   )
 }
@@ -32,6 +32,7 @@ export function DocSheet({ id }: { id: string }) {
 function Viewer({ d }: { d: Doc }) {
   const s = useApp()
   const by = s.people.find(p => p.id === d.by)
+  const folders = s.folders.filter(f => f.company === d.company)
   const [pages, setPages] = useState<string[] | null>(null)
   const [note, setNote] = useState<string | null>(null)
 
@@ -47,7 +48,7 @@ function Viewer({ d }: { d: Doc }) {
           urls.push(URL.createObjectURL(blob))
           return show(urls)
         }
-        if (blob.type !== 'application/pdf' && !/\.pdf$/i.test(d.file?.name ?? '')) return live && setNote('Энэ файлыг энд харах боломжгүй. Татаж аваад нээнэ үү.')
+        if (blob.type !== 'application/pdf' && !/\.pdf$/i.test(d.file?.name ?? '')) return live && setNote('Энэ файлыг энд харах боломжгүй. Татаад нээнэ үү.')
         const view = await viewPdf(blob)
         for (let i = 0; i < Math.min(view.numPages, 30) && live; i++) {
           const canvas = await drawPage({ view }, i, 1400)
@@ -68,11 +69,6 @@ function Viewer({ d }: { d: Doc }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d.id])
 
-  const download = async () => {
-    const blob = await docBlob(d)
-    if (blob) saveBlob(d.file?.name ?? `${d.name}.pdf`, blob)
-  }
-
   return (
     <div className="dview">
       <header className="dview__head">
@@ -88,17 +84,25 @@ function Viewer({ d }: { d: Doc }) {
         </div>
       )}
       <div className="dview__actions">
-        <button type="button" className="btn btn--accent" onClick={download}><Download className="ico" />Татах</button>
+        <button type="button" className="btn btn--accent" onClick={() => downloadDoc(d)}><Download className="ico" />Татах</button>
+        {/* The office moves a document to another folder */}
+        <label className="dview__move">
+          <span>Хавтас</span>
+          <select value={d.folder} onChange={e => { actions.updateDoc(d.id, { folder: e.target.value }); toast('Бичиг баримт зөөгдлөө.') }}>
+            {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+          </select>
+        </label>
       </div>
     </div>
   )
 }
 
-/** HR and the office add a document and say who sees it */
-export function DocAdd() {
+/** HR and the office add a document to a folder and say who sees it */
+export function DocAdd({ folder }: { folder?: string }) {
   const s = useApp()
   const sc = scoped(s)
-  const [f, setF] = useState({ name: '', kind: 'form' as DocKind, all: true, people: [] as string[] })
+  const folders = s.folders.filter(x => x.company === s.company)
+  const [f, setF] = useState({ name: '', kind: 'form' as DocKind, folder: folder ?? folders[0]?.id ?? '', all: true, people: [] as string[] })
   const [file, setFile] = useState<BoardFile | null>(null)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
@@ -109,7 +113,7 @@ export function DocAdd() {
     const x = e.target.files?.[0]
     drop('da-file')
     if (!x) return
-    if (x.size > MB25) return setErrors(v => ({ ...v, 'da-file': 'Файл 25 MB-аас бага байх ёстой.' }))
+    if (x.size > MB25) return setErrors(v => ({ ...v, 'da-file': '25 MB хүртэлх файл сонгоно уу.' }))
     setSaving(true)
     const ref = { id: `f${cid()}`, name: x.name, type: x.type, size: x.size }
     try {
@@ -117,7 +121,7 @@ export function DocAdd() {
       setFile(ref)
       setF(v => ({ ...v, name: v.name || x.name.replace(/\.[^.]+$/, '') }))
     } catch {
-      setErrors(v => ({ ...v, 'da-file': 'Энэ хөтөч файл хадгалах боломжгүй байна.' }))
+      setErrors(v => ({ ...v, 'da-file': 'Энэ хөтөч дээр файл хадгалах боломжгүй байна.' }))
     } finally {
       setSaving(false)
     }
@@ -125,12 +129,14 @@ export function DocAdd() {
   const submit = () => {
     const e: Errors = {}
     if (!file) e['da-file'] = saving ? 'Файл хадгалагдаж дуусахыг хүлээнэ үү.' : 'Файлаа сонгоно уу.'
-    if (!f.name.trim()) e['da-name'] = 'Баримтын нэрийг бичнэ үү.'
+    if (!f.name.trim()) e['da-name'] = 'Бичиг баримтын нэрийг бичнэ үү.'
     if (!f.all && !f.people.length) e['da-to'] = 'Хэнд харагдахыг сонгоно уу.'
     setErrors(e)
     if (Object.keys(e).length) return false
-    actions.addDoc({ name: f.name.trim(), kind: f.kind, file: file!, to: f.all ? 'all' : f.people })
-    toast('Баримт нэмэгдлээ.')
+    // With every folder removed, the first document makes one named after its kind
+    const into = f.folder || actions.addFolder({ name: DOC_KIND[f.kind], hue: DOC_HUE[f.kind] }).id
+    actions.addDoc({ name: f.name.trim(), kind: f.kind, folder: into, file: file!, to: f.all ? 'all' : f.people })
+    toast('Бичиг баримт нэмэгдлээ.')
     return true
   }
   const toggle = (id: string) => {
@@ -139,7 +145,7 @@ export function DocAdd() {
   }
 
   return (
-    <FormSheet title="Баримт нэмэх" sub="Хүний нөөц, бичиг хэргийн ажилтан нэмнэ. Сонгосон хүмүүст харагдана." submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors} wide>
+    <FormSheet title="Бичиг баримт нэмэх" sub="Хүний нөөц, бичиг хэргийн ажилтан нэмнэ. Сонгосон ажилтанд харагдана." submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors} wide>
       <Field id="da-file" label="Файл" hint="PDF, зураг эсвэл Word, 25 MB хүртэл" error={errors['da-file']} wide>
         <span className="dfilepick">
           <input type="file" {...fieldAria('da-file', errors['da-file'], true)} onChange={pick} />
@@ -150,6 +156,13 @@ export function DocAdd() {
       <Field id="da-name" label="Нэр" error={errors['da-name']}>
         <input {...fieldAria('da-name', errors['da-name'])} value={f.name} onChange={e => { setF({ ...f, name: e.target.value }); drop('da-name') }} />
       </Field>
+      {folders.length > 0 && (
+        <Field id="da-folder" label="Хавтас">
+          <select id="da-folder" value={f.folder} onChange={e => setF({ ...f, folder: e.target.value })}>
+            {folders.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select>
+        </Field>
+      )}
       <Field id="da-kind" label="Төрөл">
         <select id="da-kind" value={f.kind} onChange={e => setF({ ...f, kind: e.target.value as DocKind })}>
           {DOC_KINDS.map(k => <option key={k} value={k}>{DOC_KIND[k]}</option>)}
@@ -159,7 +172,7 @@ export function DocAdd() {
         <legend className="field__label">Хэнд харагдах</legend>
         <div className="choices">
           <label className="choice"><input type="radio" name="da-to" checked={f.all} onChange={() => { setF({ ...f, all: true }); drop('da-to') }} /><span><b>Бүх ажилтан</b><small>Журам, маягт зэрэг</small></span></label>
-          <label className="choice"><input type="radio" name="da-to" id="da-to" checked={!f.all} onChange={() => setF({ ...f, all: false })} /><span><b>Сонгосон хүмүүс</b><small>Гэрээ, тушаал, тодорхойлолт</small></span></label>
+          <label className="choice"><input type="radio" name="da-to" id="da-to" checked={!f.all} onChange={() => setF({ ...f, all: false })} /><span><b>Сонгосон ажилтан</b><small>Гэрээ, тушаал, тодорхойлолт</small></span></label>
         </div>
         {!f.all && (
           <ul className="dpeople">
@@ -194,10 +207,10 @@ export function RequestForm() {
   const submit = () => {
     const e: Errors = {}
     const copies = Number(f.copies)
-    if (f.what === OTHER && !f.other.trim()) e['rq-other'] = 'Баримтын нэрийг бичнэ үү.'
+    if (f.what === OTHER && !f.other.trim()) e['rq-other'] = 'Бичиг баримтын нэрийг бичнэ үү.'
     if (!f.purpose.trim()) e['rq-purpose'] = 'Юунд ашиглахаа бичнэ үү.'
-    if (f.paper && !(Number.isInteger(copies) && copies >= 1 && copies <= 10)) e['rq-copies'] = 'Хувийн тоо 1-ээс 10-ын хооронд байх ёстой.'
-    if (!f.need || daysFromToday(f.need) < 0) e['rq-need'] = 'Огноо өнөөдөр эсвэл түүнээс хойш байх ёстой.'
+    if (f.paper && !(Number.isInteger(copies) && copies >= 1 && copies <= 10)) e['rq-copies'] = '1-ээс 10 хүртэлх тоо бичнэ үү.'
+    if (!f.need || daysFromToday(f.need) < 0) e['rq-need'] = 'Өнөөдөр эсвэл түүнээс хойших огноо сонгоно уу.'
     setErrors(e)
     if (Object.keys(e).length) return false
     actions.addRequest({
@@ -209,18 +222,18 @@ export function RequestForm() {
   }
 
   return (
-    <FormSheet title="Бичиг баримт хүсэх" sub="Бичиг хэргийн ажилтан бэлтгээд танд мэдэгдэнэ." submit="Хүсэлт илгээх" onSubmit={submit} onClose={close} errors={errors} wide>
-      <Field id="rq-what" label="Ямар баримт">
+    <FormSheet title="Бичиг баримт хүсэх" sub="Бичиг хэргийн ажилтан бэлтгээд танд мэдэгдэнэ." submit="Илгээх" onSubmit={submit} onClose={close} errors={errors} wide>
+      <Field id="rq-what" label="Ямар бичиг баримт">
         <select id="rq-what" value={f.what} onChange={e => { set('what')(e); drop('rq-other') }} data-autofocus>
           {[...WHAT, OTHER].map(w => <option key={w}>{w}</option>)}
         </select>
       </Field>
       {f.what === OTHER ? (
-        <Field id="rq-other" label="Баримтын нэр" error={errors['rq-other']}>
+        <Field id="rq-other" label="Бичиг баримтын нэр" error={errors['rq-other']}>
           <input {...fieldAria('rq-other', errors['rq-other'])} value={f.other} onChange={set('other')} />
         </Field>
       ) : <span aria-hidden="true" />}
-      <Field id="rq-purpose" label="Юунд ашиглах" hint="Жишээ нь: банкны зээл, виз мэдүүлэг" error={errors['rq-purpose']}>
+      <Field id="rq-purpose" label="Юунд ашиглах" hint="Жишээ нь: банкны зээл авах, виз мэдүүлэх" error={errors['rq-purpose']}>
         <input {...fieldAria('rq-purpose', errors['rq-purpose'], true)} value={f.purpose} onChange={set('purpose')} list="rq-purposes" autoComplete="off" />
         <datalist id="rq-purposes">{PURPOSES.map(p => <option key={p} value={p} />)}</datalist>
       </Field>
@@ -294,9 +307,11 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
     try {
       const file = { id: `f${cid()}`, name, type: blob.type || 'application/pdf', size: blob.size }
       await putFile(file.id, blob)
-      const d = actions.addDoc({ name: r.what, kind: kindOf(r.what), file, to: [r.by] })
+      const kind = kindOf(r.what)
+      const folder = folderFor(s.folders, s.docs, r.company, kind) ?? actions.addFolder({ name: DOC_KIND[kind], hue: DOC_HUE[kind] })
+      const d = actions.addDoc({ name: r.what, kind, folder: folder.id, file, to: [r.by] })
       actions.stepRequest(r.id, 'done', { doc: d.id })
-      toast('Баримт илгээгдлээ.')
+      toast('Бичиг баримт илгээгдлээ.')
     } catch {
       setError('Файл хадгалж чадсангүй. Дахин оролдоно уу.')
     } finally {
@@ -307,13 +322,13 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
     const x = e.target.files?.[0]
     e.target.value = ''
     if (!x) return
-    if (x.size > MB25) return setError('Файл 25 MB-аас бага байх ёстой.')
+    if (x.size > MB25) return setError('25 MB хүртэлх файл сонгоно уу.')
     send(x, x.name)
   }
   const confirm = () => {
     if (!text.trim()) return setError(act === 'decline' ? 'Татгалзах шалтгаанаа бичнэ үү.' : 'Ирж авах газраа бичнэ үү.')
     if (act === 'decline') step('declined', text.trim(), 'Хүсэлтээс татгалзлаа.')
-    else step('ready', text.trim(), 'Ажилтанд мэдэгдлээ.')
+    else step('ready', text.trim(), 'Мэдэгдэл илгээгдлээ.')
   }
 
   return (
@@ -348,7 +363,7 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
       {doc && (
         <button type="button" className="rq__doc" onClick={() => open({ kind: 'doc', id: doc.id })}>
           <DocTile kind={doc.kind} />
-          <span><b>{doc.name}</b><small>Илгээсэн баримтыг нээх</small></span>
+          <span><b>{doc.name}</b><small>Бичиг баримт нээх</small></span>
         </button>
       )}
       {r.status === 'ready' && !office && <p className="rq__ready">Бэлэн боллоо. Ирж авах газар: {last.note}.</p>}
@@ -361,14 +376,14 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
               <label className="field__label" htmlFor="rq-text">{act === 'decline' ? 'Татгалзах шалтгаан' : 'Ирж авах газар'}</label>
               <input id="rq-text" value={text} onChange={e => { setText(e.target.value); setError('') }} autoFocus aria-invalid={error ? true : undefined} aria-describedby={error ? 'rq-error' : undefined} />
               <div className="rq__acts">
-                <button type="button" className={`btn ${act === 'decline' ? 'btn--danger' : 'btn--accent'}`} onClick={confirm}>{act === 'decline' ? 'Татгалзах' : 'Бэлэн гэж мэдэгдэх'}</button>
+                <button type="button" className={`btn ${act === 'decline' ? 'btn--danger' : 'btn--accent'}`} onClick={confirm}>{act === 'decline' ? 'Татгалзах' : 'Мэдэгдэх'}</button>
                 <button type="button" className="btn btn--plain" onClick={() => { setAct(null); setError('') }}>Болих</button>
               </div>
             </div>
           ) : (
             <div className="rq__acts">
-              {r.status === 'sent' && <button type="button" className="btn btn--accent" onClick={() => step('working', undefined, 'Хүсэлтийг бэлтгэж эхэллээ.')}>Бэлтгэж эхлэх</button>}
-              {r.status === 'working' && r.paper && <button type="button" className="btn btn--accent" onClick={() => { setText('Бичиг хэргийн өрөө'); setAct('ready') }}>Бэлэн боллоо</button>}
+              {r.status === 'sent' && <button type="button" className="btn btn--accent" onClick={() => step('working', undefined, 'Хүсэлт хүлээн авагдлаа.')}>Хүлээн авах</button>}
+              {r.status === 'working' && r.paper && <button type="button" className="btn btn--accent" onClick={() => { setText('Бичиг хэргийн өрөө'); setAct('ready') }}>Бэлэн болгох</button>}
               {r.status === 'working' && !r.paper && (
                 <>
                   <button type="button" className="btn btn--accent" disabled={busy} onClick={() => attach.current?.click()}><Paperclip className="ico" />Файл хавсаргаж илгээх</button>
@@ -376,7 +391,7 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
                   <input ref={attach} type="file" hidden onChange={attachFile} />
                 </>
               )}
-              {r.status === 'ready' && <button type="button" className="btn btn--accent" onClick={() => step('done', undefined, 'Баримт олгогдлоо.')}>Олгосон</button>}
+              {r.status === 'ready' && <button type="button" className="btn btn--accent" onClick={() => step('done', undefined, 'Бичиг баримт олгогдлоо.')}>Олгох</button>}
               <button type="button" className="btn btn--plain" onClick={() => { setText(''); setAct('decline') }}>Татгалзах</button>
             </div>
           )}
@@ -386,3 +401,48 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
     </div>
   )
 }
+
+/** The office makes a folder, or changes one's name and colour */
+export function FolderForm({ id }: { id?: string }) {
+  const s = useApp()
+  const old = id ? s.folders.find(x => x.id === id) : undefined
+  const mine = s.folders.filter(x => x.company === s.company && x.id !== id)
+  const [f, setF] = useState<{ name: string; hue: Hue }>({ name: old?.name ?? '', hue: old?.hue ?? FOLDER_HUES[mine.length % FOLDER_HUES.length] })
+  const [errors, setErrors] = useState<Errors>({})
+  const submit = () => {
+    const name = f.name.trim()
+    const e: Errors = {}
+    if (!name) e['fo-name'] = 'Хавтасны нэрийг бичнэ үү.'
+    else if (mine.some(x => x.name.toLocaleLowerCase('mn') === name.toLocaleLowerCase('mn'))) e['fo-name'] = 'Ийм нэртэй хавтас байна. Өөр нэр бичнэ үү.'
+    setErrors(e)
+    if (Object.keys(e).length) return false
+    if (old) {
+      actions.updateFolder(old.id, { name, hue: f.hue })
+      toast('Хавтас хадгалагдлаа.')
+    } else {
+      actions.addFolder({ name, hue: f.hue })
+      toast('Хавтас үүсгэгдлээ.')
+    }
+    return true
+  }
+  return (
+    <FormSheet title={old ? 'Хавтас засах' : 'Шинэ хавтас'} sub="Бичиг хэргийн ажилтан хавтас үүсгэж, бичиг баримтаа ангилна." submit={old ? 'Хадгалах' : 'Үүсгэх'} onSubmit={submit} onClose={close} errors={errors}>
+      <Field id="fo-name" label="Нэр" error={errors['fo-name']} wide>
+        <input {...fieldAria('fo-name', errors['fo-name'])} value={f.name} onChange={e => { setF({ ...f, name: e.target.value }); setErrors({}) }} placeholder="Жишээ нь: Тушаал" data-autofocus />
+      </Field>
+      <fieldset className="field field--wide">
+        <legend className="field__label">Өнгө</legend>
+        <div className="swatches">
+          {FOLDER_HUES.map(h => (
+            <label key={h} className={`swatch hue--${h}`}>
+              <input type="radio" name="fo-hue" checked={f.hue === h} onChange={() => setF({ ...f, hue: h })} />
+              <span className="sr-only">{HUE_NAME[h]}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    </FormSheet>
+  )
+}
+
+const HUE_NAME: Record<Hue, string> = { blue: 'Цэнхэр', green: 'Ногоон', pink: 'Ягаан', teal: 'Цайвар ногоон', purple: 'Нил ягаан', orange: 'Улбар шар', indigo: 'Хөх', yellow: 'Шар' }

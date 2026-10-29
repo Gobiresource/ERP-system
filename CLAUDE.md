@@ -68,6 +68,7 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
   cd $S/agy-run && $S/agy/agy -p "$(cat $S/prompts/batchN.txt)" --print-timeout 330s > $S/prompts/batchN.out
   ```
 - **Загвар.** CLI-ийн анхдагч загвар Gemini 3.8 Flash (High). Хэрэглэгчийн хүссэн Argon 4, мөн 3.1 Pro зөвхөн Gemini апп-д байгаа, CLI-д алга (2026-10-29). `agy models`-д шинэ загвар гарвал `--model`-оор сонгоно.
+  - High загвар 12 мөрийн багц дээр ч 5 минутаас удаан бодож, хариугаа гаргаж амжаагүй (2026-10-29). `--model gemini-3.8-flash-medium` 1.5–4 минутад хариулдаг тул түүнийг хэрэглэнэ.
 - **Зураг, дуу.** Зураг (Imagen 3, 1024²): `agy -p "Do NOT use run_command. Use your image-generator subagent to create ONE image: …" --mode accept-edits --print-timeout 380s`. Зураг `~/.gemini/antigravity-cli/brain/<яриа>/`-д гарна. Видеоны дууг сонсгохдоо файлыг `$S/agy-run`-д хуулж, `read_file`-аар уншуулна. Veo видео CLI-д алга.
 - **Хэлбэр.** Текстийг багцаар илгээнэ, мөр бүр ID-тай. Gemini зөвхөн засах мөрүүдийг `ID | шинэ хувилбар | шалтгаан` хэлбэрээр буцаана. Эргэлзээтэй зүйлийг дугаарласан асуултаар дахин тодруулна.
 - **Шалгах.** Gemini-ийн хариуг шууд хуулахгүй. Утга, `erp-ui-guidelines`-ийн дүрэм, бусад дэлгэцтэй нийцэж байгааг Claude шалгана. Шийдсэн үгийг `erp-ui-guidelines/references/writing.md`-ийн нэр томьёоны толь бичигт нэмнэ.

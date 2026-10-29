@@ -1,11 +1,12 @@
-// Бичиг хэрэг: documents HR and the office share with an employee, forms the office puts up, requests to the office for a
-// document, and the PDF tool (docs/decisions.md, 2026-10-29). One ХХК at a time, like the rest of the app.
+// Бичиг хэрэг: folders the office makes for documents (an employee's own, rules, forms, templates), requests to the office
+// for a document, and the PDF tool (docs/decisions.md, 2026-10-29). One ХХК at a time, like the rest of the app.
 import { BookOpenText, ClipboardList, FileCheck, FilePen, FileText, Mail, ScrollText, Stamp } from 'lucide-react'
 import '../styles/screens/docs.css'
 import type { DocKind, DocRequest } from '../lib/types'
 import { DOC_HUE, REQ_STATUS, stepsOf } from '../lib/docs'
 import { SubNav } from '../ui/SubNav'
-import Papers from './docs/Papers'
+import DocsPick from './docs/DocsPick'
+import FolderPage from './docs/Folder'
 import Requests from './docs/Requests'
 import Pdf from './docs/Pdf'
 
@@ -13,7 +14,8 @@ export default function Docs({ id }: { id?: string }) {
   if (id === 'requests') return <Requests />
   // #docs-pdf, or #docs-pdf-<board>-<card> to edit a PDF that sits on a board
   if (id === 'pdf' || id?.startsWith('pdf-')) return <Pdf from={id.slice(4) || undefined} />
-  return <Papers />
+  if (id?.startsWith('folder-')) return <FolderPage key={id} id={id.slice(7)} />
+  return <DocsPick />
 }
 
 const TABS = [['', 'Бичиг баримт'], ['requests', 'Хүсэлт'], ['pdf', 'PDF засах']] as const

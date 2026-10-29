@@ -68,7 +68,7 @@ export default function Requests() {
             })}
           </ul>
         ) : tab === 'mine' ? (
-          <Empty icon={<Send className="ico" />} title="Хүсэлт алга" text="Ажлын газрын тодорхойлолт гэх мэт баримтаа бичиг хэргээс хүсэж болно." />
+          <Empty icon={<Send className="ico" />} title="Хүсэлт алга" text="Ажлын газрын тодорхойлолт гэх мэт бичиг баримтаа бичиг хэргээс хүсэж болно." />
         ) : (
           <Empty icon={<Inbox className="ico" />} title="Ирсэн хүсэлт алга" />
         )}

@@ -2,7 +2,7 @@
 // Every page says "ЖИШЭЭ" across it: these are samples of the prototype, not real documents.
 import type { Doc, DocRequest } from './types'
 import { actions, getState } from './store'
-import { getFile, putFile } from './files'
+import { getFile, putFile, saveBlob } from './files'
 import { imagesToPdf } from './pdf'
 import { cid } from './draft'
 import { dateDots, parse, short } from './format'
@@ -77,7 +77,7 @@ export async function paperPdf(p: { company: string; title: string; lines: strin
   x.restore()
   x.fillStyle = '#8a8d99'
   x.font = `400 20px ${FONT}`
-  x.fillText('Туршилтын хувилбарын жишээ баримт', M, H - 90)
+  x.fillText('Туршилтын хувилбарын жишээ бичиг баримт', M, H - 90)
 
   const png = await new Promise<Blob>((ok, fail) => c.toBlob(b => (b ? ok(b) : fail(new Error('canvas'))), 'image/png'))
   return imagesToPdf([png])
@@ -100,6 +100,11 @@ export async function docBlob(d: Doc): Promise<Blob | undefined> {
     actions.updateDoc(d.id, { file })
   } catch { /* shown this time, drawn again next time */ }
   return blob
+}
+
+export async function downloadDoc(d: Doc) {
+  const blob = await docBlob(d)
+  if (blob) saveBlob(d.file?.name ?? `${d.name}.pdf`, blob)
 }
 
 /** A sample of what the office sends back for a request, filled from the person's HR record */
