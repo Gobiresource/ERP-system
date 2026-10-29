@@ -30,7 +30,8 @@ let touchDragging = false
 document.addEventListener('touchmove', e => { if (touchDragging && e.cancelable) e.preventDefault() }, { passive: false })
 
 export function Board({ tasks }: { tasks: Task[] }) {
-  const sc = scoped(useApp())
+  const s = useApp()
+  const sc = scoped(s)
   const board = useRef<HTMLDivElement>(null)
   const ghost = useRef<HTMLElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -225,7 +226,7 @@ export function Board({ tasks }: { tasks: Task[] }) {
                 return (
                   <Fragment key={t.id}>
                     {drag?.col === st && i === drag.index && <div className="tk-slot" style={{ height: drag.height }} aria-hidden="true" />}
-                    <TaskCard task={t} project={sc.project(t.project)} person={sc.person(t.assignee)} away={t.id === drag?.id} />
+                    <TaskCard task={t} project={sc.project(t.project)} people={s.people} away={t.id === drag?.id} />
                   </Fragment>
                 )
               })}
@@ -242,7 +243,7 @@ export function Board({ tasks }: { tasks: Task[] }) {
       })}
       {dragged && createPortal(
         <div className="tk-layer" aria-hidden="true">
-          <TaskCard task={dragged} project={sc.project(dragged.project)} person={sc.person(dragged.assignee)} ref={ghost} lifted menu={false} />
+          <TaskCard task={dragged} project={sc.project(dragged.project)} people={s.people} ref={ghost} lifted menu={false} />
         </div>,
         document.body,
       )}

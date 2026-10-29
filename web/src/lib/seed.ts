@@ -75,9 +75,9 @@ export function seed(): State {
       milestones: ms([['Зардлын тооцоо', 15, false], ['Үнийн санал', 40, false]]) },
   ]
 
-  const task = (company: string, project: string | undefined, title: string, status: TaskStatus, prio: Priority, assignee: string, due: number, estimate: number,
+  const task = (company: string, project: string | undefined, title: string, status: TaskStatus, prio: Priority, who: string | string[], due: number, estimate: number,
     extra: { subs?: [string, boolean][]; comments?: [string, string, number][]; doneAgo?: number } = {}): Task => ({
-    id: uid('t'), company, project, title, status, prio, assignee, due: day(due), estimate,
+    id: uid('t'), company, project, title, status, prio, assignees: [who].flat(), due: day(due), estimate,
     subtasks: (extra.subs ?? []).map(([title, done]) => ({ id: uid('s'), title, done })),
     comments: (extra.comments ?? []).map(([author, text, minutes]) => ({ id: uid('k'), author, text, at: ago(minutes) })),
     // Open tasks were created 6–43 days ago; finished ones 2–10 days before they were done
@@ -86,7 +86,7 @@ export function seed(): State {
   })
 
   const tasks: Task[] = [
-    task('c1', 'p1', 'Барилгын гүйцэтгэгчтэй гэрээ байгуулах', 'doing', 'high', 'u1', 0, 4, { subs: [['Гэрээний төслийг хянах', true], ['Хуульчаар шалгуулах', true], ['Гарын үсэг зурах', false]], comments: [['u10', 'Гүйцэтгэгч баасан гараг хүртэл хүлээнэ гэсэн.', 300]] }),
+    task('c1', 'p1', 'Барилгын гүйцэтгэгчтэй гэрээ байгуулах', 'doing', 'high', ['u1', 'u10'], 0, 4, { subs: [['Гэрээний төслийг хянах', true], ['Хуульчаар шалгуулах', true], ['Гарын үсэг зурах', false]], comments: [['u10', 'Гүйцэтгэгч баасан гараг хүртэл хүлээнэ гэсэн.', 300]] }),
     task('c1', 'p1', 'Суурийн ажлын төсвийг батлах', 'todo', 'urgent', 'u1', 0, 2),
     task('c1', 'p1', 'Барилгын зөвшөөрлийн бичиг баримт', 'review', 'high', 'u10', 1, 6, { subs: [['Өргөдөл', true], ['Газрын гэрчилгээ', true], ['Зураг төсөл', false]], comments: [['u10', 'Зураг төслийн хуулбарыг маргааш авна.', 120]] }),
     task('c1', 'p1', 'Цахилгааны зургийг шалгуулах', 'todo', 'medium', 'u14', 5, 3),
@@ -94,7 +94,7 @@ export function seed(): State {
     task('c1', 'p1', 'Барилгын материалын үнийн санал авах', 'doing', 'medium', 'u5', 2, 5, { subs: [['Цемент', true], ['Арматур', false], ['Блок', false]] }),
     task('c1', 'p2', 'Гуравдугаар улирлын гүйлгээ тулгах', 'done', 'high', 'u5', -2, 10, { doneAgo: 60 * 26 }),
     task('c1', 'p2', 'Аудитын компанитай уулзалт товлох', 'todo', 'medium', 'u3', 3, 1),
-    task('c1', 'p2', 'Үндсэн хөрөнгийн тооллогын акт', 'doing', 'high', 'u6', 1, 6, { subs: [['Оффис', true], ['Агуулах', false]] }),
+    task('c1', 'p2', 'Үндсэн хөрөнгийн тооллогын акт', 'doing', 'high', ['u6', 'u5'], 1, 6, { subs: [['Оффис', true], ['Агуулах', false]] }),
     task('c1', 'p2', 'Татварын тайлангийн төслийг хянах', 'review', 'urgent', 'u1', 0, 3, { comments: [['u3', 'Хавсралт 4-ийг шинэчилсэн. Нэг харчихаарай.', 90]] }),
     task('c1', 'p2', 'Мөнгөн гүйлгээний тайлан', 'todo', 'medium', 'u5', 6, 4),
     task('c1', 'p2', 'Өглөгийн үлдэгдлийг баталгаажуулах', 'done', 'medium', 'u6', -4, 3, { doneAgo: 60 * 24 * 4 }),

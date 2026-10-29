@@ -318,8 +318,8 @@ function Data() {
   const exportTasks = () => {
     const rows: (string | number)[][] = [['Нэр', 'Төсөл', 'Хариуцагч', 'Төлөв', 'Ач холбогдол', 'Дуусах өдөр', 'Төлөвлөсөн цаг', 'Үүсгэсэн', 'Дууссан']]
     for (const t of sc.tasks) {
-      const who = sc.person(t.assignee)
-      rows.push([t.title, sc.project(t.project)?.name ?? '', who ? short(who) : '', STATUS[t.status], PRIO[t.prio], t.due, t.estimate, t.createdAt.slice(0, 10), t.doneAt?.slice(0, 10) ?? ''])
+      const who = t.assignees.map(id => sc.person(id)).filter(x => x !== undefined).map(short).join(', ')
+      rows.push([t.title, sc.project(t.project)?.name ?? '', who, STATUS[t.status], PRIO[t.prio], t.due, t.estimate, t.createdAt.slice(0, 10), t.doneAt?.slice(0, 10) ?? ''])
     }
     downloadCsv(`ajluud-${today()}.csv`, rows)
   }

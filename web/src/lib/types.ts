@@ -56,7 +56,8 @@ export interface Task {
   title: string
   status: TaskStatus
   prio: Priority
-  assignee: Id
+  /** Хариуцагч: one or more people */
+  assignees: Id[]
   due: string // YYYY-MM-DD
   estimate: number // hours
   subtasks: Subtask[]

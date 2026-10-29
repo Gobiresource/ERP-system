@@ -10,7 +10,7 @@ export function Sidebar() {
   const s = useApp()
   const route = useRoute()
   const { tasks, projects } = scoped(s)
-  const open = tasks.filter(t => t.assignee === s.me && t.status !== 'done').length
+  const open = tasks.filter(t => t.assignees.includes(s.me) && t.status !== 'done').length
   const pinned = projects.filter(p => p.pinned)
   const track = useRef<HTMLDivElement>(null)
   const lens = useRef<HTMLSpanElement>(null)

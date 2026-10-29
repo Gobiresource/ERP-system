@@ -3,8 +3,8 @@ import { Calendar, Check, Ellipsis, MessageSquare } from 'lucide-react'
 import type { Person, Project, Task, TaskStatus } from '../../lib/types'
 import { actions, getState } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
-import { daysFromToday, dueLabel, short } from '../../lib/format'
-import { Avatar, Prio, ProjectChip, STATUS, STATUSES } from '../../ui/bits'
+import { daysFromToday, dueLabel } from '../../lib/format'
+import { AvatarStack, Prio, ProjectChip, STATUS, STATUSES } from '../../ui/bits'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
 
 export function DueTag({ task, className = 'tk-due' }: { task: Task; className?: string }) {
@@ -34,18 +34,20 @@ export function moveTask(t: Task, status: TaskStatus, before?: string) {
 
 /**
  * A task on the board. The menu is the keyboard way to move a card to another column.
- * Memoised with its project and person passed in, so a drag only redraws the cards that change.
+ * Memoised with its project and everyone (the store's people, which a drag does not change) passed in, so a drag only
+ * redraws the cards that change.
  */
-export const TaskCard = memo(function TaskCard({ task: t, project: p, person: who, ref, lifted, away, menu = true }: {
+export const TaskCard = memo(function TaskCard({ task: t, project: p, people, ref, lifted, away, menu = true }: {
   task: Task
   project?: Project
-  person?: Person
+  people: Person[]
   ref?: Ref<HTMLElement>
   lifted?: boolean
   away?: boolean
   menu?: boolean
 }) {
   const subsDone = t.subtasks.filter(x => x.done).length
+  const who = t.assignees.map(id => people.find(x => x.id === id)).filter(x => x !== undefined)
   const pop = usePopover()
   const done = t.status === 'done'
 
@@ -86,10 +88,10 @@ export const TaskCard = memo(function TaskCard({ task: t, project: p, person: wh
         {t.comments.length > 0 && (
           <span className="tk-meta"><MessageSquare className="ico" /><span className="tnum">{t.comments.length}</span><span className="sr-only"> сэтгэгдэл</span></span>
         )}
-        {who && (
+        {who.length > 0 && (
           <span className="tk-card__who">
-            <Avatar person={who} size="xs" />
-            <span className="sr-only">Хариуцагч: {short(who)}</span>
+            <span className="sr-only">Хариуцагч: </span>
+            <AvatarStack people={who} max={3} size="xs" />
           </span>
         )}
       </div>

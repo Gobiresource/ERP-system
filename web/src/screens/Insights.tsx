@@ -165,14 +165,14 @@ export default function Insights() {
           {slow.length === 0 ? <p className="tp-none"><PartyPopper className="ico" /> Дуусаагүй ажил алга.</p> : (
             <ul className="slow">
               {slow.map(({ task, days: d }) => {
-                const who = sc.person(task.assignee)
+                const who = task.assignees.map(x => sc.person(x)).filter(x => x !== undefined)
                 return (
                   <li key={task.id}>
                     <button type="button" className="slow__row" onClick={() => open({ kind: 'task', id: task.id })}>
-                      {who && <Avatar person={who} size="sm" />}
+                      {who.length > 0 && <Avatar person={who[0]} size="sm" />}
                       <span className="slow__main">
                         <b>{task.title}</b>
-                        <span><ProjectChip project={sc.project(task.project)} />{who && <small>{short(who)}</small>}</span>
+                        <span><ProjectChip project={sc.project(task.project)} />{who.length > 0 && <small>{who.map(short).join(', ')}</small>}</span>
                       </span>
                       <span className="slow__age"><b className="tnum">{d} хоног</b><small>дуусаагүй</small></span>
                     </button>

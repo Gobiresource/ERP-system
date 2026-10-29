@@ -30,7 +30,7 @@ export default function Home() {
   const now = new Date()
   const me = sc.me
 
-  const mine = sc.tasks.filter(x => x.assignee === s.me)
+  const mine = sc.tasks.filter(x => x.assignees.includes(s.me))
   const doneToday = mine.filter(x => x.doneAt && ymd(new Date(x.doneAt)) === t)
   const dueToday = mine.filter(x => x.due === t)
   const ringTotal = new Set([...dueToday, ...doneToday].map(x => x.id)).size
@@ -177,7 +177,7 @@ function FocusCard() {
   const r = 52
   const c = 2 * Math.PI * r
   const today_ = focusToday(s.focusLog)
-  const open_ = s.tasks.filter(t => t.company === s.company && t.assignee === s.me && t.status !== 'done')
+  const open_ = s.tasks.filter(t => t.company === s.company && t.assignees.includes(s.me) && t.status !== 'done')
   const current = f.task ? s.tasks.find(t => t.id === f.task) : undefined
 
   return (
@@ -243,7 +243,7 @@ function MyTasks() {
   const flipState = useRef<Flip.FlipState | null>(null)
   const t = today()
   const tasks = useMemo(() => sc.tasks
-    .filter(x => x.assignee === s.me && ((x.status !== 'done' && x.due <= t) || (x.doneAt && ymd(new Date(x.doneAt)) === t)))
+    .filter(x => x.assignees.includes(s.me) && ((x.status !== 'done' && x.due <= t) || (x.doneAt && ymd(new Date(x.doneAt)) === t)))
     .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || a.due.localeCompare(b.due) || RANK[a.prio] - RANK[b.prio]),
   [sc.tasks, s.me, t])
 

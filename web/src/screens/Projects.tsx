@@ -349,7 +349,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
                     {list.length === 0 ? <p className="pgroup__none">Ажил алга.</p> : !collapsed && (
                       <ul className="pgroup__list">
                         {list.map(t => {
-                          const who = sc.person(t.assignee)
+                          const who = t.assignees.map(x => sc.person(x)).filter(x => x !== undefined)
                           const late = t.status !== 'done' && daysFromToday(t.due) < 0
                           return (
                             <li key={t.id}>
@@ -357,7 +357,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
                                 <span className="prow__title">{t.title}</span>
                                 <Prio prio={t.prio} />
                                 <span className={`prow__due${late ? ' is-late' : ''}`}>{late && <span className="sr-only">Хоцорсон: </span>}{dueLabel(t.due)}</span>
-                                {who ? <Avatar person={who} size="xs" /> : <span />}
+                                {who.length ? <AvatarStack people={who} max={3} size="xs" /> : <span />}
                               </button>
                             </li>
                           )

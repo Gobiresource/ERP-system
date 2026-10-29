@@ -39,9 +39,9 @@ export default function Tasks() {
     const t = q.trim().toLocaleLowerCase('mn')
     return sc.tasks.filter(x =>
       (project === 'all' || (project === 'none' ? !x.project : x.project === project)) &&
-      (!mine || x.assignee === s.me) &&
+      (!mine || x.assignees.includes(s.me)) &&
       (prio === 'all' || x.prio === prio) &&
-      (!t || [x.title, sc.project(x.project)?.name, sc.person(x.assignee)?.given, sc.person(x.assignee)?.family].some(v => v?.toLocaleLowerCase('mn').includes(t))))
+      (!t || [x.title, sc.project(x.project)?.name, ...x.assignees.flatMap(id => [sc.person(id)?.given, sc.person(id)?.family])].some(v => v?.toLocaleLowerCase('mn').includes(t))))
   }, [sc, project, mine, prio, q, s.me])
 
   const open_ = sc.tasks.filter(t => t.status !== 'done')

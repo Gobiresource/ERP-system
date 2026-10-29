@@ -6,10 +6,11 @@ import type { TaskStatus } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
 import { go } from '../lib/router'
-import { ago, dateDots, daysFromToday, dueLabel, monthDayDots, parse, short } from '../lib/format'
+import { ago, collator, dateDots, daysFromToday, dueLabel, monthDayDots, parse, short } from '../lib/format'
 import { Sheet, useCloseSheet } from '../ui/Sheet'
 import { Seg } from '../ui/Seg'
 import { Avatar, Prio, ProjectChip, STATUS, STATUSES } from '../ui/bits'
+import { PeoplePick } from '../ui/PeoplePick'
 import { moveTask } from '../screens/tasks/TaskCard'
 
 /** "Маргааш (10.30)" near today, otherwise "2026.11.19" */
@@ -34,10 +35,13 @@ function Body({ id }: { id: string }) {
   const [sub, setSub] = useState('')
   const [comment, setComment] = useState('')
   const [confirm, setConfirm] = useState(false)
+  const [pickWho, setPickWho] = useState(false)
   if (!t) return <p className="tp-none">Ажил устгагдсан байна.</p>
 
   const p = sc.project(t.project)
-  const who = sc.person(t.assignee)
+  const who = t.assignees.map(x => sc.person(x)).filter(x => x !== undefined)
+  const people = [...sc.people].sort((a, b) => collator.compare(a.given, b.given))
+  const toggleWho = (x: string) => actions.updateTask(t.id, { assignees: t.assignees.includes(x) ? t.assignees.filter(y => y !== x) : [...t.assignees, x] })
   const late = t.status !== 'done' && daysFromToday(t.due) < 0
   const subsDone = t.subtasks.filter(x => x.done).length
 
@@ -73,13 +77,14 @@ function Body({ id }: { id: string }) {
       <dl className="meta tp__meta">
         <div>
           <dt>Хариуцагч</dt>
-          <dd>
-            {who ? (
-              <button type="button" className="row" style={{ gap: 8 }} onClick={() => open({ kind: 'person', id: who.id })}>
-                <Avatar person={who} size="xs" />
-                <span>{short(who)}</span>
+          <dd className="tp__who">
+            {who.length ? who.map(w => (
+              <button key={w.id} type="button" className="row" style={{ gap: 8 }} onClick={() => open({ kind: 'person', id: w.id })}>
+                <Avatar person={w} size="xs" />
+                <span>{short(w)}</span>
               </button>
-            ) : <><User className="ico" /><span>Оноогоогүй</span></>}
+            )) : <><User className="ico" /><span>Оноогоогүй</span></>}
+            <button type="button" className="btn btn--ghost btn--sm" aria-expanded={pickWho} onClick={() => setPickWho(!pickWho)}>{pickWho ? 'Хураах' : 'Сонгох'}</button>
           </dd>
         </div>
         <div>
@@ -98,6 +103,7 @@ function Body({ id }: { id: string }) {
           <dd><Clock className="ico" /><span className="tnum">{t.estimate} цаг</span></dd>
         </div>
       </dl>
+      {pickWho && <PeoplePick people={people} value={t.assignees} onToggle={toggleWho} />}
 
       <section className="block" aria-labelledby="tp-subs">
         <header><h3 id="tp-subs">Дэд ажил</h3><span className="badge tnum">{subsDone}/{t.subtasks.length}</span></header>

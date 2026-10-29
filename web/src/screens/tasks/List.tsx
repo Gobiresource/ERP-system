@@ -5,8 +5,7 @@ import type { Priority, Task, TaskStatus } from '../../lib/types'
 import { scoped, useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
 import { checkPop } from '../../lib/motion'
-import { short } from '../../lib/format'
-import { Avatar, Prio, ProjectChip, STATUS, STATUSES } from '../../ui/bits'
+import { AvatarStack, Prio, ProjectChip, STATUS, STATUSES } from '../../ui/bits'
 import { Seg } from '../../ui/Seg'
 import { DueTag, moveTask } from './TaskCard'
 
@@ -49,7 +48,7 @@ export function List({ tasks, total }: { tasks: Task[]; total: number }) {
               <div className="tk-rows">
                 {list.map(t => {
                   const p = sc.project(t.project)
-                  const who = sc.person(t.assignee)
+                  const who = t.assignees.map(x => sc.person(x)).filter(x => x !== undefined)
                   return (
                     <div key={t.id} className={`tk-row${t.status === 'done' ? ' is-done' : ''}`}>
                       <input type="checkbox" className="check" checked={t.status === 'done'} aria-label={`${t.title}: дууссан`}
@@ -63,7 +62,7 @@ export function List({ tasks, total }: { tasks: Task[]; total: number }) {
                         <DueTag task={t} className="tk-row__due" />
                         <span className="tk-row__prio"><Prio prio={t.prio} always /></span>
                       </div>
-                      <span className="tk-row__who">{who && <><Avatar person={who} size="sm" /><span className="sr-only">Хариуцагч: {short(who)}</span></>}</span>
+                      <span className="tk-row__who">{who.length > 0 && <><span className="sr-only">Хариуцагч: </span><AvatarStack people={who} max={3} /></>}</span>
                     </div>
                   )
                 })}

@@ -15,8 +15,9 @@ export interface Load {
 
 /** Open work (hours of unfinished tasks) against the hours a person has in a week */
 export function workload(p: Person, tasks: Task[]): Load {
-  const mine = tasks.filter(t => t.assignee === p.id && t.status !== 'done')
-  const hours = mine.reduce((n, t) => n + t.estimate, 0)
+  const mine = tasks.filter(t => t.assignees.includes(p.id) && t.status !== 'done')
+  // A task with several people in charge: its hours are shared between them
+  const hours = Math.round(mine.reduce((n, t) => n + t.estimate / t.assignees.length, 0) * 10) / 10
   const pct = Math.round((hours / p.capacity) * 100)
   return { hours, capacity: p.capacity, pct, level: pct > 100 ? 'over' : pct >= 70 ? 'high' : 'ok', open: mine.length }
 }

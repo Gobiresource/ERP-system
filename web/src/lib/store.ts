@@ -22,6 +22,10 @@ function load(): State | null {
     if (!s.drafts) s = { ...s, drafts: seedDrafts(new Date(), s.me) }
     // Saved before Бичиг хэрэг existed
     if (!s.docs) s = { ...s, ...seedDocs(new Date()) }
+    // Saved when a task had one person in charge
+    if (s.tasks.some((t: Partial<Task>) => !t.assignees)) {
+      s = { ...s, tasks: s.tasks.map(({ assignee, ...t }: Task & { assignee?: Id }) => ({ ...t, assignees: t.assignees ?? (assignee ? [assignee] : []) })) }
+    }
     return s
   } catch {
     return null
