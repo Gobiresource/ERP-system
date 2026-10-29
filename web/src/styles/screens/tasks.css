@@ -106,10 +106,10 @@
 .tk-card__who { margin-left: auto; }
 .tk-card__who .av { box-shadow: 0 0 0 2px var(--av-ring); }
 .tk-slot { flex: none; border: 1.5px dashed color-mix(in srgb, var(--accent-ink) 55%, transparent); border-radius: 18px; background: color-mix(in srgb, var(--accent) 8%, transparent); }
-.tk-layer { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
-.tk-layer .tk-card { position: absolute; top: 0; left: 0; margin: 0; pointer-events: none; }
+/* While dragging, this layer covers the page: the cursor stays "grabbing" and nothing underneath reacts to hover */
+.tk-layer { position: fixed; inset: 0; z-index: 70; cursor: grabbing; user-select: none; -webkit-user-select: none; }
+.tk-layer .tk-card { position: absolute; top: 0; left: 0; margin: 0; pointer-events: none; will-change: transform; }
 .tk-layer .tk-card__more { opacity: 0; }
-html.tk-dragging, html.tk-dragging * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
 .check-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--accent); pointer-events: none; }
 
 /* List */

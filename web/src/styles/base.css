@@ -71,8 +71,8 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 /* Cards inside the page only have the wallpaper behind them. On a flat wallpaper a blur gives back the same
    flat colour, so they skip it: scrolling and page changes get much lighter to draw. The side menu, toolbar
    and windows keep it, because the page moves under them. */
-.card, .sgroup, .snav, .tk-bar { --glass: var(--glass-card); }
-:root:is([data-wall="ash"], [data-wall="sand"], [data-wall="sage"]) :is(.card, .sgroup, .snav, .tk-bar, .stat) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.card, .sgroup, .snav, .tk-bar, .tk-col { --glass: var(--glass-card); }
+:root:is([data-wall="ash"], [data-wall="sand"], [data-wall="sage"]) :is(.card, .sgroup, .snav, .tk-bar, .tk-col, .stat) { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .glass--chrome { --glass: var(--glass-chrome); }
 .glass--thick { --glass: var(--glass-thick); --blur: var(--blur-thick); }
 :root.is-solid :is(.glass, .stat) { -webkit-backdrop-filter: none; backdrop-filter: none; }

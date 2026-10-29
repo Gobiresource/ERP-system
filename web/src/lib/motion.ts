@@ -83,8 +83,21 @@ export function checkPop(el: HTMLElement) {
 
 /** Squash on drop */
 export function settle(el: HTMLElement) {
+  enter([el], { transform: 'scale(1.03, .96)' }, { duration: 0.65, ease: 'elastic.out(1, 0.45)' })
+}
+
+/** Where elements are on screen now, to hand to slideFrom() after a change */
+export const tops = (els: Iterable<Element>) => new Map([...els].map(el => [el, el.getBoundingClientRect().top]))
+
+/** Slides elements from their old place (see tops) to where they are now (FLIP), off the main thread */
+export function slideFrom(first: Map<Element, number>) {
   if (reduced()) return
-  gsap.fromTo(el, { scaleX: 1.03, scaleY: 0.96 }, { scaleX: 1, scaleY: 1, duration: 0.65, ease: 'elastic.out(1, 0.45)', clearProps: 'transform' })
+  const els = [...first.keys()].filter(el => el.isConnected)
+  for (const el of els) for (const a of el.getAnimations()) if (a.id === 'slide') a.cancel()
+  const dys = els.map(el => first.get(el)! - el.getBoundingClientRect().top)
+  els.forEach((el, i) => {
+    if (Math.abs(dys[i]) > 0.5) el.animate([{ transform: `translateY(${dys[i]}px)` }, { transform: 'none' }], { id: 'slide', duration: 550, easing: easing('power3.inOut') })
+  })
 }
 
 /** Records positions before a change; call the returned function after React has rendered. */

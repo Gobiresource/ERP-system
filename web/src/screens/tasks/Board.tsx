@@ -4,8 +4,9 @@ import { Fragment, useLayoutEffect, useMemo, useRef, useState, type PointerEvent
 import { createPortal } from 'react-dom'
 import { Plus } from 'lucide-react'
 import type { Task, TaskStatus } from '../../lib/types'
+import { scoped, useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
-import { Flip, checkPop, gsap, popIn, reduced, settle } from '../../lib/motion'
+import { checkPop, gsap, popIn, reduced, settle, slideFrom, tops } from '../../lib/motion'
 import { STATUS, STATUSES } from '../../ui/bits'
 import { TaskCard, moveTask } from './TaskCard'
 
@@ -29,13 +30,14 @@ let touchDragging = false
 document.addEventListener('touchmove', e => { if (touchDragging && e.cancelable) e.preventDefault() }, { passive: false })
 
 export function Board({ tasks }: { tasks: Task[] }) {
+  const sc = scoped(useApp())
   const board = useRef<HTMLDivElement>(null)
   const ghost = useRef<HTMLElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
   const [expanded, setExpanded] = useState<Partial<Record<TaskStatus, boolean>>>({})
   const [dropped, setDropped] = useState<{ id: string; toDone: boolean } | null>(null)
-  const flipState = useRef<Flip.FlipState | null>(null)
-  const pointer = useRef({ x: 0, y: 0, offX: 0, offY: 0, width: 0, startLeft: 0, startTop: 0, vx: 0 })
+  const first = useRef<Map<Element, number> | null>(null)
+  const pointer = useRef({ x: 0, y: 0, offX: 0, offY: 0, width: 0, startLeft: 0, startTop: 0 })
 
   const byCol = useMemo(() => {
     const m = { todo: [], doing: [], review: [], done: [] } as Record<TaskStatus, Task[]>
@@ -48,12 +50,10 @@ export function Board({ tasks }: { tasks: Task[] }) {
     popIn([...board.current!.querySelectorAll('.tk-card')].filter(c => c.getBoundingClientRect().top < innerHeight))
   }, [])
 
-  // Cards make room for the dragged one
+  // Cards make room for the dragged one: they slide from where they were
   useLayoutEffect(() => {
-    if (flipState.current) {
-      Flip.from(flipState.current, { duration: 0.55, ease: 'power3.inOut' })
-      flipState.current = null
-    }
+    if (first.current) slideFrom(first.current)
+    first.current = null
   }, [drag?.col, drag?.index])
 
   // Lift the card when the drag starts
@@ -77,64 +77,71 @@ export function Board({ tasks }: { tasks: Task[] }) {
     setDropped(null)
   }, [dropped])
 
-  const start = (e: ReactPointerEvent<HTMLElement>, t: Task) => {
+  const start = (e: ReactPointerEvent<HTMLElement>, t: Task, el: HTMLElement) => {
     if (e.button !== 0 || (e.target as Element).closest('.tk-card__more')) return
-    const el = e.currentTarget
     const r = el.getBoundingClientRect()
     const touch = e.pointerType === 'touch'
     const p = pointer.current
-    Object.assign(p, { x: e.clientX, y: e.clientY, offX: e.clientX - r.left, offY: e.clientY - r.top, width: r.width, startLeft: r.left, startTop: r.top, vx: 0 })
+    Object.assign(p, { x: e.clientX, y: e.clientY, offX: e.clientX - r.left, offY: e.clientY - r.top, width: r.width, startLeft: r.left, startTop: r.top })
     const x0 = e.clientX
     const y0 = e.clientY
+    let lastX = x0
     let started = false
     let ready = !touch
     let current: Drag | null = null
     let raf = 0
     let timer = 0
+    let tilt: ((deg: number) => void) | null = null
 
-    const tilt = () => {
-      if (!ghost.current || reduced()) return
-      gsap.to(ghost.current, { rotation: Math.max(-6, Math.min(6, p.vx * 0.35)), duration: 0.3, ease: 'power2.out', overwrite: 'auto' })
-    }
-
+    // Which column and place the pointer is over. Card positions come from the layout (offsetTop), so cards
+    // that are still sliding out of the way do not change the answer.
     const hit = () => {
       const cols = [...board.current!.querySelectorAll<HTMLElement>('.tk-col')]
-      const col = cols.find(c => { const b = c.getBoundingClientRect(); return p.x >= b.left && p.x <= b.right }) ??
-        cols.reduce((a, c) => (Math.abs(c.getBoundingClientRect().left - p.x) < Math.abs(a.getBoundingClientRect().left - p.x) ? c : a))
-      const status = col.dataset.col as TaskStatus
-      const cards = [...col.querySelectorAll<HTMLElement>('.tk-card:not(.is-away)')]
-      const index = cards.filter(c => { const b = c.getBoundingClientRect(); return b.top + b.height / 2 < p.y }).length
+      const boxes = cols.map(c => c.getBoundingClientRect())
+      let i = boxes.findIndex(b => p.x >= b.left && p.x <= b.right)
+      if (i < 0) i = boxes.reduce((best, b, k) => (Math.abs(b.left - p.x) < Math.abs(boxes[best].left - p.x) ? k : best), 0)
+      const status = cols[i].dataset.col as TaskStatus
+      const list = cols[i].querySelector<HTMLElement>('.tk-col__list')!
+      const top = list.getBoundingClientRect().top
+      const index = [...list.querySelectorAll<HTMLElement>('.tk-card:not(.is-away)')].filter(c => top + c.offsetTop + c.offsetHeight / 2 < p.y).length
       if (current && (current.col !== status || current.index !== index)) {
-        if (!reduced()) flipState.current = Flip.getState(board.current!.querySelectorAll('.tk-card:not(.is-away), .tk-slot'))
+        first.current = tops([current.col, status].flatMap(st => [...board.current!.querySelectorAll(`.tk-col[data-col="${st}"] .tk-card:not(.is-away)`)]))
         current = { ...current, col: status, index }
         setDrag(current)
       }
     }
 
-    // Scroll the page (and the board on small screens) near the edges
-    const edge = () => {
+    // Once per frame: move and tilt the card, scroll near the edges, find the drop place
+    const frame = () => {
+      const g = ghost.current
       const b = board.current
       if (!b || !started) return
+      if (g) {
+        gsap.set(g, { x: p.x - p.offX, y: p.y - p.offY })
+        if (!reduced()) {
+          tilt ??= gsap.quickTo(g, 'rotation', { duration: 0.3, ease: 'power2.out' })
+          tilt(Math.max(-6, Math.min(6, (p.x - lastX) * 0.35)))
+        }
+        lastX = p.x
+      }
       if (p.y < 80) window.scrollBy(0, -Math.ceil((80 - p.y) / 6))
       else if (p.y > innerHeight - 80) window.scrollBy(0, Math.ceil((p.y - innerHeight + 80) / 6))
       const br = b.getBoundingClientRect()
       if (p.x < br.left + 50) b.scrollLeft -= 10
       else if (p.x > br.right - 50) b.scrollLeft += 10
       hit()
-      raf = requestAnimationFrame(edge)
+      raf = requestAnimationFrame(frame)
     }
 
     const begin = () => {
       started = true
       touchDragging = touch
-      document.documentElement.classList.add('tk-dragging')
       current = { id: t.id, col: t.status, index: byCol[t.status].indexOf(t), height: r.height }
       setDrag(current)
-      raf = requestAnimationFrame(edge)
+      raf = requestAnimationFrame(frame)
     }
 
     const move = (ev: PointerEvent) => {
-      p.vx = ev.clientX - p.x
       p.x = ev.clientX
       p.y = ev.clientY
       if (!started) {
@@ -143,9 +150,6 @@ export function Board({ tasks }: { tasks: Task[] }) {
         if (dist < 6) return
         begin()
       }
-      if (ghost.current) gsap.set(ghost.current, { x: p.x - p.offX, y: p.y - p.offY })
-      tilt()
-      hit()
     }
 
     const cleanup = () => {
@@ -156,7 +160,6 @@ export function Board({ tasks }: { tasks: Task[] }) {
       removeEventListener('pointerup', up)
       removeEventListener('pointercancel', cancel)
       removeEventListener('keydown', key)
-      document.documentElement.classList.remove('tk-dragging')
     }
 
     const finish = (commit: boolean) => {
@@ -178,7 +181,7 @@ export function Board({ tasks }: { tasks: Task[] }) {
         setDrag(null)
       }
       if (!ghost.current || reduced()) return done()
-      gsap.to(ghost.current, { x: target.left, y: target.top, scale: 1, rotation: 0, duration: 0.32, ease: 'power3.out', onComplete: done })
+      gsap.to(ghost.current, { x: target.left, y: target.top, scale: 1, rotation: 0, duration: 0.32, ease: 'power3.out', overwrite: true, onComplete: done })
     }
     const up = () => finish(true)
     const cancel = () => finish(false)
@@ -192,12 +195,18 @@ export function Board({ tasks }: { tasks: Task[] }) {
   }
 
   const dragged = drag ? tasks.find(t => t.id === drag.id) : undefined
+  // One listener for all cards, so the cards keep the same props and are not redrawn during a drag
+  const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
+    const el = (e.target as Element).closest<HTMLElement>('.tk-card')
+    const t = el && tasks.find(x => x.id === el.dataset.id)
+    if (el && t) start(e, t, el)
+  }
 
   return (
-    <div className="tk-board" ref={board}>
+    <div className="tk-board" ref={board} onPointerDown={onPointerDown}>
       {STATUSES.map(st => {
         const list = byCol[st]
-        const showAll = expanded[st] || drag?.col === st
+        const showAll = expanded[st]
         const visible = showAll ? list : list.slice(0, LIMIT)
         const rest = visible.filter(t => t.id !== drag?.id)
         return (
@@ -216,7 +225,7 @@ export function Board({ tasks }: { tasks: Task[] }) {
                 return (
                   <Fragment key={t.id}>
                     {drag?.col === st && i === drag.index && <div className="tk-slot" style={{ height: drag.height }} aria-hidden="true" />}
-                    <TaskCard task={t} away={t.id === drag?.id} onPointerDown={e => start(e, t)} />
+                    <TaskCard task={t} project={sc.project(t.project)} person={sc.person(t.assignee)} away={t.id === drag?.id} />
                   </Fragment>
                 )
               })}
@@ -233,7 +242,7 @@ export function Board({ tasks }: { tasks: Task[] }) {
       })}
       {dragged && createPortal(
         <div className="tk-layer" aria-hidden="true">
-          <TaskCard task={dragged} ref={ghost} lifted menu={false} />
+          <TaskCard task={dragged} project={sc.project(dragged.project)} person={sc.person(dragged.assignee)} ref={ghost} lifted menu={false} />
         </div>,
         document.body,
       )}

@@ -1,7 +1,7 @@
-import type { PointerEvent, Ref } from 'react'
+import { memo, type Ref } from 'react'
 import { Calendar, Check, Ellipsis, MessageSquare } from 'lucide-react'
-import type { Task, TaskStatus } from '../../lib/types'
-import { actions, getState, scoped, useApp } from '../../lib/store'
+import type { Person, Project, Task, TaskStatus } from '../../lib/types'
+import { actions, getState } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { daysFromToday, dueLabel, short } from '../../lib/format'
 import { Avatar, Prio, ProjectChip, STATUS, STATUSES } from '../../ui/bits'
@@ -32,25 +32,25 @@ export function moveTask(t: Task, status: TaskStatus, before?: string) {
   toast(status === 'done' ? `Дууссан: ${t.title}` : `Шилжүүллээ: ${STATUS[status]}`, { undo })
 }
 
-/** A task on the board. The menu is the keyboard way to move a card to another column. */
-export function TaskCard({ task: t, ref, lifted, away, menu = true, onPointerDown }: {
+/**
+ * A task on the board. The menu is the keyboard way to move a card to another column.
+ * Memoised with its project and person passed in, so a drag only redraws the cards that change.
+ */
+export const TaskCard = memo(function TaskCard({ task: t, project: p, person: who, ref, lifted, away, menu = true }: {
   task: Task
+  project?: Project
+  person?: Person
   ref?: Ref<HTMLElement>
   lifted?: boolean
   away?: boolean
   menu?: boolean
-  onPointerDown?: (e: PointerEvent<HTMLElement>) => void
 }) {
-  const s = useApp()
-  const sc = scoped(s)
-  const p = sc.project(t.project)
-  const who = sc.person(t.assignee)
   const subsDone = t.subtasks.filter(x => x.done).length
   const pop = usePopover()
   const done = t.status === 'done'
 
   return (
-    <article ref={ref} className={`tk-card${done ? ' is-done' : ''}${lifted ? ' is-lifted' : ''}${away ? ' is-away' : ''}`} data-id={t.id} onPointerDown={onPointerDown}>
+    <article ref={ref} className={`tk-card${done ? ' is-done' : ''}${lifted ? ' is-lifted' : ''}${away ? ' is-away' : ''}`} data-id={t.id}>
       <div className="tk-card__top">
         <ProjectChip project={p} />
         <Prio prio={t.prio} />
@@ -95,4 +95,4 @@ export function TaskCard({ task: t, ref, lifted, away, menu = true, onPointerDow
       </div>
     </article>
   )
-}
+})
