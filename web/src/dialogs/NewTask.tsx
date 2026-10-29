@@ -54,7 +54,7 @@ export function NewTask({ defaults = {} }: { defaults?: Partial<Task> }) {
           {people.map(p => <option key={p.id} value={p.id}>{short(p)}{p.id === s.me ? ' (та)' : ''}</option>)}
         </select>
       </Field>
-      <Field id="nt-prio" label="Чухал байдал">
+      <Field id="nt-prio" label="Ач холбогдол">
         <select id="nt-prio" value={f.prio} onChange={set('prio')}>
           {(['low', 'medium', 'high', 'urgent'] as Priority[]).map(p => <option key={p} value={p}>{PRIO[p]}</option>)}
         </select>
@@ -67,7 +67,7 @@ export function NewTask({ defaults = {} }: { defaults?: Partial<Task> }) {
           {STATUSES.map(st => <option key={st} value={st}>{STATUS[st]}</option>)}
         </select>
       </Field>
-      <Field id="nt-estimate" label="Төлөвлөсөн хугацаа (цаг)" error={errors['nt-estimate']}>
+      <Field id="nt-estimate" label="Төлөвлөсөн цаг" error={errors['nt-estimate']}>
         <input {...fieldAria('nt-estimate', errors['nt-estimate'])} inputMode="decimal" value={f.estimate} onChange={set('estimate')} />
       </Field>
     </FormSheet>

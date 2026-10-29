@@ -27,7 +27,7 @@ export function NewProject() {
     setErrors(e)
     if (Object.keys(e).length) return false
     const p = actions.addProject({ name: f.name.trim(), goal: f.goal.trim(), lead: f.lead, hue: f.hue, icon: f.icon, status: 'active', start: today(), due: f.due })
-    toast('Төсөл нэмэгдлээ.')
+    toast('Төсөл үүсгэгдлээ.')
     go('projects', p.id)
     return true
   }

@@ -61,7 +61,7 @@ export function NewEvent({ defaults = {} }: { defaults?: Partial<CalEvent> }) {
           {sc.projects.filter(p => p.status !== 'done').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </Field>
-      <Field id="ne-where" label="Хаана" optional>
+      <Field id="ne-where" label="Байршил" optional>
         <input id="ne-where" value={f.where} onChange={set('where')} placeholder="Хурлын өрөө 1" />
       </Field>
     </FormSheet>

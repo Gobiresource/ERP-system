@@ -281,7 +281,7 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 
 /* Cards */
 .card { min-width: 0; padding: clamp(16px, .6vw + 12px, 22px); border-radius: var(--r-xl); }
-.card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.card__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .card__title { font: 650 var(--fs-lg)/1.25 var(--font); letter-spacing: -.01em; }
 .card__sub { margin-top: 2px; font-size: 13.5px; color: var(--text-2); }
 .card__tools { display: flex; align-items: center; gap: 6px; flex: none; }
@@ -314,6 +314,7 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .meta > div { display: grid; gap: 6px; min-width: 0; padding: 12px 14px; border-radius: 16px; background: var(--fill); }
 .meta dt { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
 .meta dd { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 560; }
+.meta dd:has(> .pstatus) { flex-wrap: wrap; }
 .meta dd span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meta dd .ico { width: 18px; height: 18px; color: var(--text-2); }
 .block > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }

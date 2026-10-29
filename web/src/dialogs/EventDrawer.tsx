@@ -23,7 +23,7 @@ function Body({ id }: { id: string }) {
   const sc = scoped(s)
   const closeSheet = useCloseSheet()
   const e = s.events.find(x => x.id === id)
-  if (!e) return <p className="tp-none">Энэ тов устсан байна.</p>
+  if (!e) return <p className="tp-none">Тов устгагдсан байна.</p>
   const start = parse(e.start)
   const p = sc.project(e.project)
   const Icon = KIND_ICON[e.kind]
@@ -34,7 +34,7 @@ function Body({ id }: { id: string }) {
   const remove = () => {
     const undo = actions.removeEvent(e.id)
     closeSheet()
-    toast(`Устгалаа: ${e.title}`, { undo })
+    toast(`${e.title} устгагдлаа.`, { undo })
   }
 
   return (
@@ -46,15 +46,15 @@ function Body({ id }: { id: string }) {
       <h2 className="tp__title">{e.title}</h2>
       <dl className="meta">
         <div>
-          <dt>Хэзээ</dt>
+          <dt>Огноо, цаг</dt>
           <dd><CalendarClock className="ico" /><span className="tnum">{dueLabel(e.start.slice(0, 10))}, {hm(start)}–{hm(eventEnd(e))}</span></dd>
         </div>
         <div>
-          <dt>Хугацаа</dt>
+          <dt>Үргэлжлэх хугацаа</dt>
           <dd><span className="tnum">{duration(e.minutes)}, {dateDots(start)}</span></dd>
         </div>
         <div>
-          <dt>Хаана</dt>
+          <dt>Байршил</dt>
           <dd><MapPin className="ico" /><span>{e.where || 'Заагаагүй'}</span></dd>
         </div>
         <div>

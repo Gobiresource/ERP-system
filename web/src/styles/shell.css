@@ -289,7 +289,6 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
   .stat__value { font-size: 21px; }
   .head__actions { justify-content: flex-start; width: 100%; }
   .head__actions > .btn { flex: auto; }
-  .card__head { flex-wrap: wrap; }
   .card__tools { max-width: 100%; margin-left: auto; }
 
   .mform__grid { grid-template-columns: 1fr; }

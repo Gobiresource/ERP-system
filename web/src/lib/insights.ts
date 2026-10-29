@@ -148,7 +148,7 @@ export function toCsv(rows: (string | number)[][]) {
 
 /** Saves rows as a CSV file. A preview frame blocks downloads, so it says so instead of doing nothing. */
 export function downloadCsv(name: string, rows: (string | number)[][]) {
-  if (window.self !== window.top) return toast('Энэ туршилтын хуудсанд файл татах боломжгүй. Жинхэнэ систем дээр ажиллана.', { kind: 'info' })
+  if (window.self !== window.top) return toast('Энэ туршилтын хуудаснаас файл татах боломжгүй. Үндсэн систем дээр ажиллана.', { kind: 'info' })
   const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }))
   const a = document.createElement('a')
   a.href = url

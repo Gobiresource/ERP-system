@@ -68,10 +68,10 @@ export default function Calendar() {
         sub={`Энэ долоо хоногт ${weekCount} тов байна.`}
         actions={
           <>
-            <div className="cal-nav" role="group" aria-label={view === 'month' ? 'Сар солих' : 'Долоо хоног солих'}>
+            <div className="cal-nav" role="group" aria-label={view === 'month' ? 'Сар шилжүүлэх' : 'Долоо хоног шилжүүлэх'}>
               <button type="button" className="cal-nav__btn" onClick={() => step(-1)} aria-label={view === 'month' ? 'Өмнөх сар' : 'Өмнөх долоо хоног'}><ChevronLeft className="ico" /></button>
               <button type="button" className="cal-nav__btn cal-nav__today" onClick={goToday}>Өнөөдөр</button>
-              <button type="button" className="cal-nav__btn" onClick={() => step(1)} aria-label={view === 'month' ? 'Дараах сар' : 'Дараах долоо хоног'}><ChevronRight className="ico" /></button>
+              <button type="button" className="cal-nav__btn" onClick={() => step(1)} aria-label={view === 'month' ? 'Дараагийн сар' : 'Дараагийн долоо хоног'}><ChevronRight className="ico" /></button>
             </div>
             <Seg label="Харагдац" className="cal-viewseg" value={view} onChange={changeView} options={[{ value: 'month', label: 'Сар' }, { value: 'week', label: 'Долоо хоног' }]} />
             <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'newEvent', defaults: { start: `${selected}T10:00` } })}>

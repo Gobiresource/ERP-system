@@ -34,7 +34,7 @@ function Body({ id }: { id: string }) {
   const [sub, setSub] = useState('')
   const [comment, setComment] = useState('')
   const [confirm, setConfirm] = useState(false)
-  if (!t) return <p className="tp-none">Энэ ажил устсан байна.</p>
+  if (!t) return <p className="tp-none">Ажил устгагдсан байна.</p>
 
   const p = sc.project(t.project)
   const who = sc.person(t.assignee)
@@ -54,7 +54,7 @@ function Body({ id }: { id: string }) {
   const remove = () => {
     const undo = actions.removeTask(t.id)
     closeSheet()
-    toast(`Устгалаа: ${t.title}`, { undo })
+    toast(`${t.title} устгагдлаа.`, { undo })
   }
 
   return (
@@ -83,7 +83,7 @@ function Body({ id }: { id: string }) {
           </dd>
         </div>
         <div>
-          <dt>Дуусах хугацаа</dt>
+          <dt>Дуусах өдөр</dt>
           <dd className={late ? 'tk-due is-late' : undefined}><Calendar className="ico" /><span className="tnum">{dueText(t.due)}</span></dd>
         </div>
         <div>
@@ -94,7 +94,7 @@ function Body({ id }: { id: string }) {
           </dd>
         </div>
         <div>
-          <dt>Төлөвлөсөн хугацаа</dt>
+          <dt>Төлөвлөсөн цаг</dt>
           <dd><Clock className="ico" /><span className="tnum">{t.estimate} цаг</span></dd>
         </div>
       </dl>
@@ -129,7 +129,7 @@ function Body({ id }: { id: string }) {
               <div className="tp-comment" key={c.id}>
                 {a && <Avatar person={a} size="sm" />}
                 <div>
-                  <small><b style={{ color: 'var(--text)' }}>{a ? short(a) : 'Хэн нэгэн'}</b> · {ago(c.at)}</small>
+                  <small><b style={{ color: 'var(--text)' }}>{a ? short(a) : 'Устгагдсан ажилтан'}</b> · {ago(c.at)}</small>
                   <p>{c.text}</p>
                 </div>
               </div>
@@ -156,7 +156,7 @@ function Body({ id }: { id: string }) {
           {t.status === 'done' ? (
             <button type="button" className="btn btn--glass" onClick={() => moveTask(t, 'todo')}><RotateCcw className="ico" />Дахин нээх</button>
           ) : (
-            <button type="button" className="btn btn--accent" onClick={() => moveTask(t, 'done')}>Дууссан гэж тэмдэглэх</button>
+            <button type="button" className="btn btn--accent" onClick={() => moveTask(t, 'done')}>Дуусгах</button>
           )}
           <button type="button" className="btn btn--ghost tp__del" style={{ color: 'var(--danger)' }} onClick={() => setConfirm(true)}>
             <Trash className="ico" />

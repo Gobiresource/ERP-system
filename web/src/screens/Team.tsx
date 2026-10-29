@@ -43,7 +43,7 @@ export default function Team() {
         title="Баг"
         sub={`Энэ компанид ${people.length} хүн, ${teams.length} хэлтэс байна.`}
         stats={[
-          { label: 'Одоо идэвхтэй', value: online, unit: `/ ${people.length}` },
+          { label: 'Идэвхтэй', value: online, unit: `/ ${people.length}` },
           { label: 'Төвлөрсөн', value: inFocus },
           { label: 'Дундаж ачаалал', value: avg, unit: '%' },
         ]}
@@ -54,7 +54,7 @@ export default function Team() {
             </div>
             <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'invite' })}>
               <UserPlus className="ico" />
-              Хүн нэмэх
+              Ажилтан нэмэх
             </button>
           </>
         }
@@ -107,8 +107,8 @@ function MemberCard({ person: p, me }: { person: Person; me: boolean }) {
         </div>
       </div>
       <div className="mcard__foot">
-        <span className="mcard__open"><SquareCheck className="ico" /><span className="tnum">{load.open}</span> нээлттэй ажил</span>
-        <button type="button" className="btn btn--glass btn--sm" onClick={profile}>Профайл</button>
+        <span className="mcard__open"><SquareCheck className="ico" /><span className="tnum">{load.open}</span> дуусаагүй ажил</span>
+        <button type="button" className="btn btn--glass btn--sm" onClick={profile}>Мэдээлэл харах</button>
       </div>
     </article>
   )

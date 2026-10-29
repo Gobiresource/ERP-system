@@ -12,7 +12,7 @@ export const STATUSES: TaskStatus[] = ['todo', 'doing', 'review', 'done']
 export const PRESENCE: Record<Presence, string> = { online: 'Идэвхтэй', focus: 'Төвлөрсөн', meeting: 'Уулзалттай', away: 'Түр эзгүй' }
 export const KIND: Record<EventKind, string> = { meeting: 'Уулзалт', focus: 'Төвлөрөх цаг', review: 'Хяналт', deadline: 'Эцсийн хугацаа', social: 'Багийн арга хэмжээ' }
 export const KIND_HUE: Record<EventKind, Hue> = { meeting: 'indigo', focus: 'purple', review: 'purple', deadline: 'pink', social: 'orange' }
-export const PSTATUS: Record<ProjectStatus, string> = { active: 'Идэвхтэй', planning: 'Төлөвлөж буй', done: 'Дууссан' }
+export const PSTATUS: Record<ProjectStatus, string> = { active: 'Хэрэгжиж буй', planning: 'Төлөвлөж буй', done: 'Дууссан' }
 export const KIND_ICON: Record<EventKind, typeof Users> = { meeting: Users, focus: Moon, review: Sparkles, deadline: Hourglass, social: PartyPopper }
 /** An event takes its project's colour, otherwise its type's */
 export const eventHue = (e: CalEvent, sc: Scoped): Hue => sc.project(e.project)?.hue ?? KIND_HUE[e.kind]

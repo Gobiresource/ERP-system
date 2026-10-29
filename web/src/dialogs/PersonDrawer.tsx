@@ -27,7 +27,7 @@ export function PersonDrawer({ id }: { id: string }) {
   const c = 2 * Math.PI * r
 
   return (
-    <Sheet kind="drawer" label={`${short(p)}, профайл`} onClose={close}>
+    <Sheet kind="drawer" label={`${short(p)}, хувийн мэдээлэл`} onClose={close}>
       <div className={`prof hue--${teamHue(p.team)}`}>
         <div className="prof__hero">
           <Avatar person={p} size="xl" presence />
@@ -55,7 +55,7 @@ export function PersonDrawer({ id }: { id: string }) {
             <dd><Mail className="ico" /><span>{p.email}</span></dd>
           </div>
           <div>
-            <dt>{where ? 'Орон нутгийн цаг' : 'Овог'}</dt>
+            <dt>{where ? 'Бүсийн цаг' : 'Овог'}</dt>
             <dd>{where ? <><Clock className="ico" /><span className="tnum">{where.time}, {where.city}</span></> : <span>{p.family}</span>}</dd>
           </div>
         </dl>
@@ -71,14 +71,14 @@ export function PersonDrawer({ id }: { id: string }) {
           <div className="prof__nums">
             <div><small>Ачаалал</small><b className="tnum">{load.hours} <span>/ {load.capacity} цаг</span></b></div>
             <div><small>Энэ долоо хоногт төвлөрсөн</small><b className="tnum">{dec(focusHours)} <span>цаг</span></b></div>
-            <div><small>Нээлттэй ажил</small><b className="tnum">{load.open}</b></div>
+            <div><small>Дуусаагүй ажил</small><b className="tnum">{load.open}</b></div>
           </div>
         </div>
 
         <section className="block" aria-labelledby="prof-tasks">
-          <header><h3 id="prof-tasks">Нээлттэй ажил</h3><span className="badge tnum">{tasks.length}</span></header>
+          <header><h3 id="prof-tasks">Дуусаагүй ажил</h3><span className="badge tnum">{tasks.length}</span></header>
           {tasks.length === 0 ? (
-            <p className="prof__none"><PartyPopper className="ico" />Нээлттэй ажил алга.</p>
+            <p className="prof__none"><PartyPopper className="ico" />Дуусаагүй ажил алга.</p>
           ) : (
             <div className="prof__list">
               {tasks.slice(0, 6).map(t => {
@@ -102,7 +102,7 @@ export function PersonDrawer({ id }: { id: string }) {
         <section className="block" aria-labelledby="prof-week">
           <header><h3 id="prof-week">Энэ долоо хоногт</h3><span className="badge tnum">{events.length}</span></header>
           {events.length === 0 ? (
-            <p className="prof__none">Үлдсэн хурал, уулзалт алга.</p>
+            <p className="prof__none">Үлдсэн тов алга.</p>
           ) : (
             <div className="prof__list">
               {events.slice(0, 6).map(e => {
@@ -122,7 +122,7 @@ export function PersonDrawer({ id }: { id: string }) {
         </section>
 
         <section className="block" aria-labelledby="prof-projects">
-          <header><h3 id="prof-projects">Төслүүд</h3><span className="badge tnum">{projects.length}</span></header>
+          <header><h3 id="prof-projects">Төсөл</h3><span className="badge tnum">{projects.length}</span></header>
           {projects.length === 0 ? (
             <p className="prof__none">Төсөлд ороогүй.</p>
           ) : (

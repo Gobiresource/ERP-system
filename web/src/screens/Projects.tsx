@@ -95,17 +95,17 @@ function ProjectList({ sc }: { sc: Scoped }) {
     <div ref={ref}>
       <PageHead
         title="Төсөл"
-        sub={`${active.length + sc.projects.filter(p => p.status === 'planning').length} төсөл явагдаж байна, ${done.length} нь дууссан.`}
+        sub={`${active.length + sc.projects.filter(p => p.status === 'planning').length} төсөл хэрэгжиж байна, ${done.length} нь дууссан.`}
         stats={[
-          { label: 'Идэвхтэй', value: active.length },
+          { label: 'Хэрэгжиж буй', value: active.length },
           { label: 'Дууссан', value: done.length },
-          { label: 'Хугацаандаа явж буй', value: active.length ? Math.round((onTrack / active.length) * 100) : 0, unit: '%' },
+          { label: 'Хугацаандаа', value: active.length ? Math.round((onTrack / active.length) * 100) : 0, unit: '%' },
           { label: 'Энэ сард дуусах', value: dueThisMonth },
         ]}
         actions={
           <>
             <Seg label="Төлвөөр шүүх" className="pfilter" value={filter} onChange={change}
-              options={[{ value: 'all', label: 'Бүгд' }, { value: 'active', label: 'Идэвхтэй' }, { value: 'planning', label: 'Төлөвлөж буй' }, { value: 'done', label: 'Дууссан' }]} />
+              options={[{ value: 'all', label: 'Бүгд' }, { value: 'active', label: 'Хэрэгжиж буй' }, { value: 'planning', label: 'Төлөвлөж буй' }, { value: 'done', label: 'Дууссан' }]} />
             <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'newProject' })}>
               <Plus className="ico" />
               Шинэ төсөл
@@ -172,7 +172,7 @@ function Missing() {
     <div ref={ref}>
       <PageHead title="Төсөл олдсонгүй" />
       <div className="card glass" style={{ maxWidth: 560 }}>
-        <Empty icon={<FolderSearch className="ico" />} title="Энэ төсөл энэ компанид алга" text="Өөр компани сонгосон эсвэл төсөл устсан байж магадгүй.">
+        <Empty icon={<FolderSearch className="ico" />} title="Энэ компанид уг төсөл алга" text="Өөр компани сонгосон эсвэл төсөл устсан байж магадгүй.">
           <button type="button" className="btn btn--glass" onClick={() => go('projects')}>Бүх төсөл</button>
         </Empty>
       </div>
@@ -213,7 +213,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
           }
           stats={[
             { label: 'Явц', value: prog.pct, unit: '%' },
-            { label: 'Нээлттэй ажил', value: prog.open },
+            { label: 'Дуусаагүй ажил', value: prog.open },
             { label: 'Дууссан', value: prog.done },
             left >= 0 ? { label: 'Үлдсэн хоног', value: left } : { label: 'Хэтэрсэн хоног', value: -left, alert: p.status !== 'done' },
           ]}
@@ -259,10 +259,10 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
               </div>
             </div>
             <div className="tline__ends">
-              <span><small>Эхэлсэн</small>{dateDots(parse(p.start))}</span>
+              <span><small>Эхлэх</small>{dateDots(parse(p.start))}</span>
               <span><small>Дуусах</small>{dateDots(parse(p.due))}</span>
             </div>
-            <h3 className="ov__h">Хүмүүс <span className="badge tnum">{people.length}</span></h3>
+            <h3 className="ov__h">Оролцогчид <span className="badge tnum">{people.length}</span></h3>
             <div className="ov__people">
               {people.map(x => (
                 <button key={x.id} type="button" className="ov__person" onClick={() => open({ kind: 'person', id: x.id })}>
@@ -307,7 +307,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
             <div className="card__head">
               <div>
                 <h2 className="card__title" id="burn-t">Явцын график</h2>
-                <p className="card__sub">Дууссан ажил ба нийт ажил, төсөл эхэлснээс хойш</p>
+                <p className="card__sub">Төсөл эхэлснээс хойших дууссан ба нийт ажил</p>
               </div>
             </div>
             <div className="burn__legend" aria-hidden="true">
@@ -321,8 +321,8 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
           <section className="card glass pd-tasks" aria-labelledby="pt-t" data-enter>
             <div className="card__head">
               <div>
-                <h2 className="card__title" id="pt-t">Ажлууд</h2>
-                <p className="card__sub">{prog.open} нээлттэй, {prog.done} дууссан</p>
+                <h2 className="card__title" id="pt-t">Ажил</h2>
+                <p className="card__sub">{prog.open} дуусаагүй, {prog.done} дууссан</p>
               </div>
               <button type="button" className="btn btn--accent btn--sm" onClick={() => open({ kind: 'newTask', defaults: { project: p.id } })}>
                 <Plus className="ico" />
@@ -340,7 +340,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
                       <h3>{STATUS[st]}</h3>
                       <span className="badge tnum">{list.length}</span>
                       {st === 'done' && list.length > 0 && (
-                        <button type="button" className="btn btn--ghost btn--sm pgroup__more" aria-expanded={showDone} onClick={() => setShowDone(!showDone)}>{showDone ? 'Нуух' : 'Харуулах'}</button>
+                        <button type="button" className="btn btn--ghost btn--sm pgroup__more" aria-expanded={showDone} onClick={() => setShowDone(!showDone)}>{showDone ? 'Хураах' : 'Дэлгэх'}</button>
                       )}
                     </div>
                     {list.length === 0 ? <p className="pgroup__none">Ажил алга.</p> : !collapsed && (
@@ -368,7 +368,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
           </section>
 
           <section className="card glass pd-up" aria-labelledby="up-t" data-enter>
-            <div className="card__head"><h2 className="card__title" id="up-t">Удахгүй болох</h2></div>
+            <div className="card__head"><h2 className="card__title" id="up-t">Ойрын тов</h2></div>
             {events.length === 0 ? (
               <p className="tp-none">Төлөвлөсөн тов алга.</p>
             ) : (

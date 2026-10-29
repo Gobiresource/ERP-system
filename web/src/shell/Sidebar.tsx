@@ -27,7 +27,7 @@ export function Sidebar() {
               <n.icon className="ico" />
               <span className="nav__text">{n.label}</span>
               {n.page === 'tasks' && open > 0 && (
-                <span className="nav__count">{open}<span className="sr-only"> нээлттэй ажил</span></span>
+                <span className="nav__count">{open}<span className="sr-only"> дуусаагүй ажил</span></span>
               )}
             </a>
           ))}

@@ -46,7 +46,7 @@ export default function Home() {
     <div ref={ref}>
       <PageHead
         title={`${greeting()}, ${me.given}`}
-        sub={`${weekday(now)}, ${monthDay(now)}. ${tasksLeft || meetingsToday.length - meetingsDone ? `Өнөөдөр ${meetingsToday.length - meetingsDone} уулзалт, ${tasksLeft} ажил үлдсэн.` : 'Өнөөдөр үлдсэн ажил, уулзалт алга.'}`}
+        sub={`${weekday(now)}, ${monthDay(now)}. ${tasksLeft || meetingsToday.length - meetingsDone ? `Өнөөдөр ${meetingsToday.length - meetingsDone} тов, ${tasksLeft} ажил үлдсэн.` : 'Өнөөдөр үлдсэн ажил, тов алга.'}`}
         stats={[
           { label: 'Өнөөдөр дууссан', value: doneToday.length, unit: `/ ${ringTotal}` },
           { label: 'Өнөөдөр төвлөрсөн', value: Number(dec(focused.minutes / 60)), unit: 'цаг' },
@@ -58,7 +58,7 @@ export default function Home() {
             {next ? (
               <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'event', id: next.id })}>
                 <CalendarClock className="ico" />
-                {next.start.startsWith(t) ? `Дараагийнх: ${hm(parse(next.start))}` : `Дараагийнх: ${dueLabel(next.start.slice(0, 10))}`}
+                {next.start.startsWith(t) ? `Дараагийн тов: ${hm(parse(next.start))}` : `Дараагийн тов: ${dueLabel(next.start.slice(0, 10))}`}
               </button>
             ) : (
               <button type="button" className="btn btn--accent" onClick={() => go('calendar')}><CalendarClock className="ico" />Хуанли</button>
@@ -108,7 +108,7 @@ function Rings({ tasks, focusMin, meetings }: { tasks: [number, number]; focusMi
         <dl className="rings__legend">
           <div className="rings__row rings--tasks"><dt>Ажил</dt><dd className="tnum">{tasks[0]}<small>/ {tasks[1]}</small></dd></div>
           <div className="rings__row rings--focus"><dt>Төвлөрөл</dt><dd className="tnum">{dec(focusMin / 60)}<small>/ {FOCUS_GOAL / 60} цаг</small></dd></div>
-          <div className="rings__row rings--meet"><dt>Уулзалт</dt><dd className="tnum">{meetings[0]}<small>/ {meetings[1]}</small></dd></div>
+          <div className="rings__row rings--meet"><dt>Тов</dt><dd className="tnum">{meetings[0]}<small>/ {meetings[1]}</small></dd></div>
         </dl>
       </div>
     </section>
@@ -125,10 +125,10 @@ function UpNext() {
   return (
     <section className="card glass w-next" aria-labelledby="next-t" data-enter>
       <div className="card__head">
-        <h2 className="card__title" id="next-t">Дараагийн уулзалт</h2>
+        <h2 className="card__title" id="next-t">Дараагийн тов</h2>
         <button type="button" className="btn btn--ghost btn--sm" onClick={() => go('calendar')}>Хуанли</button>
       </div>
-      {!next ? <p className="tp-none">Ойрын үед уулзалт алга.</p> : (
+      {!next ? <p className="tp-none">Ойрын үед тов алга.</p> : (
         <div className="next-wrap">
           <button type="button" className={`next hue--${eventHue(next, sc)}`} onClick={() => open({ kind: 'event', id: next.id })}>
             <span className="next__when">
@@ -138,7 +138,7 @@ function UpNext() {
             <span className="next__meta tnum">{hm(parse(next.start))}–{hm(eventEnd(next))}{next.where ? `, ${next.where}` : ''}</span>
             <span className="next__foot">
               <AvatarStack people={next.attendees.map(id => sc.person(id)).filter(x => x !== undefined)} max={4} size="sm" />
-              <span className="btn btn--accent btn--sm" aria-hidden="true">Дэлгэрэнгүй</span>
+              <span className="btn btn--accent btn--sm" aria-hidden="true">Дэлгэрэнгүй харах</span>
             </span>
           </button>
           {rest.length > 0 && (
@@ -183,7 +183,7 @@ function FocusCard() {
   return (
     <section className="card glass w-focus" aria-labelledby="focus-t" data-enter>
       <div className="card__head">
-        <div><h2 className="card__title" id="focus-t">Төвлөрөл</h2><p className="card__sub">Цаг нь дээд талд харагдана</p></div>
+        <div><h2 className="card__title" id="focus-t">Төвлөрөх цаг</h2><p className="card__sub">Цаг нь дээд талд харагдана</p></div>
         {!running && <Seg small label="Төвлөрөх хугацаа" value={len} onChange={setLen} options={['15', '25', '50'].map(v => ({ value: v, label: `${v} мин` }))} />}
       </div>
       <div className={`focus${f.status === 'running' ? ' is-running' : f.status === 'paused' ? ' is-paused' : ''}`}>
@@ -202,7 +202,7 @@ function FocusCard() {
             {!running ? (
               <>
                 <label className="focus__pick">
-                  <span className="focus__label">Юун дээр төвлөрөх вэ</span>
+                  <span className="focus__label">Төвлөрөх ажил</span>
                   <select value={task} onChange={e => setTask(e.target.value)}>
                     <option value="">Ажил сонгохгүй</option>
                     {open_.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
@@ -210,7 +210,7 @@ function FocusCard() {
                 </label>
                 <button type="button" className="btn btn--accent focus__go" onClick={() => focus.start(Number(len), task || undefined)}>
                   <Play className="ico" />
-                  Төвлөрч эхлэх
+                  Эхлүүлэх
                 </button>
               </>
             ) : (
@@ -262,8 +262,8 @@ function MyTasks() {
   return (
     <section className="card glass w-tasks" aria-labelledby="mt-t" data-enter>
       <div className="card__head">
-        <div><h2 className="card__title" id="mt-t">Миний ажлууд</h2><p className="card__sub">Өнөөдрийн болон хоцорсон</p></div>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={() => go('tasks')}>Бүх ажил</button>
+        <div><h2 className="card__title" id="mt-t">Миний ажил</h2><p className="card__sub">Өнөөдрийн болон хоцорсон</p></div>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => go('tasks')}>Бүгдийг харах</button>
       </div>
       {tasks.length === 0 ? <p className="tp-none">Өнөөдөр хийх ажил алга.</p> : (
         <div className="mytasks" ref={list}>
@@ -305,7 +305,7 @@ function ThisWeek() {
   return (
     <section className="card glass w-week" aria-labelledby="wk-t" data-enter>
       <div className="card__head">
-        <div><h2 className="card__title" id="wk-t">Энэ долоо хоног</h2><p className="card__sub">Багийн дуусгасан ажил</p></div>
+        <div><h2 className="card__title" id="wk-t">Энэ долоо хоног</h2><p className="card__sub">Багийн дууссан ажил</p></div>
         <button type="button" className="ibtn ibtn--sm" onClick={() => go('insights')} aria-label="Тайлан руу очих"><ArrowUpRight className="ico" /></button>
       </div>
       <p className="week__sum">
@@ -326,7 +326,7 @@ function HomeProjects() {
   return (
     <section className="card glass w-projects" aria-labelledby="hp-t" data-enter>
       <div className="card__head">
-        <h2 className="card__title" id="hp-t">Төслүүд</h2>
+        <h2 className="card__title" id="hp-t">Төсөл</h2>
         <button type="button" className="btn btn--ghost btn--sm" onClick={() => go('projects')}>Бүгдийг харах</button>
       </div>
       <ul className="hprojects">

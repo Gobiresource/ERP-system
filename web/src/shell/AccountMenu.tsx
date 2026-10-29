@@ -45,7 +45,7 @@ export function AccountMenu({ variant }: { variant: 'side' | 'toolbar' }) {
         <MenuItem checked={s.settings.theme === 'dark'} onSelect={pick(() => setTheme('dark'))}>Бараан</MenuItem>
         <MenuItem checked={s.settings.theme === 'system'} onSelect={pick(() => setTheme('system'))}>Автомат</MenuItem>
         <hr />
-        <MenuItem danger icon={<RotateCcw className="ico" />} onSelect={pick(() => toast('Жишээ өгөгдлийг сэргээлээ.', { undo: actions.reset() }))}>
+        <MenuItem danger icon={<RotateCcw className="ico" />} onSelect={pick(() => toast('Жишээ өгөгдөл сэргээгдлээ.', { undo: actions.reset() }))}>
           Жишээ өгөгдлийг сэргээх
         </MenuItem>
       </Menu>

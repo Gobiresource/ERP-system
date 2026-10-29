@@ -31,7 +31,7 @@ export function List({ tasks, total }: { tasks: Task[]; total: number }) {
           <p className="card__sub">Нийт {total} ажил байна.</p>
         </div>
         <div className="card__tools">
-          <Seg small label="Эрэмбэлэх" value={sort} onChange={setSort} options={[{ value: 'due', label: 'Хугацаагаар' }, { value: 'prio', label: 'Чухлаар' }]} />
+          <Seg small label="Эрэмбэлэх" value={sort} onChange={setSort} options={[{ value: 'due', label: 'Хугацаагаар' }, { value: 'prio', label: 'Ач холбогдлоор' }]} />
         </div>
       </div>
       <div className="tk-groups">

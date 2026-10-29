@@ -61,9 +61,9 @@ export default function Tasks() {
     <div ref={ref} className="tk">
       <PageHead
         title="Ажил"
-        sub={`${projectCount} төсөлд ${stats.open} нээлттэй ажил байна.`}
+        sub={`${projectCount} төсөлд ${stats.open} дуусаагүй ажил байна.`}
         stats={[
-          { label: 'Нээлттэй', value: stats.open },
+          { label: 'Дуусаагүй', value: stats.open },
           { label: 'Энэ долоо хоногт дуусах', value: stats.week },
           { label: 'Хоцорсон', value: stats.late, alert: stats.late > 0 },
           { label: 'Энэ долоо хоногт дууссан', value: stats.done },
@@ -93,7 +93,7 @@ export default function Tasks() {
           </button>
           <button ref={prioPop.anchor} type="button" className={`tk-chip${prio !== 'all' ? ' is-on' : ''}`} aria-haspopup="menu" aria-expanded={prioPop.open} onClick={prioPop.toggle}>
             <Flag className="ico" />
-            {prio === 'all' ? 'Бүх зэрэглэл' : PRIO[prio]}
+            {prio === 'all' ? 'Бүх ач холбогдол' : PRIO[prio]}
             <ChevronDown className="ico caret" />
           </button>
         </div>
@@ -118,14 +118,14 @@ export default function Tasks() {
               <span className="row" style={{ gap: 10 }}>
                 <span className={`tk-hue${p.hue ? ` hue--${p.hue}` : p.id === 'all' ? ' tk-hue--all' : ' hue--blue'}`} aria-hidden="true" />
                 {p.name}
-                <small className="muted tnum" style={{ marginLeft: 6 }}>{n} нээлттэй</small>
+                <small className="muted tnum" style={{ marginLeft: 6 }}>{n} дуусаагүй</small>
               </span>
             </MenuItem>
           )
         })}
       </Menu>
-      <Menu state={prioPop} label="Чухал байдлаар шүүх" placement="bottom-start">
-        <MenuItem checked={prio === 'all'} onSelect={() => { prioPop.close(); setPrio('all') }}>Бүх зэрэглэл</MenuItem>
+      <Menu state={prioPop} label="Ач холбогдлоор шүүх" placement="bottom-start">
+        <MenuItem checked={prio === 'all'} onSelect={() => { prioPop.close(); setPrio('all') }}>Бүх ач холбогдол</MenuItem>
         {(['urgent', 'high', 'medium', 'low'] as Priority[]).map(p => (
           <MenuItem key={p} checked={prio === p} onSelect={() => { prioPop.close(); setPrio(p) }}>{PRIO[p]}</MenuItem>
         ))}

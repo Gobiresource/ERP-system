@@ -63,9 +63,9 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
   - Өнгө → Enter. «Interactions data»-г асаалгүй [ ] үлдээнэ (Enter нь асааж, унтраадаг). Down → Right-аар «Done» → Enter. «Trust this folder» → Enter.
   - `$S/agy/agy models`-оор шалгана. `/config`-д «Enable Telemetry» ба «Use AI Credits» унтраастай байгааг шалгана.
   - Токен `~/.gemini/antigravity-cli/antigravity-oauth-token`-д хадгалагдана. Түүнийг хэвлэхгүй, repo-д хийхгүй.
-- **Ашиглах.** Хоосон `$S/agy-run`-аас ажиллуулна. Prompt-ын эхэнд "Do NOT use run_command. Do not read or write any files." гэж бичнэ. Нэг хариу 2–4 минут болно.
+- **Ашиглах.** Хоосон `$S/agy-run`-аас ажиллуулна. Prompt-ын эхэнд "Do NOT use run_command. Do not read or write any files." гэж бичнэ. 60–95 мөртэй багц 3.5–4.5 минут болно. Багцуудыг зэрэг биш, дараалан ажиллуулна. Хариу файлыг agy дуусахаас өмнө уншихгүй, хагас бичигдсэн байдаг.
   ```bash
-  cd $S/agy-run && $S/agy/agy -p "$(cat $S/prompts/batchN.txt)" --print-timeout 280s > $S/prompts/batchN.out
+  cd $S/agy-run && $S/agy/agy -p "$(cat $S/prompts/batchN.txt)" --print-timeout 330s > $S/prompts/batchN.out
   ```
 - **Загвар.** CLI-ийн анхдагч загвар Gemini 3.8 Flash (High). Хэрэглэгчийн хүссэн Argon 4, мөн 3.1 Pro зөвхөн Gemini апп-д байгаа, CLI-д алга (2026-10-29). `agy models`-д шинэ загвар гарвал `--model`-оор сонгоно.
 - **Зураг, дуу.** Зураг (Imagen 3, 1024²): `agy -p "Do NOT use run_command. Use your image-generator subagent to create ONE image: …" --mode accept-edits --print-timeout 380s`. Зураг `~/.gemini/antigravity-cli/brain/<яриа>/`-д гарна. Видеоны дууг сонсгохдоо файлыг `$S/agy-run`-д хуулж, `read_file`-аар уншуулна. Veo видео CLI-д алга.

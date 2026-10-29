@@ -29,7 +29,7 @@ export function moveTask(t: Task, status: TaskStatus, before?: string) {
     actions.moveTask(t.id, t.status, after)
     if (t.doneAt) actions.updateTask(t.id, { doneAt: t.doneAt })
   }
-  toast(status === 'done' ? `Дууссан: ${t.title}` : `Шилжүүллээ: ${STATUS[status]}`, { undo })
+  toast(status === 'done' ? `${t.title} дууслаа.` : `${STATUS[status]} төлөвт шилжлээ.`, { undo })
 }
 
 /**
