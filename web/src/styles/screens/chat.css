@@ -89,18 +89,21 @@
   background: var(--glass-solid); box-shadow: 0 0 0 1px var(--sep), 0 2px 6px -2px rgb(10 20 60 / .18); font-size: 14px;
 }
 .creact .tnum { font-size: 12px; font-weight: 650; color: var(--text-2); }
-.creact[aria-pressed="true"] { background: var(--accent-soft); box-shadow: 0 0 0 1.5px var(--accent-ink); }
 .creact:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
 .cacts {
   display: flex; flex-wrap: wrap; align-items: center; gap: 2px; max-width: 100%; padding: 4px; border-radius: 22px;
   background: var(--glass-solid); box-shadow: 0 0 0 1px var(--sep), 0 14px 32px -14px rgb(10 20 60 / .35);
 }
-.cacts__emoji { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; font-size: 21px; line-height: 1; }
-.cacts__emoji[aria-pressed="true"] { background: var(--accent-soft); }
-.cacts__btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 999px; color: var(--text); font: 600 13.5px/1 var(--font); }
-.cacts__btn .ico { width: 17px; height: 17px; }
-.cacts__btn.is-danger, .cacts__btn.is-danger .ico { color: var(--bad-ink); }
-@media (hover: hover) { .cacts__emoji:hover, .cacts__btn:hover { background: var(--fill-hover); } }
+/* An emoji grows a little under the pointer and gives on a press; no ring stays around it (the user's call, 2026-10-29) */
+.cacts__emoji { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; font-size: 21px; line-height: 1; transition: transform .15s var(--ease); }
+@media (hover: hover) { .cacts__emoji:hover { transform: scale(1.22); } }
+.cacts__emoji:active { transform: scale(.9); }
+@media (prefers-reduced-motion: reduce) { .cacts__emoji { transition: none; } }
+.cacts__sep { width: 1px; height: 22px; margin: 0 4px; background: var(--sep); }
+.cacts__icon { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 38px; padding: 0 8px; border-radius: 999px; color: var(--text-2); }
+.cacts__icon .ico { width: 18px; height: 18px; }
+.cacts__icon.is-danger { color: var(--bad-ink); }
+@media (hover: hover) { .cacts__icon:hover { background: var(--fill-hover); } }
 .cacts button:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: -2px; }
 /* Under my newest message: sent, or read and by whom */
 .cseen { display: inline-flex; align-self: flex-end; align-items: center; gap: 5px; min-height: 24px; margin-top: 2px; padding: 0 4px; border-radius: 8px; color: var(--text-2); font: 600 12px/1 var(--font); }

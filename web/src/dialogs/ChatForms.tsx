@@ -7,6 +7,7 @@ import { close, toast } from '../lib/ui'
 import { go } from '../lib/router'
 import { collator, short } from '../lib/format'
 import { FOLDER_HUES } from '../lib/docs'
+import { readers } from '../lib/chat'
 import { Sheet } from '../ui/Sheet'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 import { PeoplePick } from '../ui/PeoplePick'
@@ -93,8 +94,7 @@ export function Readers({ id }: { id: Id }) {
   const m = s.messages.find(x => x.id === id)
   const chat = s.chats.find(c => c.id === m?.chat)
   if (!m || !chat) return null
-  const others = s.people.filter(p => p.id !== s.me && chat.members.includes(p.id)).sort((a, b) => collator.compare(a.given, b.given))
-  const read = others.filter(p => (chat.read[p.id] ?? '') >= m.at)
+  const { others, read } = readers(chat, m, [...s.people].sort((a, b) => collator.compare(a.given, b.given)), s.me)
   const list = (title: string, people: Person[]) => people.length > 0 && (
     <section className="creaders">
       <h3>{title} <span className="tnum">{people.length}</span></h3>

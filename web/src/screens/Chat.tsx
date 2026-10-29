@@ -7,7 +7,7 @@ import '../styles/screens/chat.css'
 import type { BoardFile, Chat, ChatRef, Id, Message, State } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { open, toast } from '../lib/ui'
-import { chatName, myChats, unread } from '../lib/chat'
+import { chatName, myChats, readers, unread } from '../lib/chat'
 import { DOC_KIND, seen } from '../lib/docs'
 import { collator, dueLabel, hm, parse, short, today, ymd } from '../lib/format'
 import { getFile, putFile, saveBlob, useFileUrl } from '../lib/files'
@@ -187,6 +187,8 @@ function Bubble({ m, first, group, fresh, on, toggle }: { m: Message; first: boo
   useLayoutEffect(() => { if (on) acts.current?.scrollIntoView({ block: 'nearest' }) }, [on])
   const mine = m.by === s.me
   const by = s.people.find(p => p.id === m.by)
+  const chat = s.chats.find(c => c.id === m.chat)
+  const read = mine && chat ? readers(chat, m, s.people, s.me).read : []
   const name = (id: Id) => {
     if (id === s.me) return 'Та'
     const p = s.people.find(x => x.id === id)
@@ -263,8 +265,12 @@ function Bubble({ m, first, group, fresh, on, toggle }: { m: Message; first: boo
           ))}
           {mine && (
             <>
-              <button type="button" className="cacts__btn" onClick={() => { toggle(); open({ kind: 'readers', id: m.id }) }}><CheckCheck className="ico" />Хэн уншсаныг харах</button>
-              <button type="button" className="cacts__btn is-danger" onClick={recall}><Trash2 className="ico" />Бүгдээс устгах</button>
+              <span className="cacts__sep" aria-hidden="true" />
+              {/* Who has read it: their faces (a tick while nobody has); the list opens on a press */}
+              <button type="button" className="cacts__icon" aria-label="Хэн уншсан" title="Хэн уншсан" onClick={() => { toggle(); open({ kind: 'readers', id: m.id }) }}>
+                {read.length ? <AvatarStack people={read} max={3} size="xs" /> : <Check className="ico" />}
+              </button>
+              <button type="button" className="cacts__icon is-danger" aria-label="Бүгдээс устгах" title="Бүгдээс устгах" onClick={recall}><Trash2 className="ico" /></button>
             </>
           )}
         </div>
@@ -276,8 +282,7 @@ function Bubble({ m, first, group, fresh, on, toggle }: { m: Message; first: boo
 /** Under my newest message: whether it has been read; in a group, by how many and whom */
 function Seen({ chat, m }: { chat: Chat; m: Message }) {
   const s = useApp()
-  const others = s.people.filter(p => p.id !== s.me && chat.members.includes(p.id))
-  const read = others.filter(p => (chat.read[p.id] ?? '') >= m.at)
+  const { others, read } = readers(chat, m, s.people, s.me)
   const Icon = read.length ? CheckCheck : Check
   const text = !read.length ? 'Илгээсэн' : chat.kind === 'direct' ? 'Уншсан' : read.length === others.length ? 'Бүгд уншсан' : `${read.length} хүн уншсан`
   if (chat.kind === 'direct') return <p className="cseen"><Icon className="ico" />{text}</p>

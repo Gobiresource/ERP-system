@@ -13,6 +13,12 @@ export function chatName(c: Chat, people: Person[], me: string) {
 export const unread = (c: Chat, messages: Message[], me: string) =>
   messages.filter(m => m.chat === c.id && m.by !== me && m.at > (c.read[me] ?? '')).length
 
+/** The others in the chat, and those of them who have read a message (they opened the chat after it came) */
+export function readers(c: Chat, m: Message, people: Person[], me: string) {
+  const others = people.filter(p => p.id !== me && c.members.includes(p.id))
+  return { others, read: others.filter(p => (c.read[p.id] ?? '') >= m.at) }
+}
+
 /** The chats I am in, the one with the latest message first */
 export function myChats(s: Pick<State, 'chats' | 'messages' | 'me'>) {
   const last = new Map<string, string>()
