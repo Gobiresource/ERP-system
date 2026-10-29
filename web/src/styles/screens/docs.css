@@ -196,9 +196,11 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
   .player__wait { animation: none; }
 }
 
-/* Folders (src/screens/docs/Folders.tsx): the user's own glass folder (glass-folder.zip). The picture is one SVG; name,
-   count and marks sit on it in white. Pointing at a folder or focusing it lifts it and its papers (--up 0 → 1). */
-.folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 26px 22px; padding-top: 6px; }
+/* Company folders (src/screens/docs/Folders.tsx): the user's own glass folder (glass-folder.zip), one for each ХХК. The
+   picture is one SVG; name, counts and marks sit on it in white. Pointing at a folder or focusing it lifts it and its papers
+   (--up 0 → 1). */
+/* align-items: a folder keeps its own height, so its gear stays on it when the next tile in the row is taller */
+.folders { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); align-items: start; gap: 26px 22px; padding-top: 6px; }
 .folder { --up: 0; position: relative; container-type: inline-size; }
 @media (hover: hover) { .folder:hover { --up: 1; } }
 .folder:has(.folder__open:focus-visible) { --up: 1; }
@@ -213,24 +215,34 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 .fsheet--2 { transform: translateY(calc(var(--up) * -16px)); }
 .fsheet--3 { transform: translateY(calc(var(--up) * -24px)); }
 .folder__label {
-  position: absolute; right: calc(7% + 36px); bottom: 7%; left: 7%; display: grid; gap: 3px;
+  position: absolute; right: 7%; bottom: 7%; left: 7%; display: grid; gap: 3px;
   color: #fff; text-shadow: 0 1px 10px rgb(0 0 0 / .18); pointer-events: none;
 }
 .folder__name {
-  display: -webkit-box; overflow: hidden; font-size: clamp(16px, 9cqi, 24px); font-weight: 700; line-height: 1.15; letter-spacing: -.01em;
+  display: -webkit-box; overflow: hidden; font-size: clamp(16px, 10cqi, 24px); font-weight: 700; line-height: 1.15; letter-spacing: -.01em;
   -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: balance;
 }
-.folder__meta { font-size: clamp(12px, 5.2cqi, 13.5px); font-weight: 560; }
+/* Counts as whole parts, clear of the gear: on a narrow folder the second one goes to the next line */
+.folder__meta { display: flex; flex-wrap: wrap; column-gap: .3em; margin-right: 32px; font-size: 12px; font-weight: 500; line-height: 1.35; opacity: .9; }
+.folder__meta span:not(:last-child)::after { content: " ·"; }
 .fchip {
   position: absolute; top: 6%; left: 6%; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 7px;
   border-radius: 999px; background: rgb(225 29 72 / .92); color: #fff; font: 650 12px/1.2 var(--font); font-variant-numeric: tabular-nums;
   box-shadow: 0 4px 10px rgb(0 0 0 / .15); pointer-events: none;
 }
 .fchip .ico { width: 13px; height: 13px; }
+/* The company I am working in */
+.fcur {
+  position: absolute; top: 6%; right: 6%; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px 2px 7px;
+  border: 1px solid rgb(255 255 255 / .4); border-radius: 999px; background: rgb(255 255 255 / .25); color: #fff;
+  font: 650 12px/1.2 var(--font); box-shadow: 0 1px 2px rgb(0 0 0 / .06); backdrop-filter: blur(6px); pointer-events: none;
+}
+.fcur .ico { width: 13px; height: 13px; }
 .folder__open { position: absolute; inset: 0; z-index: 1; border-radius: 9.5% / 10.1%; }
 .folder__open:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 4px; }
+/* On the counts' line, as in the user's design, so a name may run the folder's full width above it */
 .folder__edit {
-  position: absolute; right: 5%; bottom: 6%; z-index: 2; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  position: absolute; right: calc(7% - 8px); bottom: calc(7% - 11px); z-index: 2; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
   color: #fff; transform: translateY(calc(var(--up) * -6px)); transition: transform .5s var(--ease), background .2s;
 }
 .folder__edit:hover { background: rgb(255 255 255 / .2); }
@@ -251,17 +263,26 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 .folder-add small { font-size: 13px; }
 @media (width <= 600px) {
   .folders { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
-  .folder__label { right: calc(7% + 30px); }
-  .folder__edit { width: 32px; height: 32px; }
+  .folder__meta { margin-right: 26px; }
+  .folder__edit { right: calc(7% - 6.5px); bottom: calc(7% - 8px); width: 32px; height: 32px; }
   .folder__edit .ico { width: 19px; height: 19px; }
   .fchip { padding: 2px 7px 2px 6px; font-size: 11px; }
   .folder-add__plus { width: 44px; height: 44px; }
-  .folder-add small { display: none; }
+  .folder-add small { font-size: 12px; }
 }
+/* The narrowest phones: one folder a row, as in the user's own page, so the marks and the name have room */
+@media (width <= 360px) { .folders { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .folder { --up: 0 !important; } }
 
-/* Documents by kind, a filter under the search */
+/* A company folder's categories (the kinds of document): links under the folders, a filter on the folder's page */
 .dkinds { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 var(--gap); }
+/* Under the folders, as in the user's design: the current company's folder and its categories */
+.dcats { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; margin-top: calc(var(--gap) + 8px); }
+.dcats__who { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.dcats__art { flex: none; width: 48px; }
+.dcats__name { font-size: 16px; font-weight: 600; line-height: 1.3; }
+.dcats__sub { font-size: 13px; color: var(--text-2); }
+.dcats__list { display: flex; flex-wrap: wrap; gap: 8px; }
 .kchip {
   display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 12px; border-radius: 999px;
   background: var(--glass-solid); box-shadow: inset 0 0 0 1px var(--sep); color: var(--text); font: 600 14px/1 var(--font);
@@ -304,16 +325,7 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 }
 .dpaper__dl { position: absolute; right: 10px; bottom: 10px; color: var(--text-2); }
 
-/* Moving a document to another folder, in its window */
-.dview__move { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; font-size: 14px; font-weight: 600; color: var(--text-2); }
-.dview__move select {
-  min-height: 40px; max-width: 16em; padding: 0 36px 0 14px; border: 0; border-radius: 999px; appearance: none;
-  background: var(--fill) linear-gradient(45deg, transparent 50%, currentColor 50%) calc(100% - 20px) 50% / 5px 5px no-repeat;
-  color: var(--text); font: 560 14.5px/1 var(--font);
-}
-.dview__move select:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
-
-/* A folder's colour */
+/* A company folder's colour */
 .swatches { display: flex; flex-wrap: wrap; gap: 12px; }
 .swatch { position: relative; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
 .swatch input { position: absolute; opacity: 0; pointer-events: none; }

@@ -88,6 +88,8 @@ export const clock = (sec: number) => `${pad(Math.floor(Math.max(0, sec) / 60))}
 export const short = (p: { given: string; family: string }) => `${p.family.charAt(0)}.${p.given}`
 /** Initials for avatars: БӨ */
 export const initials = (p: { given: string; family: string }) => (p.family.charAt(0) + p.given.charAt(0)).toUpperCase()
+/** ГР for "Говь Ресурс ХХК": the company's mark, and the start of its employee codes */
+export const companyMark = (name: string) => name.replace(/\s*ХХК$/i, '').split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase()
 
 /** Sorts Mongolian text correctly (Ө after О, Ү after У) */
 export const collator = new Intl.Collator('mn')

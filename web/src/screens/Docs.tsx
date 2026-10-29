@@ -1,5 +1,5 @@
-// Бичиг хэрэг: folders the office makes for documents (an employee's own, rules, forms, templates), requests to the office
-// for a document, and the PDF tool (docs/decisions.md, 2026-10-29). One ХХК at a time, like the rest of the app.
+// Бичиг хэрэг: a folder for each ХХК with its documents by category (an employee's own, rules, forms, templates), requests
+// to the office for a document, and the PDF tool (docs/decisions.md, 2026-10-29).
 import { BookOpenText, ClipboardList, FileCheck, FilePen, FileText, Mail, ScrollText, Stamp } from 'lucide-react'
 import '../styles/screens/docs.css'
 import type { DocKind, DocRequest } from '../lib/types'

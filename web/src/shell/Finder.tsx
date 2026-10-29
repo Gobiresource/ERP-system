@@ -86,9 +86,9 @@ function FinderDialog() {
     add(s.drafts.filter(d => d.company === s.company && d.owner === s.me && has(d.name, ...d.cards.map(c => c.text ?? c.file?.name))).map(d => ({
       id: d.id, group: 'Ноорог', title: d.name, sub: `${d.cards.length} зүйл`, lead: <span className="lead"><NotebookPen className="ico" /></span>, run: () => go('draft', d.id),
     })))
-    // Бичиг хэрэг: its folders, and the documents I can see
-    add(s.folders.filter(f => f.company === s.company && has(f.name)).map(f => ({
-      id: f.id, group: 'Хавтас', title: f.name, sub: 'Бичиг хэрэг', lead: <span className="lead"><FolderOpen className="ico" /></span>, run: () => go('docs', `folder-${f.id}`),
+    // Бичиг хэрэг: the folder of each company I work in, and the documents I can see
+    add(s.companies.filter(c => sc.me.companies.includes(c.id) && has(c.name)).map(c => ({
+      id: `folder-${c.id}`, group: 'Хавтас', title: c.name, sub: 'Бичиг хэрэг', lead: <span className="lead"><FolderOpen className="ico" /></span>, run: () => go('docs', `folder-${c.id}`),
     })))
     add(s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name)).map(d => ({
       id: d.id, group: 'Бичиг баримт', title: d.name, sub: DOC_KIND[d.kind], lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),

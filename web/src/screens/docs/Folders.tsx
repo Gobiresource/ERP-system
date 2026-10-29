@@ -1,13 +1,13 @@
-// Бичиг хэрэг, first page: the office's folders, documents by kind, how my requests are going, and a search across every
-// document I can see (docs/decisions.md, 2026-10-29). The folder is the user's own glass folder from their earlier HR
-// system (glass-folder.zip, learned.md §18), redrawn here without Tailwind.
+// Бичиг хэрэг, first page: a glass folder for each ХХК I work in, the current company's categories, how my requests are
+// going, and a search in the current company's documents (docs/decisions.md, 2026-10-29). Folders and page follow the
+// user's own design from their earlier HR system (glass-folder.zip, learned.md §19), redrawn here without Tailwind.
 import { useMemo, useRef, useState, type CSSProperties } from 'react'
-import { Bell, FolderPlus, Search, Send, Settings } from 'lucide-react'
-import type { DocKind, Folder, Hue } from '../../lib/types'
-import { useApp } from '../../lib/store'
+import { Bell, Check, FolderPlus, Search, Send, Settings } from 'lucide-react'
+import type { Company, Doc, Hue } from '../../lib/types'
+import { scoped, useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, seen } from '../../lib/docs'
+import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, isOpen, seen } from '../../lib/docs'
 import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
 import { DocsNav, KIND_ICON } from '../Docs'
@@ -20,45 +20,30 @@ export default function Folders() {
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
   const [q, setQ] = useState('')
-  const [kind, setKind] = useState<DocKind | null>(null)
-  const folders = s.folders.filter(f => f.company === s.company)
-  const mine = useMemo(
-    () => s.docs.filter(d => d.company === s.company && seen(d, s.me)).sort((a, b) => b.added.localeCompare(a.added)),
-    [s.docs, s.company, s.me],
-  )
-  const kinds = DOC_KINDS.map(k => [k, mine.filter(d => d.kind === k).length] as const).filter(([, n]) => n > 0)
+  const me = scoped(s).me
+  const companies = s.companies.filter(c => me.companies.includes(c.id))
+  const current = s.companies.find(c => c.id === s.company)!
+  const mine = useMemo(() => s.docs.filter(d => seen(d, s.me)).sort((a, b) => b.added.localeCompare(a.added)), [s.docs, s.me])
+  const here = mine.filter(d => d.company === s.company)
   const t = lower(q.trim())
-  const found = mine.filter(d => (!t || lower(d.name).includes(t)) && (!kind || d.kind === kind))
+  const found = here.filter(d => lower(d.name).includes(t))
 
   return (
     <div ref={ref}>
       <DocsNav at="" />
       <PageHead
         title="Бичиг хэрэг"
-        sub="Бичиг хэргийн хавтас: танд хамаарах бичиг баримт, журам, маягт. Хэрэгтэй бичиг баримтаа бичиг хэргээс хүсэж болно."
+        sub="Компани бүр өөрийн хавтастай. Хавтас дээр дарж гэрээ, тушаал, журам, маягтаа нээнэ."
         actions={<button type="button" className="btn btn--accent" onClick={() => open({ kind: 'docRequest' })}><Send className="ico" />Бичиг баримт хүсэх</button>}
       />
       <DocSearch q={q} setQ={setQ} />
-      {/* Documents by kind, from every folder: a filter, so it sits above what it filters */}
-      {kinds.length > 0 && (
-        <div className="dkinds" role="group" aria-label="Төрөл" data-enter>
-          {kinds.map(([k, n]) => {
-            const Icon = KIND_ICON[k]
-            return (
-              <button key={k} type="button" className="kchip" aria-pressed={kind === k} onClick={() => setKind(kind === k ? null : k)}>
-                <Icon className="ico" />{DOC_KIND[k]}<span className="kchip__n tnum">{n}</span>
-              </button>
-            )
-          })}
-        </div>
-      )}
 
-      {t || kind ? (
+      {t ? (
         <section className="card glass dgroup" aria-labelledby="dg-found" data-enter>
           <div className="card__head">
             <div>
-              <h2 className="card__title" id="dg-found">{kind && !t ? DOC_KIND[kind] : 'Илэрц'}</h2>
-              <p className="card__sub">Бүх хавтаснаас</p>
+              <h2 className="card__title" id="dg-found">Илэрц</h2>
+              <p className="card__sub">{current.name}</p>
             </div>
           </div>
           {found.length ? (
@@ -68,45 +53,85 @@ export default function Folders() {
           )}
         </section>
       ) : (
-        <ul className="folders" aria-label="Хавтас" data-enter>
-          {folders.map(f => {
-            const docs = mine.filter(d => d.folder === f.id)
-            return <FolderCard key={f.id} f={f} count={docs.length} fresh={docs.filter(isNew).length} />
-          })}
-          <li>
-            <button type="button" className="folder-add" onClick={() => open({ kind: 'folder' })}>
-              <span className="folder-add__plus" aria-hidden="true"><FolderPlus className="ico" /></span>
-              <b>Хавтас үүсгэх</b>
-              <small>Бичиг баримтаа ангилж хадгална</small>
-            </button>
-          </li>
-        </ul>
+        <>
+          <ul className="folders" aria-label="Компанийн хавтас" data-enter>
+            {companies.map(c => (
+              <CompanyFolder
+                key={c.id}
+                c={c}
+                docs={mine.filter(d => d.company === c.id)}
+                asked={s.requests.filter(r => r.company === c.id && r.by === s.me && isOpen(r)).length}
+                current={c.id === s.company}
+              />
+            ))}
+            <li>
+              <button type="button" className="folder-add" onClick={() => open({ kind: 'company' })}>
+                <span className="folder-add__plus" aria-hidden="true"><FolderPlus className="ico" /></span>
+                <b>Компани нэмэх</b>
+                <small>Хавтас нь автоматаар үүснэ</small>
+              </button>
+            </li>
+          </ul>
+          <Categories c={current} docs={here} />
+        </>
       )}
       <RequestsCard />
     </div>
   )
 }
 
-/** A folder: the picture, its name and count in white on the glass, a red mark for new documents, a gear to edit it */
-function FolderCard({ f, count, fresh }: { f: Folder; count: number; fresh: number }) {
-  const meta = count ? `${count} бичиг баримт` : 'Хоосон'
+/**
+ * A company's folder: the picture, its name and counts in white on the glass, a red mark for new documents, "Одоогийн" on
+ * the company I am working in, and a gear to change its name and colour
+ */
+function CompanyFolder({ c, docs, asked, current }: { c: Company; docs: Doc[]; asked: number; current: boolean }) {
+  const fresh = docs.filter(isNew).length
+  const parts = [docs.length ? `${docs.length} бичиг баримт` : 'Хоосон', asked ? `${asked} хүсэлт явцад` : ''].filter(Boolean)
   return (
-    <li className="folder" style={{ '--to': FOLDER_COLORS[f.hue][1] } as CSSProperties}>
+    <li className="folder" style={{ '--to': FOLDER_COLORS[c.hue][1] } as CSSProperties}>
       <span className="folder__card">
-        <FolderArt id={`fa-${f.id}`} hue={f.hue} />
+        <FolderArt id={`fa-${c.id}`} hue={c.hue} />
         {fresh > 0 && <span className="fchip" aria-hidden="true"><Bell className="ico" />{fresh}</span>}
+        {current && <span className="fcur" aria-hidden="true"><Check className="ico" />Одоогийн</span>}
         <span className="folder__label" aria-hidden="true">
-          <b className="folder__name">{f.name}</b>
-          <small className="folder__meta">{meta}</small>
+          <b className="folder__name">{c.name}</b>
+          <small className="folder__meta">{parts.map(p => <span key={p}>{p}</span>)}</small>
         </span>
       </span>
-      <a className="folder__open" href={`#docs-folder-${f.id}`}>
-        <span className="sr-only">{f.name}, {meta}{fresh ? `, ${fresh} нь шинэ` : ''}</span>
+      <a className="folder__open" href={`#docs-folder-${c.id}`}>
+        <span className="sr-only">{[c.name, ...parts, fresh ? `${fresh} нь шинэ` : '', current ? 'одоогийн компани' : ''].filter(Boolean).join(', ')}</span>
       </a>
-      <button type="button" className="folder__edit" aria-label={`${f.name}: хавтас засах`} title="Хавтас засах" onClick={() => open({ kind: 'folder', id: f.id })}>
+      <button type="button" className="folder__edit" aria-label={`${c.name}: хавтас засах`} title="Хавтас засах" onClick={() => open({ kind: 'company', id: c.id })}>
         <Settings className="ico" />
       </button>
     </li>
+  )
+}
+
+/** Under the folders, as in the user's design: the current company's folder by category, each opening it at that kind */
+function Categories({ c, docs }: { c: Company; docs: Doc[] }) {
+  const kinds = DOC_KINDS.map(k => [k, docs.filter(d => d.kind === k).length] as const).filter(([, n]) => n > 0)
+  if (!kinds.length) return null
+  return (
+    <section className="card glass dcats" aria-labelledby="dcats-name" data-enter>
+      <div className="dcats__who">
+        <span className="dcats__art" aria-hidden="true"><FolderArt id={`fc-${c.id}`} hue={c.hue} /></span>
+        <div>
+          <h2 className="dcats__name" id="dcats-name">{c.name}</h2>
+          <p className="dcats__sub">Одоогийн хавтасны ангиллууд</p>
+        </div>
+      </div>
+      <ul className="dcats__list">
+        {kinds.map(([k, n]) => {
+          const Icon = KIND_ICON[k]
+          return (
+            <li key={k}>
+              <a className="kchip" href={`#docs-folder-${c.id}-${k}`}><Icon className="ico" />{DOC_KIND[k]}<span className="kchip__n tnum">{n}</span></a>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
 
@@ -147,21 +172,15 @@ function Papers({ id }: { id: string }) {
  * it, cut to the front's shape, under a white veil. `id` must differ for each folder on a page (the SVG's ids).
  */
 export function FolderArt({ id, hue }: { id: string; hue: Hue }) {
-  const [from, to, deep] = FOLDER_COLORS[hue]
+  const [from, to] = FOLDER_COLORS[hue]
   return (
     <svg className="folder__art" viewBox="0 0 400 376" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stopColor={from} /><stop offset="1" stopColor={to} /></linearGradient>
         <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff" stopOpacity=".6" />
-          <stop offset=".5" stopColor="#fff" stopOpacity=".28" />
-          <stop offset="1" stopColor="#fff" stopOpacity=".1" />
-        </linearGradient>
-        {/* The glass deepens into the folder's colour under the name, so white text reads on every colour */}
-        <linearGradient id={`${id}-shade`} x1="0" y1="146" x2="0" y2="376" gradientUnits="userSpaceOnUse">
-          <stop offset=".08" stopColor={deep} stopOpacity="0" />
-          <stop offset=".34" stopColor={deep} stopOpacity=".9" />
-          <stop offset="1" stopColor={deep} stopOpacity=".94" />
+          <stop offset=".5" stopColor="#fff" stopOpacity=".32" />
+          <stop offset="1" stopColor="#fff" stopOpacity=".16" />
         </linearGradient>
         <radialGradient id={`${id}-shine`} cx=".2" cy="0" r="1"><stop offset="0" stopColor="#fff" stopOpacity=".35" /><stop offset=".6" stopColor="#fff" stopOpacity="0" /></radialGradient>
         <clipPath id={`${id}-card`}><rect width="400" height="376" rx="38" /></clipPath>
@@ -179,7 +198,6 @@ export function FolderArt({ id, hue }: { id: string; hue: Hue }) {
             <g opacity=".62"><Papers id={id} /></g>
           </g>
           <path d={FRONT} fill={`url(#${id}-glass)`} />
-          <path d={FRONT} fill={`url(#${id}-shade)`} />
         </g>
         <path d={FRONT} fill="none" stroke="#fff" strokeOpacity=".75" strokeWidth="2" />
       </g>

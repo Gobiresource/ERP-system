@@ -4,13 +4,11 @@ import type { Company } from '../lib/types'
 import { actions, useApp } from '../lib/store'
 import { go, parse } from '../lib/router'
 import { toast } from '../lib/ui'
+import { companyMark } from '../lib/format'
 import { Menu, MenuItem, usePopover } from '../ui/Popover'
 
-/** ГР for "Говь Ресурс ХХК" */
-const mark = (c: Company) => c.name.replace(/\s*ХХК$/, '').split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('')
-
 export function CompanyMark({ company }: { company: Company }) {
-  return <span className={`brand__mark hue--${company.hue}`} aria-hidden="true">{mark(company)}</span>
+  return <span className={`brand__mark hue--${company.hue}`} aria-hidden="true">{companyMark(company.name)}</span>
 }
 
 export function CompanySwitcher({ variant }: { variant: 'brand' | 'pill' }) {

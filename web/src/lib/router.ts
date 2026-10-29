@@ -10,7 +10,8 @@ export function parse(hash: string): Route {
   if (h.startsWith('project-')) return { page: 'projects', id: h.slice(8) }
   // Human resources: #hr, #hr-employees, #hr-structure, #hr-new, #hr-<employee>, #hr-<employee>-edit
   if (h.startsWith('hr-')) return { page: 'hr', id: h.slice(3) }
-  // Бичиг хэрэг: #docs, #docs-folder-<folder>, #docs-requests, #docs-pdf, #docs-pdf-<board>-<card> (the PDF tool was at #draft-pdf before)
+  // Бичиг хэрэг: #docs, #docs-folder-<company>, #docs-folder-<company>-<kind>, #docs-requests, #docs-pdf, #docs-pdf-<board>-<card>
+  // (the PDF tool was at #draft-pdf before)
   if (h.startsWith('docs-')) return { page: 'docs', id: h.slice(5) }
   if (h === 'draft-pdf' || h.startsWith('draft-pdf-')) return { page: 'docs', id: h.slice(6) }
   // Ноорог: #draft, #draft-<board>

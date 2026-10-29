@@ -6,7 +6,7 @@ import '../styles/screens/docs.css'
 import type { BoardFile, Doc, DocKind, DocRequest, Hue } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
-import { DOC_HUE, DOC_KIND, DOC_KINDS, FOLDER_COLORS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, folderFor, isOpen, stepsOf } from '../lib/docs'
+import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, isOpen, stepsOf } from '../lib/docs'
 import { docBlob, downloadDoc, requestPdf } from '../lib/paper'
 import { drawPage, viewPdf } from '../lib/pdf'
 import { putFile } from '../lib/files'
@@ -32,7 +32,6 @@ export function DocSheet({ id }: { id: string }) {
 function Viewer({ d }: { d: Doc }) {
   const s = useApp()
   const by = s.people.find(p => p.id === d.by)
-  const folders = s.folders.filter(f => f.company === d.company)
   const [pages, setPages] = useState<string[] | null>(null)
   const [note, setNote] = useState<string | null>(null)
 
@@ -85,24 +84,17 @@ function Viewer({ d }: { d: Doc }) {
       )}
       <div className="dview__actions">
         <button type="button" className="btn btn--accent" onClick={() => downloadDoc(d)}><Download className="ico" />Татах</button>
-        {/* The office moves a document to another folder */}
-        <label className="dview__move">
-          <span>Хавтас</span>
-          <select value={d.folder} onChange={e => { actions.updateDoc(d.id, { folder: e.target.value }); toast('Бичиг баримт зөөгдлөө.') }}>
-            {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </select>
-        </label>
       </div>
     </div>
   )
 }
 
-/** HR and the office add a document to a folder and say who sees it */
-export function DocAdd({ folder }: { folder?: string }) {
+/** HR and the office add a document to a company's folder and say who sees it */
+export function DocAdd({ company }: { company?: string }) {
   const s = useApp()
-  const sc = scoped(s)
-  const folders = s.folders.filter(x => x.company === s.company)
-  const [f, setF] = useState({ name: '', kind: 'form' as DocKind, folder: folder ?? folders[0]?.id ?? '', all: true, people: [] as string[] })
+  const into = company ?? s.company
+  const people = s.people.filter(p => p.companies.includes(into))
+  const [f, setF] = useState({ name: '', kind: 'form' as DocKind, all: true, people: [] as string[] })
   const [file, setFile] = useState<BoardFile | null>(null)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
@@ -133,9 +125,7 @@ export function DocAdd({ folder }: { folder?: string }) {
     if (!f.all && !f.people.length) e['da-to'] = 'Хэнд харагдахыг сонгоно уу.'
     setErrors(e)
     if (Object.keys(e).length) return false
-    // With every folder removed, the first document makes one named after its kind
-    const into = f.folder || actions.addFolder({ name: DOC_KIND[f.kind], hue: DOC_HUE[f.kind] }).id
-    actions.addDoc({ name: f.name.trim(), kind: f.kind, folder: into, file: file!, to: f.all ? 'all' : f.people })
+    actions.addDoc({ name: f.name.trim(), kind: f.kind, company: into, file: file!, to: f.all ? 'all' : f.people })
     toast('Бичиг баримт нэмэгдлээ.')
     return true
   }
@@ -156,13 +146,6 @@ export function DocAdd({ folder }: { folder?: string }) {
       <Field id="da-name" label="Нэр" error={errors['da-name']}>
         <input {...fieldAria('da-name', errors['da-name'])} value={f.name} onChange={e => { setF({ ...f, name: e.target.value }); drop('da-name') }} />
       </Field>
-      {folders.length > 0 && (
-        <Field id="da-folder" label="Хавтас">
-          <select id="da-folder" value={f.folder} onChange={e => setF({ ...f, folder: e.target.value })}>
-            {folders.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select>
-        </Field>
-      )}
       <Field id="da-kind" label="Төрөл">
         <select id="da-kind" value={f.kind} onChange={e => setF({ ...f, kind: e.target.value as DocKind })}>
           {DOC_KINDS.map(k => <option key={k} value={k}>{DOC_KIND[k]}</option>)}
@@ -176,7 +159,7 @@ export function DocAdd({ folder }: { folder?: string }) {
         </div>
         {!f.all && (
           <ul className="dpeople">
-            {sc.people.map(p => (
+            {people.map(p => (
               <li key={p.id}>
                 <label>
                   <input type="checkbox" className="check" checked={f.people.includes(p.id)} onChange={() => toggle(p.id)} />
@@ -307,9 +290,7 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
     try {
       const file = { id: `f${cid()}`, name, type: blob.type || 'application/pdf', size: blob.size }
       await putFile(file.id, blob)
-      const kind = kindOf(r.what)
-      const folder = folderFor(s.folders, s.docs, r.company, kind) ?? actions.addFolder({ name: DOC_KIND[kind], hue: DOC_HUE[kind] })
-      const d = actions.addDoc({ name: r.what, kind, folder: folder.id, file, to: [r.by] })
+      const d = actions.addDoc({ name: r.what, kind: kindOf(r.what), company: r.company, file, to: [r.by] })
       actions.stepRequest(r.id, 'done', { doc: d.id })
       toast('Бичиг баримт илгээгдлээ.')
     } catch {
@@ -402,40 +383,47 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
   )
 }
 
-/** The office makes a folder, or changes one's name and colour */
-export function FolderForm({ id }: { id?: string }) {
+/** A new ХХК, which gets its folder in Бичиг хэрэг; or a company's name and folder colour, from the gear on its folder */
+export function CompanyForm({ id }: { id?: string }) {
   const s = useApp()
-  const old = id ? s.folders.find(x => x.id === id) : undefined
-  const mine = s.folders.filter(x => x.company === s.company && x.id !== id)
-  const [f, setF] = useState<{ name: string; hue: Hue }>({ name: old?.name ?? '', hue: old?.hue ?? FOLDER_HUES[mine.length % FOLDER_HUES.length] })
+  const old = id ? s.companies.find(x => x.id === id) : undefined
+  const others = s.companies.filter(x => x.id !== id)
+  const [f, setF] = useState<{ name: string; hue: Hue }>({ name: old?.name ?? '', hue: old?.hue ?? FOLDER_HUES[others.length % FOLDER_HUES.length] })
   const [errors, setErrors] = useState<Errors>({})
   const submit = () => {
     const name = f.name.trim()
     const e: Errors = {}
-    if (!name) e['fo-name'] = 'Хавтасны нэрийг бичнэ үү.'
-    else if (mine.some(x => x.name.toLocaleLowerCase('mn') === name.toLocaleLowerCase('mn'))) e['fo-name'] = 'Ийм нэртэй хавтас байна. Өөр нэр бичнэ үү.'
+    if (!name) e['co-name'] = 'Компанийн нэрийг бичнэ үү.'
+    else if (others.some(x => x.name.toLocaleLowerCase('mn') === name.toLocaleLowerCase('mn'))) e['co-name'] = 'Ийм нэртэй компани бүртгэлтэй байна. Өөр нэр бичнэ үү.'
     setErrors(e)
     if (Object.keys(e).length) return false
     if (old) {
-      actions.updateFolder(old.id, { name, hue: f.hue })
+      actions.updateCompany(old.id, { name, hue: f.hue })
       toast('Хавтас хадгалагдлаа.')
     } else {
-      actions.addFolder({ name, hue: f.hue })
-      toast('Хавтас үүсгэгдлээ.')
+      actions.addCompany({ name, hue: f.hue })
+      toast('Компани нэмэгдэж, хавтас үүслээ.')
     }
     return true
   }
   return (
-    <FormSheet title={old ? 'Хавтас засах' : 'Хавтас үүсгэх'} sub="Бичиг хэргийн ажилтан хавтас үүсгэж, бичиг баримтаа ангилна." submit={old ? 'Хадгалах' : 'Үүсгэх'} onSubmit={submit} onClose={close} errors={errors}>
-      <Field id="fo-name" label="Нэр" error={errors['fo-name']} wide>
-        <input {...fieldAria('fo-name', errors['fo-name'])} value={f.name} onChange={e => { setF({ ...f, name: e.target.value }); setErrors({}) }} placeholder="Жишээ нь: Тушаал" data-autofocus />
+    <FormSheet
+      title={old ? 'Хавтас засах' : 'Компани нэмэх'}
+      sub={old ? 'Компанийн нэр бүх хэсэгт өөрчлөгдөнө.' : 'Компанийн хавтас автоматаар үүснэ.'}
+      submit={old ? 'Хадгалах' : 'Нэмэх'}
+      onSubmit={submit}
+      onClose={close}
+      errors={errors}
+    >
+      <Field id="co-name" label="Компанийн нэр" error={errors['co-name']} wide>
+        <input {...fieldAria('co-name', errors['co-name'])} value={f.name} onChange={e => { setF({ ...f, name: e.target.value }); setErrors({}) }} placeholder="Жишээ нь: Говь Майнинг ХХК" data-autofocus />
       </Field>
       <fieldset className="field field--wide">
-        <legend className="field__label">Өнгө</legend>
+        <legend className="field__label">Хавтасны өнгө</legend>
         <div className="swatches">
           {FOLDER_HUES.map(h => (
             <label key={h} className="swatch" style={{ background: `linear-gradient(160deg, ${FOLDER_COLORS[h][0]}, ${FOLDER_COLORS[h][1]})` }}>
-              <input type="radio" name="fo-hue" checked={f.hue === h} onChange={() => setF({ ...f, hue: h })} />
+              <input type="radio" name="co-hue" checked={f.hue === h} onChange={() => setF({ ...f, hue: h })} />
               <span className="sr-only">{HUE_NAME[h]}</span>
             </label>
           ))}

@@ -1,5 +1,6 @@
-// Бичиг хэрэг: names of document kinds and request steps, what can be asked for, the folders, and the demo documents and requests.
-import type { Doc, DocKind, DocRequest, Folder, Hue, Id, ReqStatus } from './types'
+// Бичиг хэрэг: names of document kinds (a company folder's categories) and request steps, what can be asked for, folder colours,
+// and the demo documents and requests.
+import type { Doc, DocKind, DocRequest, Hue, Id, ReqStatus } from './types'
 
 export const DOC_KIND: Record<DocKind, string> = {
   contract: 'Гэрээ', order: 'Тушаал', certificate: 'Тодорхойлолт', rule: 'Журам', decision: 'Шийдвэр', letter: 'Албан бичиг', form: 'Маягт',
@@ -22,55 +23,22 @@ export const PURPOSES = ['Банкны зээл авах', 'Виз мэдүүл�
 /** Whether this user may see the document */
 export const seen = (d: Doc, me: Id) => d.to === 'all' || d.to.includes(me)
 
-/** Colours a folder can have, in the order the office is offered them */
+/** Colours a company's folder can have, in the order they are offered */
 export const FOLDER_HUES: Hue[] = ['blue', 'green', 'pink', 'teal', 'purple', 'orange', 'indigo', 'yellow']
-/**
- * Each folder colour as the top and bottom of its picture (from the user's glass folder, glass-folder.zip), and a deep
- * shade the glass takes on under the name, so white text reads at 4.5:1
- */
-export const FOLDER_COLORS: Record<Hue, [string, string, string]> = {
-  green: ['#3fd49a', '#05935f', '#047051'], purple: ['#b39cfb', '#8b5cf6', '#6d28d9'], blue: ['#6aaefb', '#2563eb', '#1d4ed8'],
-  orange: ['#fbc138', '#dc7a06', '#9a4a04'], pink: ['#fb8398', '#e11d48', '#be123c'], teal: ['#3ddcc5', '#0d9488', '#0f6e67'],
-  indigo: ['#8f98fa', '#4f46e5', '#4338ca'], yellow: ['#f2d046', '#c08a00', '#7c5c00'],
+/** Each folder colour as the top and bottom of its picture, from the user's glass folder (glass-folder.zip) */
+export const FOLDER_COLORS: Record<Hue, [string, string]> = {
+  green: ['#3fd49a', '#05935f'], purple: ['#b39cfb', '#8b5cf6'], blue: ['#6aaefb', '#2563eb'], orange: ['#fbc138', '#dc7a06'],
+  pink: ['#fb8398', '#e11d48'], teal: ['#3ddcc5', '#0d9488'], indigo: ['#8f98fa', '#4f46e5'], yellow: ['#f2d046', '#c08a00'],
 }
 
-/** The folders the office starts with, and which kinds of document go in each */
-const START: [string, Hue, DocKind[]][] = [
-  ['Хөдөлмөрийн гэрээ', 'blue', ['contract']],
-  ['Тушаал, шийдвэр', 'pink', ['order', 'decision', 'letter']],
-  ['Тодорхойлолт', 'green', ['certificate']],
-  ['Дотоод журам', 'teal', ['rule']],
-  ['Маягт, загвар', 'purple', ['form', 'template']],
-]
-
-/** Puts documents into the starting folders by kind: the demo data, and data saved before folders existed */
-export function intoFolders(docs: (Omit<Doc, 'folder'> & { folder?: Id })[], at: string): { folders: Folder[]; docs: Doc[] } {
-  const folders: Folder[] = []
-  const filed = docs.map(d => {
-    const [name, hue] = START.find(x => x[2].includes(d.kind)) ?? START[0]
-    let f = folders.find(x => x.company === d.company && x.name === name)
-    if (!f) folders.push((f = { id: `fd${folders.length + 1}`, company: d.company, name, hue, by: 'u12', added: at }))
-    return { ...d, folder: f.id }
-  })
-  const order = (f: Folder) => START.findIndex(x => x[0] === f.name)
-  return { folders: folders.sort((a, b) => order(a) - order(b)), docs: filed }
-}
-
-/** Where a document the office sends back goes: the folder that holds most documents of its kind, else the first one */
-export function folderFor(folders: Folder[], docs: Doc[], company: Id, kind: DocKind): Folder | undefined {
-  const mine = folders.filter(f => f.company === company)
-  const count = (f: Folder) => docs.filter(d => d.folder === f.id && d.kind === kind).length
-  return [...mine].sort((a, b) => count(b) - count(a))[0]
-}
-
-export function seedDocs(now: Date): { folders: Folder[]; docs: Doc[]; requests: DocRequest[] } {
+export function seedDocs(now: Date): { docs: Doc[]; requests: DocRequest[] } {
   const ago = (days: number, hours = 0) => new Date(now.getTime() - (days * 24 + hours) * 36e5).toISOString()
   const day = (offset: number) => {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   }
   const hr = 'u12'
-  const doc = (id: string, company: string, name: string, kind: DocKind, to: Doc['to'], days: number, text: string[]): Omit<Doc, 'folder'> =>
+  const doc = (id: string, company: string, name: string, kind: DocKind, to: Doc['to'], days: number, text: string[]): Doc =>
     ({ id, company, name, kind, to, by: hr, added: ago(days), text })
 
   const rules = (c: string, n: number) => [
@@ -109,11 +77,11 @@ export function seedDocs(now: Date): { folders: Folder[]; docs: Doc[]; requests:
       'Тодорхойлолтыг ажилтны хүсэлтээр олгов.',
     ]),
     ...rules('c1', 4),
-    doc('dc6', 'c1', 'Ажлын цаг, амралтын журам', 'rule', 'all', 60, [
+    doc('dc6', 'c1', 'Ажлын цаг, амралтын журам', 'rule', 'all', 2, [
       'Ээлжийн амралтыг ажилтны ажилласан жилээс хамааран олгоно.',
       'Амралтын хуваарийг жил бүрийн 1-р сард батална.',
     ]),
-    doc('dc7', 'c1', '2026 оны төсвийн тухай хурлын шийдвэр', 'decision', 'all', 35, [
+    doc('dc7', 'c1', '2026 оны төсвийн тухай хурлын шийдвэр', 'decision', 'all', 4, [
       'Удирдлагын хурлаар 2026 оны төсвийг хэлэлцээд дараах шийдвэр гаргав:',
       '1. Шинэ агуулахын барилгын зардлыг төсөвт тусгах.',
       '2. Ажилтны сургалтын зардлыг 15%-иар нэмэгдүүлэх.',
@@ -169,5 +137,5 @@ export function seedDocs(now: Date): { folders: Folder[]; docs: Doc[]; requests:
     req('rq5', 'u9', 'Ажилласан жилийн тодорхойлолт', 'Нийгмийн даатгалд өгөх', { need: day(5) }, [['sent', 5]]),
     req('rq6', 'u7', 'Тушаалын хуулбар', 'Тэтгэмж авах', { where: 'Нийгмийн даатгалын хэлтэс', paper: true, need: day(-1) }, [['sent', 70], ['working', 48]]),
   ]
-  return { ...intoFolders(docs, ago(400)), requests }
+  return { docs, requests }
 }

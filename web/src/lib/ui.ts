@@ -15,8 +15,8 @@ export type Dialog =
   | { kind: 'position'; id?: Id; dept?: Id }
   | { kind: 'shortcuts' }
   | { kind: 'doc'; id: Id }
-  | { kind: 'docAdd'; folder?: Id }
-  | { kind: 'folder'; id?: Id }
+  | { kind: 'docAdd'; company?: Id }
+  | { kind: 'company'; id?: Id }
   | { kind: 'docRequest' }
   | { kind: 'request'; id: Id; office?: boolean }
   | null
