@@ -7,7 +7,7 @@ import { clock, short, today } from '../lib/format'
 import { focus, focusLeft, toast, useUi } from '../lib/ui'
 import { applyAppearance } from '../lib/theme'
 import { gsap, reduced, useLens, usePageEnter } from '../lib/motion'
-import { toCsv } from '../lib/insights'
+import { downloadCsv } from '../lib/insights'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { Avatar, PRIO, STATUS } from '../ui/bits'
@@ -303,12 +303,7 @@ function Data() {
       const who = sc.person(t.assignee)
       rows.push([t.title, sc.project(t.project)?.name ?? '', who ? short(who) : '', STATUS[t.status], PRIO[t.prio], t.due, t.estimate, t.createdAt.slice(0, 10), t.doneAt?.slice(0, 10) ?? ''])
     }
-    const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `ajluud-${today()}.csv`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    downloadCsv(`ajluud-${today()}.csv`, rows)
   }
   return (
     <Group id="set-data" title="Өгөгдөл" sub="Одоогоор бүх өгөгдөл зөвхөн энэ хөтөч дээр хадгалагдана">

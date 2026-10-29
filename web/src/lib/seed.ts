@@ -73,7 +73,8 @@ export function seed(): State {
     id: uid('t'), company, project, title, status, prio, assignee, due: day(due), estimate,
     subtasks: (extra.subs ?? []).map(([title, done]) => ({ id: uid('s'), title, done })),
     comments: (extra.comments ?? []).map(([author, text, minutes]) => ({ id: uid('k'), author, text, at: ago(minutes) })),
-    createdAt: ago(60 * 24 * Math.max(6 + ((n * 7) % 38), (extra.doneAgo ?? 0) / 1440 + 2)),
+    // Open tasks were created 6–43 days ago; finished ones 2–10 days before they were done
+    createdAt: ago(60 * 24 * (status === 'done' ? (extra.doneAgo ?? 1440) / 1440 + 2 + ((n * 3) % 9) : 6 + ((n * 7) % 38))),
     doneAt: status === 'done' ? ago(extra.doneAgo ?? 60 * 24) : undefined,
   })
 

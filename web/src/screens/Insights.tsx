@@ -5,7 +5,7 @@ import { scoped, useApp } from '../lib/store'
 import { open } from '../lib/ui'
 import { usePageEnter } from '../lib/motion'
 import { workload } from '../lib/derive'
-import { byProject, insights, slowest, toCsv, type Range } from '../lib/insights'
+import { byProject, downloadCsv, insights, slowest, type Range } from '../lib/insights'
 import { dec, num, short, today } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
@@ -35,12 +35,7 @@ export default function Insights() {
   const exportCsv = () => {
     const rows: (string | number)[][] = [[data.unitLabel, 'Дууссан ажил', 'Өмнөх үе', 'Төвлөрсөн цаг']]
     data.labels.forEach((l, i) => rows.push([l, data.throughput[i], data.throughputPrev[i] ?? 0, data.focus[i]]))
-    const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `tailan-${range}-honog-${today()}.csv`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    downloadCsv(`tailan-${range}-honog-${today()}.csv`, rows)
   }
 
   return (

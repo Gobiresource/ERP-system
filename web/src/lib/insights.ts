@@ -3,6 +3,7 @@
 import type { State, Task } from './types'
 import { addDays, monthDayDots, parse, ymd } from './format'
 import { scoped } from './store'
+import { toast } from './ui'
 
 export type Range = 7 | 30 | 90
 
@@ -50,7 +51,8 @@ export function history(s: State, days: number): Day[] {
         cycle: done.length ? done.reduce((n, t) => n + daysBetween(t.createdAt, t.doneAt!), 0) / done.length : 0,
       })
     } else {
-      const done = weekend ? (noise > 0.8 ? 1 : 0) : Math.round(teamSize * (0.25 + noise * 0.45))
+      // About as many as the demo tasks of the last two weeks, so the charts have no step where real data starts
+      const done = weekend ? (noise > 0.8 ? 1 : 0) : Math.round(teamSize * (0.06 + noise * 0.2))
       out.push({
         day: key,
         done,
@@ -142,4 +144,15 @@ export function slowest(tasks: Task[], n = 3) {
 export function toCsv(rows: (string | number)[][]) {
   const esc = (v: string | number) => (typeof v === 'number' ? String(v) : /[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
   return '﻿' + rows.map(r => r.map(esc).join(',')).join('\r\n')
+}
+
+/** Saves rows as a CSV file. A preview frame blocks downloads, so it says so instead of doing nothing. */
+export function downloadCsv(name: string, rows: (string | number)[][]) {
+  if (window.self !== window.top) return toast('Энэ туршилтын хуудсанд файл татах боломжгүй. Жинхэнэ систем дээр ажиллана.', { kind: 'info' })
+  const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
