@@ -97,12 +97,6 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 .choice span { display: grid; gap: 2px; }
 .choice b { font-weight: 650; }
 .choice small { font-size: 13px; color: var(--text-2); }
-.dpeople { display: grid; gap: 2px; max-height: 240px; margin-top: 10px; padding: 6px; overflow: auto; border-radius: 16px; background: var(--fill); }
-.dpeople label { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; cursor: pointer; }
-.dpeople label:hover { background: var(--fill-hover); }
-.dpeople span { display: grid; min-width: 0; }
-.dpeople b { font-size: 14.5px; font-weight: 600; }
-.dpeople small { overflow: hidden; font-size: 12.5px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
 .dfilepick { position: relative; display: flex; align-items: center; gap: 12px; min-width: 0; }
 .dfilepick input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
 .dfilepick:has(input:focus-visible) .btn { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }

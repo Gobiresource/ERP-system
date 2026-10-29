@@ -59,13 +59,15 @@
 .tline__ends span { display: grid; }
 .tline__ends span + span { text-align: right; }
 .tline__ends small { font-size: 12px; font-weight: 600; color: var(--text-2); }
-.ov__h { display: flex; align-items: center; gap: 8px; margin: 20px 0 8px; font: 650 15px/1.2 var(--font); }
+.ov__hrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin: 20px 0 8px; }
+.ov__h { display: flex; align-items: center; gap: 8px; font: 650 15px/1.2 var(--font); }
 .ov__people { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 2px 8px; }
 .ov__person { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 6px; border-radius: 14px; text-align: left; }
 .ov__person:hover { background: var(--fill-hover); }
 .ov__person span { display: grid; min-width: 0; }
 .ov__person b { overflow: hidden; font-size: 14.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.ov__person small { overflow: hidden; font-size: 12.5px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+/* Wraps rather than cuts "Төслийн ахлах, идэвхтэй" in a narrow column */
+.ov__person small { font-size: 12.5px; color: var(--text-2); }
 
 .ms { display: grid; }
 .ms__item { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 12px; padding-bottom: 18px; }

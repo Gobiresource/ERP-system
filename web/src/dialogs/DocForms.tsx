@@ -15,6 +15,7 @@ import { addDaysYmd, dateDots, daysFromToday, dueLabel, hm, short, today } from 
 import { Sheet } from '../ui/Sheet'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 import { Avatar } from '../ui/bits'
+import { PeoplePick } from '../ui/PeoplePick'
 import { DocTile, ReqPill } from '../screens/Docs'
 
 const MB25 = 25 * 1024 * 1024
@@ -158,17 +159,7 @@ export function DocAdd({ company }: { company?: string }) {
           <label className="choice"><input type="radio" name="da-to" id="da-to" checked={!f.all} onChange={() => setF({ ...f, all: false })} /><span><b>Сонгосон ажилтан</b><small>Гэрээ, тушаал, тодорхойлолт</small></span></label>
         </div>
         {!f.all && (
-          <ul className="dpeople">
-            {people.map(p => (
-              <li key={p.id}>
-                <label>
-                  <input type="checkbox" className="check" checked={f.people.includes(p.id)} onChange={() => toggle(p.id)} />
-                  <Avatar person={p} size="sm" />
-                  <span><b>{short(p)}</b><small>{p.role}</small></span>
-                </label>
-              </li>
-            ))}
-          </ul>
+          <PeoplePick people={people} value={f.people} onToggle={toggle} />
         )}
         {errors['da-to'] && <span className="field__error" id="da-to-error">{errors['da-to']}</span>}
       </fieldset>

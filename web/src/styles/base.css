@@ -171,6 +171,16 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 }
 .check:checked { background: var(--accent); border-color: var(--accent); }
 .check:checked::after { transform: translateY(-1px) rotate(-45deg) scale(1); }
+.check:disabled { cursor: default; opacity: .5; }
+
+/* People to tick, with their face and job (ui/PeoplePick.tsx) */
+.people-pick { display: grid; gap: 2px; max-height: 240px; margin-top: 10px; padding: 6px; overflow: auto; border-radius: 16px; background: var(--fill); }
+.people-pick label { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; cursor: pointer; }
+.people-pick label:hover { background: var(--fill-hover); }
+.people-pick label:has(:disabled) { cursor: default; }
+.people-pick span { display: grid; min-width: 0; }
+.people-pick b { font-size: 14.5px; font-weight: 600; }
+.people-pick small { overflow: hidden; font-size: 12.5px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
 
 /* Project chip, priority, deltas, badges */
 .pchip {

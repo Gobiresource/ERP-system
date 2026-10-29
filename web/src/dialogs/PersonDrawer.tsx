@@ -132,7 +132,7 @@ export function PersonDrawer({ id }: { id: string }) {
                   <ProjectGlyph project={x} size="md" />
                   <span className="prof__rowtext">
                     <b>{x.name}</b>
-                    <small>{x.lead === p.id ? 'Удирдагч' : 'Гишүүн'}</small>
+                    <small>{x.lead === p.id ? 'Төслийн ахлах' : 'Оролцогч'}</small>
                   </span>
                   <ChevronRight className="ico" />
                 </button>

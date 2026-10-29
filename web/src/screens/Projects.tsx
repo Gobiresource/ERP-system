@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Calendar, CalendarPlus, Check, ChevronLeft, FolderSearch, Plus, Star } from 'lucide-react'
+import { Calendar, CalendarPlus, Check, ChevronLeft, FolderSearch, Plus, Star, UserPlus } from 'lucide-react'
 import '../styles/screens/projects.css'
 import type { Project, ProjectStatus } from '../lib/types'
 import { actions, scoped, useApp, type Scoped } from '../lib/store'
@@ -235,7 +235,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
             <div className="card__head"><h2 className="card__title" id="ov-t">Тойм</h2></div>
             <dl className="meta">
               <div>
-                <dt>Удирдагч</dt>
+                <dt>Төслийн ахлах</dt>
                 <dd>{lead && <button type="button" className="ov__lead" onClick={() => open({ kind: 'person', id: lead.id })}><Avatar person={lead} size="xs" /><span>{short(lead)}</span></button>}</dd>
               </div>
               <div>
@@ -262,14 +262,17 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
               <span><small>Эхлэх</small>{dateDots(parse(p.start))}</span>
               <span><small>Дуусах</small>{dateDots(parse(p.due))}</span>
             </div>
-            <h3 className="ov__h">Оролцогчид <span className="badge tnum">{people.length}</span></h3>
+            <div className="ov__hrow">
+              <h3 className="ov__h">Оролцогчид <span className="badge tnum">{people.length}</span></h3>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => open({ kind: 'projectTeam', id: p.id })}><UserPlus className="ico" />Оролцогч нэмэх</button>
+            </div>
             <div className="ov__people">
               {people.map(x => (
                 <button key={x.id} type="button" className="ov__person" onClick={() => open({ kind: 'person', id: x.id })}>
                   <Avatar person={x} size="md" presence />
                   <span>
                     <b>{short(x)}</b>
-                    <small>{x.id === p.lead ? `Удирдагч, ${PRESENCE[x.presence].toLowerCase()}` : PRESENCE[x.presence]}</small>
+                    <small>{x.id === p.lead ? `Төслийн ахлах, ${PRESENCE[x.presence].toLowerCase()}` : PRESENCE[x.presence]}</small>
                   </span>
                 </button>
               ))}

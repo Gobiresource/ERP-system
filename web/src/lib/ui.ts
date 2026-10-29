@@ -10,6 +10,7 @@ export type Dialog =
   | { kind: 'newTask'; defaults?: Partial<Task> }
   | { kind: 'newEvent'; defaults?: Partial<CalEvent> }
   | { kind: 'newProject' }
+  | { kind: 'projectTeam'; id: Id }
   | { kind: 'invite' }
   | { kind: 'dept'; id?: Id }
   | { kind: 'position'; id?: Id; dept?: Id }
