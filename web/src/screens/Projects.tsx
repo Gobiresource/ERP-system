@@ -42,12 +42,12 @@ function PinButton({ p, big }: { p: Project; big?: boolean }) {
     return (
       <button ref={ref} type="button" className="btn btn--glass pstar" aria-pressed={p.pinned} onClick={toggle}>
         <Star className="ico" />
-        {p.pinned ? 'Цэсэнд тогтоосон' : 'Цэсэнд тогтоох'}
+        {p.pinned ? 'Онцолсон' : 'Онцлох'}
       </button>
     )
   }
   return (
-    <button ref={ref} type="button" className="ibtn ibtn--sm pstar" aria-pressed={p.pinned} onClick={toggle} aria-label={`${p.name}: хажуугийн цэсэнд тогтоох`}>
+    <button ref={ref} type="button" className="ibtn ibtn--sm pstar" aria-pressed={p.pinned} onClick={toggle} aria-label={`${p.name}: онцлох`}>
       <Star className="ico" />
     </button>
   )
@@ -94,7 +94,7 @@ function ProjectList({ sc }: { sc: Scoped }) {
   return (
     <div ref={ref}>
       <PageHead
-        title="Төслүүд"
+        title="Төсөл"
         sub={`${active.length + sc.projects.filter(p => p.status === 'planning').length} төсөл явагдаж байна, ${done.length} нь дууссан.`}
         stats={[
           { label: 'Идэвхтэй', value: active.length },
@@ -222,7 +222,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
               <PinButton p={p} big />
               <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'newEvent', defaults: { project: p.id } })}>
                 <CalendarPlus className="ico" />
-                Шинэ үйл явдал
+                Шинэ тов
               </button>
             </>
           }
@@ -370,7 +370,7 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
           <section className="card glass pd-up" aria-labelledby="up-t" data-enter>
             <div className="card__head"><h2 className="card__title" id="up-t">Удахгүй болох</h2></div>
             {events.length === 0 ? (
-              <p className="tp-none">Төлөвлөсөн үйл явдал алга.</p>
+              <p className="tp-none">Төлөвлөсөн тов алга.</p>
             ) : (
               <div className="pup__events">
                 {events.map(e => {

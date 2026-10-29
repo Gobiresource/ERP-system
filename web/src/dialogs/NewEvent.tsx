@@ -24,18 +24,18 @@ export function NewEvent({ defaults = {} }: { defaults?: Partial<CalEvent> }) {
 
   const submit = () => {
     const e: Errors = {}
-    if (!f.title.trim()) e['ne-title'] = 'Үйл явдлын нэрийг бичнэ үү.'
+    if (!f.title.trim()) e['ne-title'] = 'Товын нэрийг бичнэ үү.'
     if (!f.date) e['ne-date'] = 'Огноог сонгоно уу.'
     if (!f.time) e['ne-time'] = 'Эхлэх цагийг сонгоно уу.'
     setErrors(e)
     if (Object.keys(e).length) return false
     actions.addEvent({ title: f.title.trim(), start: `${f.date}T${f.time}`, minutes: Number(f.minutes), kind: f.kind, project: f.project || undefined, where: f.where.trim() || undefined, attendees: [s.me] })
-    toast('Үйл явдал нэмэгдлээ.')
+    toast('Тов нэмэгдлээ.')
     return true
   }
 
   return (
-    <FormSheet title="Шинэ үйл явдал" submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors}>
+    <FormSheet title="Шинэ тов" submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors}>
       <Field id="ne-title" label="Нэр" error={errors['ne-title']} wide>
         <input {...fieldAria('ne-title', errors['ne-title'])} value={f.title} onChange={set('title')} placeholder="Төслийн хэлэлцүүлэг" autoFocus />
       </Field>

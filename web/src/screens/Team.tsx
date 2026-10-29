@@ -43,8 +43,8 @@ export default function Team() {
         title="Баг"
         sub={`Энэ компанид ${people.length} хүн, ${teams.length} хэлтэс байна.`}
         stats={[
-          { label: 'Одоо онлайн', value: online, unit: `/ ${people.length}` },
-          { label: 'Төвлөрч буй', value: inFocus },
+          { label: 'Одоо идэвхтэй', value: online, unit: `/ ${people.length}` },
+          { label: 'Төвлөрсөн', value: inFocus },
           { label: 'Дундаж ачаалал', value: avg, unit: '%' },
         ]}
         actions={

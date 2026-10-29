@@ -52,7 +52,7 @@ function FormBody({ title, sub, submit, onSubmit, errors, children }: { title: s
       </div>
       {count > 0 && (
         <div className="mform__errors" role="alert" tabIndex={-1} ref={summary}>
-          <b>Дараах {count === 1 ? 'талбарыг' : 'талбаруудыг'} шалгана уу:</b>
+          <b>Дараах зүйлийг засна уу:</b>
           <ul>
             {Object.entries(errors).map(([id, msg]) => (
               <li key={id}><a href={`#${id}`} onClick={e => { e.preventDefault(); document.getElementById(id)?.focus() }}>{msg}</a></li>

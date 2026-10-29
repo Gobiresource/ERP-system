@@ -35,7 +35,7 @@ export function Sidebar() {
       </nav>
       {pinned.length > 0 && (
         <div className="side__group">
-          <p className="side__label" id="pinned-label">Тогтоосон төслүүд</p>
+          <p className="side__label" id="pinned-label">Онцолсон төслүүд</p>
           <ul className="pinned" aria-labelledby="pinned-label">
             {pinned.map(p => (
               <li key={p.id}>

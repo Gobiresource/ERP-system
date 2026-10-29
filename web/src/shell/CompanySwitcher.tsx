@@ -25,7 +25,7 @@ export function CompanySwitcher({ variant }: { variant: 'brand' | 'pill' }) {
     actions.switchCompany(c.id)
     // A project page belongs to one company, so go back to the list
     if (parse(location.hash).id) go('projects')
-    toast(`Та одоо ${c.name}-д ажиллаж байна.`, { kind: 'info' })
+    toast(`Компани солигдлоо: ${c.name}.`, { kind: 'info' })
   }
 
   return (

@@ -12,7 +12,7 @@ import { Avatar, KIND, KIND_HUE, KIND_ICON, PRESENCE, eventHue } from '../ui/bit
 
 export function EventDrawer({ id }: { id: string }) {
   return (
-    <Sheet kind="drawer" label="Үйл явдлын дэлгэрэнгүй" onClose={close}>
+    <Sheet kind="drawer" label="Товын дэлгэрэнгүй" onClose={close}>
       <Body id={id} />
     </Sheet>
   )
@@ -23,7 +23,7 @@ function Body({ id }: { id: string }) {
   const sc = scoped(s)
   const closeSheet = useCloseSheet()
   const e = s.events.find(x => x.id === id)
-  if (!e) return <p className="tp-none">Энэ үйл явдал устсан байна.</p>
+  if (!e) return <p className="tp-none">Энэ тов устсан байна.</p>
   const start = parse(e.start)
   const p = sc.project(e.project)
   const Icon = KIND_ICON[e.kind]

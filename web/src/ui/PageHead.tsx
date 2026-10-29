@@ -50,7 +50,7 @@ export function PageHead({ title, sub, stats, actions, lead }: { title: string; 
                 {s.unit && <small>{s.unit}</small>}
                 {s.delta && (
                   <span className={`delta delta--${s.delta.good === null ? 'plain' : s.delta.good ? 'up' : 'down'}`}>
-                    {s.delta.text}<span className="sr-only"> өмнөх үеэс</span>
+                    <span className="sr-only">Өмнөх үеэс </span>{s.delta.text}
                   </span>
                 )}
               </dd>

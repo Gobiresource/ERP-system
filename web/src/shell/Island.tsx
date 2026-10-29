@@ -104,7 +104,7 @@ export function Island() {
       <div className={`island${docked ? ' is-docked' : ''}${right ? ' is-right' : ''}${paused ? ' is-paused' : ''}`} data-mode={mode}>
         <div className="island__body" ref={body} style={{ opacity: 0 }}>
           {mode === 'compact' && (
-            <button type="button" className="island__compact" ref={setInner} onClick={() => setIslandOpen(true)} aria-label={`Төвлөрөл, ${clock(left)} үлдсэн. Нээх`}>
+            <button type="button" className="island__compact" ref={setInner} onClick={() => setIslandOpen(true)} aria-label={`Төвлөрөл, ${clock(left)} үлдсэн. Дэлгэх`}>
               <Ring value={progress} size={24} />
               <span className="island__label">Төвлөрөл</span>
               <span className="island__time">{clock(left)}</span>
@@ -130,7 +130,7 @@ export function Island() {
                 <span className="island__big">{clock(left)}</span>
               </div>
               <div className="island__ctrls">
-                <button type="button" className="island__btn island__btn--fold" onClick={() => setIslandOpen(false)} aria-label="Жижигрүүлэх"><ChevronUp className="ico" /></button>
+                <button type="button" className="island__btn island__btn--fold" onClick={() => setIslandOpen(false)} aria-label="Хураах"><ChevronUp className="ico" /></button>
                 <button type="button" className="island__btn" onClick={focus.addFive}><Plus className="ico" />5 мин</button>
                 <button type="button" className="island__btn island__btn--round" onClick={paused ? focus.resume : focus.pause} aria-label={paused ? 'Үргэлжлүүлэх' : 'Түр зогсоох'}>
                   {paused ? <Play className="ico" /> : <Pause className="ico" />}

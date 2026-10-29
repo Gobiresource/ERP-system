@@ -7,10 +7,10 @@ import { initials, short } from '../lib/format'
 import { avatarOf } from './avatars'
 
 export const PRIO: Record<Priority, string> = { low: 'Бага', medium: 'Дунд', high: 'Өндөр', urgent: 'Яаралтай' }
-export const STATUS: Record<TaskStatus, string> = { todo: 'Хийх', doing: 'Хийж байна', review: 'Хянаж байна', done: 'Дууссан' }
+export const STATUS: Record<TaskStatus, string> = { todo: 'Хийх', doing: 'Хийж буй', review: 'Хянаж буй', done: 'Дууссан' }
 export const STATUSES: TaskStatus[] = ['todo', 'doing', 'review', 'done']
-export const PRESENCE: Record<Presence, string> = { online: 'Онлайн', focus: 'Төвлөрч байна', meeting: 'Уулзалтад', away: 'Холдсон' }
-export const KIND: Record<EventKind, string> = { meeting: 'Уулзалт', focus: 'Төвлөрөх цаг', review: 'Хянах', deadline: 'Эцсийн хугацаа', social: 'Багийн арга хэмжээ' }
+export const PRESENCE: Record<Presence, string> = { online: 'Идэвхтэй', focus: 'Төвлөрсөн', meeting: 'Уулзалттай', away: 'Түр эзгүй' }
+export const KIND: Record<EventKind, string> = { meeting: 'Уулзалт', focus: 'Төвлөрөх цаг', review: 'Хяналт', deadline: 'Эцсийн хугацаа', social: 'Багийн арга хэмжээ' }
 export const KIND_HUE: Record<EventKind, Hue> = { meeting: 'indigo', focus: 'purple', review: 'purple', deadline: 'pink', social: 'orange' }
 export const PSTATUS: Record<ProjectStatus, string> = { active: 'Идэвхтэй', planning: 'Төлөвлөж буй', done: 'Дууссан' }
 export const KIND_ICON: Record<EventKind, typeof Users> = { meeting: Users, focus: Moon, review: Sparkles, deadline: Hourglass, social: PartyPopper }

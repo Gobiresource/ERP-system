@@ -234,7 +234,7 @@ export function Board({ tasks }: { tasks: Task[] }) {
             </div>
             {list.length > LIMIT && !drag && (
               <button type="button" className="btn btn--ghost btn--sm tk-col__all" aria-expanded={!!expanded[st]} onClick={() => setExpanded({ ...expanded, [st]: !expanded[st] })}>
-                {expanded[st] ? 'Цөөнийг харах' : `Бүгдийг харах (${list.length})`}
+                {expanded[st] ? 'Хураах' : `Бүгдийг харах (${list.length})`}
               </button>
             )}
           </section>

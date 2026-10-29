@@ -61,12 +61,12 @@ function CreateMenu() {
 
   return (
     <>
-      <button ref={pop.anchor} type="button" className="tbtn" aria-label="Шинээр үүсгэх" aria-haspopup="menu" aria-expanded={pop.open} aria-keyshortcuts="N" onClick={pop.toggle}>
+      <button ref={pop.anchor} type="button" className="tbtn" aria-label="Үүсгэх" aria-haspopup="menu" aria-expanded={pop.open} aria-keyshortcuts="N" onClick={pop.toggle}>
         <Plus className="ico" />
       </button>
-      <Menu state={pop} label="Шинээр үүсгэх">
+      <Menu state={pop} label="Үүсгэх">
         <MenuItem icon={<SquareCheck className="ico" />} onSelect={pick(() => open({ kind: 'newTask' }))}>Шинэ ажил</MenuItem>
-        <MenuItem icon={<CalendarPlus className="ico" />} onSelect={pick(() => open({ kind: 'newEvent' }))}>Шинэ үйл явдал</MenuItem>
+        <MenuItem icon={<CalendarPlus className="ico" />} onSelect={pick(() => open({ kind: 'newEvent' }))}>Шинэ тов</MenuItem>
         <MenuItem icon={<FolderPlus className="ico" />} onSelect={pick(() => open({ kind: 'newProject' }))}>Шинэ төсөл</MenuItem>
         <hr />
         <MenuItem icon={<Moon className="ico" />} onSelect={pick(() => focus.start(minutes))}>{minutes} минут төвлөрөх</MenuItem>
@@ -79,7 +79,7 @@ function ThemeButton() {
   const mode = useMode()
   const next = mode === 'dark' ? 'light' : 'dark'
   return (
-    <button type="button" className="tbtn tbtn--theme" aria-label={next === 'dark' ? 'Харанхуй горим' : 'Гэрэл горим'} onClick={() => setTheme(next)}>
+    <button type="button" className="tbtn tbtn--theme" aria-label={next === 'dark' ? 'Бараан горим' : 'Цайвар горим'} onClick={() => setTheme(next)}>
       {mode === 'dark' ? <Sun className="ico" /> : <Moon className="ico" />}
     </button>
   )
@@ -106,7 +106,7 @@ function Notifications() {
       <Popover state={pop} label="Мэдэгдэл" role="dialog" className="pop--wide">
         <div className="pop__head">
           <h2 className="pop__title">Мэдэгдэл</h2>
-          {unread > 0 && <button type="button" className="btn btn--ghost btn--sm" onClick={actions.markAllRead}>Бүгдийг уншсан</button>}
+          {unread > 0 && <button type="button" className="btn btn--ghost btn--sm" onClick={actions.markAllRead}>Бүгдийг уншсанд тооцох</button>}
         </div>
         {list.length === 0 && <Empty title="Мэдэгдэл алга" text="Шинэ зүйл гарахад энд харагдана." />}
         {list.map(n => {

@@ -65,7 +65,7 @@ export default function Calendar() {
     <div ref={ref}>
       <PageHead
         title={title}
-        sub={`Энэ долоо хоногт ${weekCount} үйл явдал байна.`}
+        sub={`Энэ долоо хоногт ${weekCount} тов байна.`}
         actions={
           <>
             <div className="cal-nav" role="group" aria-label={view === 'month' ? 'Сар солих' : 'Долоо хоног солих'}>
@@ -76,7 +76,7 @@ export default function Calendar() {
             <Seg label="Харагдац" className="cal-viewseg" value={view} onChange={changeView} options={[{ value: 'month', label: 'Сар' }, { value: 'week', label: 'Долоо хоног' }]} />
             <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'newEvent', defaults: { start: `${selected}T10:00` } })}>
               <CalendarPlus className="ico" />
-              Шинэ үйл явдал
+              Шинэ тов
             </button>
           </>
         }
@@ -100,9 +100,9 @@ export default function Calendar() {
             <div className="card__head">
               <div>
                 <h2 className="card__title">{`${monthDay(weekFrom)} – ${monthDay(addDays(weekFrom, 6))}`}</h2>
-                <p className="card__sub">{sc.events.filter(e => e.start >= ymd(weekFrom) && e.start < ymd(addDays(weekFrom, 7))).length} үйл явдал</p>
+                <p className="card__sub">{sc.events.filter(e => e.start >= ymd(weekFrom) && e.start < ymd(addDays(weekFrom, 7))).length} тов</p>
               </div>
-              <p className="cal-hint">Хоосон цаг дээр дарж үйл явдал нэмнэ.</p>
+              <p className="cal-hint">Хоосон цаг дээр дарж тов нэмнэ.</p>
             </div>
             <div className="cal-wk__scroll">
               <div className="cal-stage" ref={stage}>
@@ -162,7 +162,7 @@ function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date
             className={`cal-day${out ? ' is-out' : ''}${weekend ? ' is-weekend' : ''}${k === t ? ' is-today' : ''}`}
             aria-pressed={k === selected}
             aria-current={k === t ? 'date' : undefined}
-            aria-label={`${monthDay(d)}, ${weekday(d)}. ${evs.length ? `${evs.length} үйл явдал` : 'Үйл явдалгүй'}${fl.length ? `, ${fl.length} үе шат` : ''}`}
+            aria-label={`${monthDay(d)}, ${weekday(d)}. ${evs.length ? `${evs.length} тов` : 'Товгүй'}${fl.length ? `, ${fl.length} үе шат` : ''}`}
             tabIndex={k === selected ? 0 : -1}
             onClick={() => onSelect(k)}
             onDoubleClick={() => open({ kind: 'newEvent', defaults: { start: `${k}T10:00` } })}
@@ -201,7 +201,7 @@ function Agenda({ day, sc }: { day: string; sc: Scoped }) {
       <div className="card__head">
         <div>
           <h2 className="card__title" id="ag-title">{isToday ? 'Өнөөдөр' : weekday(d)}</h2>
-          <p className="card__sub">{monthDay(d)}, {events.length} үйл явдал</p>
+          <p className="card__sub">{monthDay(d)}, {events.length} тов</p>
         </div>
         <button type="button" className="btn btn--glass btn--sm" onClick={() => open({ kind: 'newEvent', defaults: { start: `${day}T10:00` } })}>
           <Plus className="ico" />
@@ -216,7 +216,7 @@ function Agenda({ day, sc }: { day: string; sc: Scoped }) {
           </div>
         ))}
         <div className="cal-tl">
-          {events.length === 0 && <p className="cal-none">Энэ өдөр үйл явдал алга.</p>}
+          {events.length === 0 && <p className="cal-none">Энэ өдөр тов алга.</p>}
           {events.map((e, i) => {
             const start = parse(e.start)
             const end = eventEnd(e)

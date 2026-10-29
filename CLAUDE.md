@@ -43,15 +43,37 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
 
 ## Монгол текст ба Gemini
 
-Хэрэглэгч Google Gemini монголоор илүү сайн бичдэг гэж үзэж, түүнийг холбохыг хүссэн. API түлхүүрээр биш, хэрэглэгчийн $20-ын Google бүртгэлтэй Antigravity CLI (`agy`)-аар холбоно (2026-10-29).
+Хэрэглэгч Google Gemini монголоор илүү сайн бичдэг гэж үзэж, түүнийг холбохыг хүссэн. API түлхүүрээр биш, хэрэглэгчийн Google AI Pro бүртгэлтэй Antigravity CLI (`agy`)-аар холбоно (2026-10-29). `agy` энэ cloud container дотор ажиллана. Claude түүнийг өөрөө шууд дуудна, хэрэглэгчээр текст гараар хуулуулахгүй.
 
-- `agy` хэрэглэгчийн компьютер дээр ажиллана. Google-ийн нэвтрэлт тэр компьютерт үлдэнэ. Cloud session түүнийг Remote Control-оор дуудна (зөвхөн Mac, Linux).
-- Дэлгэцийн текст, ажилчдад зориулсан заавар зэрэг монгол текстийг бичих, засахдаа `agy -p "…"`-ээр хянуулна. Хоосон түр хавтаснаас ажиллуулна, тэгвэл repo-ийн файлыг уншиж, өөрчилж чадахгүй.
-- Gemini-ийн хариуг шууд хуулахгүй. Утга, `erp-ui-guidelines`-ийн дүрэм, бусад дэлгэцтэй нийцэж байгааг Claude шалгана.
-- Хувийн болон нууц мэдээлэл илгээхгүй. Хувийн Google бүртгэлээр илгээсэн текстийг Google сургалтад ашиглаж магадгүй.
-- Одоогоор "А арга"-аар ажиллана. Claude бэлэн асуулт (хянуулах текст, дүрэм, хариуны хэлбэр) нэг кодын блокт бичиж өгнө. Хэрэглэгч түүнийг Gemini-д (Argon 4 загвар) хуулж, хариуг буцааж явуулна.
-- Текстийг багцаар илгээнэ, мөр бүр ID-тай байна. Gemini зөвхөн засах мөрүүдийг `ID | шинэ хувилбар | шалтгаан` хэлбэрээр буцаана.
-- Компьютер холбогдоогүй үед Gemini-гүйгээр үргэлжлүүлж, хянуулах текстээ тэмдэглэж үлдээнэ.
+- **Хэзээ.** Дэлгэцийн текст, ажилчдад зориулсан заавар зэрэг монгол текстийг бичих, засахдаа хянуулна.
+- **Суулгах.** Container шинэ бүрт суулгана (`S` = scratchpad хавтас):
+  ```bash
+  curl -fsSL https://antigravity.google/cli/install.sh -o $S/install.sh   # эхлээд уншиж шалгана
+  bash $S/install.sh --dir $S/agy                                          # $S/agy/agy, ~230 MB
+  ```
+- **Нэвтрэх.** Нэвтрэх хэсэг нь терминалын цонх (TUI) тул tmux-аар ажиллуулна. SSH-ийн хувьсагчууд нь нэвтрэх URL хэвлүүлнэ.
+  ```bash
+  mkdir -p $S/agy-run && cd $S/agy-run
+  tmux new-session -d -s agy -x 200 -y 50 "env SSH_CONNECTION='10.0.0.2 52000 10.0.0.1 22' SSH_CLIENT='10.0.0.2 52000 22' SSH_TTY=/dev/pts/0 TERM=xterm-256color $S/agy/agy"
+  tmux send-keys -t agy Enter     # «1. Google OAuth»
+  tmux capture-pane -t agy -p     # «────» хоорондох мөрүүдийг зайгүй нийлүүлбэл бүтэн URL болно
+  ```
+  - URL-ийг хэрэглэгчид явуулна. Хэрэглэгч нэвтэрч, хуудсан дээр гарсан кодыг чатаар өгнө. Код хэдэн минутын дараа хүчингүй болно.
+  - `tmux send-keys -t agy -l '<КОД>'`, дараа нь `tmux send-keys -t agy Enter`.
+  - Өнгө → Enter. «Interactions data»-г асаалгүй [ ] үлдээнэ (Enter нь асааж, унтраадаг). Down → Right-аар «Done» → Enter. «Trust this folder» → Enter.
+  - `$S/agy/agy models`-оор шалгана. `/config`-д «Enable Telemetry» ба «Use AI Credits» унтраастай байгааг шалгана.
+  - Токен `~/.gemini/antigravity-cli/antigravity-oauth-token`-д хадгалагдана. Түүнийг хэвлэхгүй, repo-д хийхгүй.
+- **Ашиглах.** Хоосон `$S/agy-run`-аас ажиллуулна. Prompt-ын эхэнд "Do NOT use run_command. Do not read or write any files." гэж бичнэ. Нэг хариу 2–4 минут болно.
+  ```bash
+  cd $S/agy-run && $S/agy/agy -p "$(cat $S/prompts/batchN.txt)" --print-timeout 280s > $S/prompts/batchN.out
+  ```
+- **Загвар.** CLI-ийн анхдагч загвар Gemini 3.8 Flash (High). Хэрэглэгчийн хүссэн Argon 4, мөн 3.1 Pro зөвхөн Gemini апп-д байгаа, CLI-д алга (2026-10-29). `agy models`-д шинэ загвар гарвал `--model`-оор сонгоно.
+- **Зураг, дуу.** Зураг (Imagen 3, 1024²): `agy -p "Do NOT use run_command. Use your image-generator subagent to create ONE image: …" --mode accept-edits --print-timeout 380s`. Зураг `~/.gemini/antigravity-cli/brain/<яриа>/`-д гарна. Видеоны дууг сонсгохдоо файлыг `$S/agy-run`-д хуулж, `read_file`-аар уншуулна. Veo видео CLI-д алга.
+- **Хэлбэр.** Текстийг багцаар илгээнэ, мөр бүр ID-тай. Gemini зөвхөн засах мөрүүдийг `ID | шинэ хувилбар | шалтгаан` хэлбэрээр буцаана. Эргэлзээтэй зүйлийг дугаарласан асуултаар дахин тодруулна.
+- **Шалгах.** Gemini-ийн хариуг шууд хуулахгүй. Утга, `erp-ui-guidelines`-ийн дүрэм, бусад дэлгэцтэй нийцэж байгааг Claude шалгана. Шийдсэн үгийг `erp-ui-guidelines/references/writing.md`-ийн нэр томьёоны толь бичигт нэмнэ.
+- **Нууцлал.** Хувийн болон нууц мэдээлэл илгээхгүй, зөвхөн дэлгэцийн текст, жишээ өгөгдөл илгээнэ. Хувийн Google бүртгэлээр илгээсэн текстийг Google сургалтад ашиглаж магадгүй.
+- **Сүлжээ.** 2026-10-29-нд хэрэглэгч бүрэн хандалт өгсөн. Хязгаарлавал эдгээр хаяг нээлттэй байх ёстой: antigravity.google, antigravity-cli-auto-updater-974169037036.us-central1.run.app, storage.googleapis.com, oauth2.googleapis.com, accounts.google.com, www.googleapis.com, cloudcode-pa.googleapis.com, aicode.googleapis.com, generativelanguage.googleapis.com, play.googleapis.com.
+- **Ажиллахгүй бол** (нэвтрэх код байхгүй гэх мэт) Gemini-гүйгээр үргэлжлүүлж, хянуулах текстээ `docs/decisions.md`-д тэмдэглэж үлдээнэ.
 
 ## Instagram reel үзэх арга
 

@@ -204,7 +204,7 @@ function Appearance() {
           <span className="cell__text"><b>Горим</b><small>Автомат нь таны төхөөрөмжийг дагана</small></span>
           <span className="cell__ctl">
             <Seg label="Горим" className="set-theme" value={p.theme} onChange={theme => setLook({ theme })}
-              options={[{ value: 'light', label: 'Гэрэл', icon: <Sun className="ico" /> }, { value: 'dark', label: 'Харанхуй', icon: <Moon className="ico" /> }, { value: 'system', label: 'Автомат', icon: <Contrast className="ico" /> }]} />
+              options={[{ value: 'light', label: 'Цайвар', icon: <Sun className="ico" /> }, { value: 'dark', label: 'Бараан', icon: <Moon className="ico" /> }, { value: 'system', label: 'Автомат', icon: <Contrast className="ico" /> }]} />
           </span>
         </div>
       </div>

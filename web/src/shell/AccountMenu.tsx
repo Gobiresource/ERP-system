@@ -41,11 +41,11 @@ export function AccountMenu({ variant }: { variant: 'side' | 'toolbar' }) {
         <MenuItem icon={<Settings className="ico" />} onSelect={pick(() => go('preferences'))}>Тохиргоо</MenuItem>
         <MenuItem icon={<Keyboard className="ico" />} onSelect={pick(() => open({ kind: 'shortcuts' }))}>Гарын товчлол</MenuItem>
         <hr />
-        <MenuItem checked={s.settings.theme === 'light'} onSelect={pick(() => setTheme('light'))}>Гэрэл</MenuItem>
-        <MenuItem checked={s.settings.theme === 'dark'} onSelect={pick(() => setTheme('dark'))}>Харанхуй</MenuItem>
-        <MenuItem checked={s.settings.theme === 'system'} onSelect={pick(() => setTheme('system'))}>Төхөөрөмжийг дагах</MenuItem>
+        <MenuItem checked={s.settings.theme === 'light'} onSelect={pick(() => setTheme('light'))}>Цайвар</MenuItem>
+        <MenuItem checked={s.settings.theme === 'dark'} onSelect={pick(() => setTheme('dark'))}>Бараан</MenuItem>
+        <MenuItem checked={s.settings.theme === 'system'} onSelect={pick(() => setTheme('system'))}>Автомат</MenuItem>
         <hr />
-        <MenuItem danger icon={<RotateCcw className="ico" />} onSelect={pick(() => toast('Жишээ өгөгдлийг шинээр үүсгэлээ.', { undo: actions.reset() }))}>
+        <MenuItem danger icon={<RotateCcw className="ico" />} onSelect={pick(() => toast('Жишээ өгөгдлийг сэргээлээ.', { undo: actions.reset() }))}>
           Жишээ өгөгдлийг сэргээх
         </MenuItem>
       </Menu>

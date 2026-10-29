@@ -10,7 +10,7 @@ import { eventEnd, focusToday, projectProgress } from '../lib/derive'
 import { addDays, ago, clock, daysFromToday, dec, dueLabel, hm, monthDay, monthDayDots, parse, short, today, until, weekStart, weekday, weekdayShort, ymd } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
-import { AvatarStack, Avatar, Prio, ProjectChip, ProjectGlyph, PSTATUS, eventHue } from '../ui/bits'
+import { AvatarStack, Avatar, Prio, ProjectChip, ProjectGlyph, PRESENCE, PSTATUS, eventHue } from '../ui/bits'
 import { Bars } from '../ui/charts'
 import { moveTask } from './tasks/TaskCard'
 
@@ -360,12 +360,12 @@ function RightNow() {
   const people = sc.people.filter(p => p.id !== s.me && p.presence !== 'away').sort((a, b) => order[a.presence] - order[b.presence]).slice(0, 6)
   const feed = [...sc.notices].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6)
   const status = (id: string, presence: string, role: string) => {
-    if (presence === 'focus') return 'Төвлөрч байна'
+    if (presence === 'focus') return PRESENCE.focus
     if (presence === 'meeting') {
       const e = sc.events.find(x => x.attendees.includes(id) && parse(x.start) <= now && eventEnd(x) > now)
-      return e ? `Уулзалтад: ${e.title}` : 'Уулзалтад'
+      return e ? `${PRESENCE.meeting}: ${e.title}` : PRESENCE.meeting
     }
-    return `Онлайн, ${role}`
+    return `${PRESENCE.online}, ${role}`
   }
   return (
     <section className="card glass w-people" aria-labelledby="rn-t" data-enter>

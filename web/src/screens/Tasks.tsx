@@ -60,7 +60,7 @@ export default function Tasks() {
   return (
     <div ref={ref} className="tk">
       <PageHead
-        title="Ажлууд"
+        title="Ажил"
         sub={`${projectCount} төсөлд ${stats.open} нээлттэй ажил байна.`}
         stats={[
           { label: 'Нээлттэй', value: stats.open },
