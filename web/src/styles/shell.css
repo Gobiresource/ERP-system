@@ -160,6 +160,9 @@
 .menu__item .ico { width: 19px; height: 19px; color: var(--text-2); }
 .menu__item kbd { margin-left: auto; }
 .menu__item.is-danger, .menu__item.is-danger .ico { color: var(--bad-ink); }
+.menu__item.is-off { color: var(--text-2); cursor: default; }
+.menu__item.is-off:hover { background: none; }
+.menu__why { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--text-2); }
 .menu__check { color: var(--accent-ink) !important; }
 .menu__label { padding: 8px 12px 4px; font-size: 12.5px; font-weight: 650; color: var(--text-3); }
 

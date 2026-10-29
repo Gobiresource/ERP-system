@@ -287,7 +287,7 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .card__tools { display: flex; align-items: center; gap: 6px; flex: none; }
 
 /* Forms */
-.field { display: grid; gap: 6px; min-width: 0; }
+.field { display: grid; align-content: start; gap: 6px; min-width: 0; }
 .field--wide { grid-column: 1 / -1; }
 .field__label { font-size: 13px; font-weight: 600; color: var(--text-2); }
 .field__hint { font-size: 12.5px; color: var(--text-3); }

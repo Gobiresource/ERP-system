@@ -102,23 +102,26 @@ export function Menu({ state, label, children, placement }: { state: PopState<HT
   )
 }
 
-export function MenuItem({ children, icon, onSelect, checked, danger, hint }: {
+export function MenuItem({ children, icon, onSelect, checked, danger, hint, disabled }: {
   children: ReactNode
   icon?: ReactNode
   onSelect: () => void
   checked?: boolean
   danger?: boolean
   hint?: string
+  /** Why the action is not possible right now; the item stays focusable so the reason can be read */
+  disabled?: string
 }) {
   return (
     <button
       type="button"
       role={checked === undefined ? 'menuitem' : 'menuitemradio'}
       aria-checked={checked}
-      className={`menu__item${danger ? ' is-danger' : ''}`}
-      onClick={onSelect}
+      aria-disabled={disabled ? true : undefined}
+      className={`menu__item${danger && !disabled ? ' is-danger' : ''}${disabled ? ' is-off' : ''}`}
+      onClick={disabled ? undefined : onSelect}
     >
-      <span>{children}</span>
+      <span>{children}{disabled && <small className="menu__why">{disabled}</small>}</span>
       {hint && <kbd>{hint}</kbd>}
       {checked ? <Check className="ico menu__check" /> : icon}
     </button>

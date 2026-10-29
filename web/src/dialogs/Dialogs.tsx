@@ -7,6 +7,7 @@ import { NewTask } from './NewTask'
 import { NewProject } from './NewProject'
 import { EventDrawer } from './EventDrawer'
 import { NewEvent } from './NewEvent'
+import { DeptForm, PositionForm } from './HrForms'
 
 /** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
 export function Dialogs() {
@@ -21,5 +22,7 @@ export function Dialogs() {
     case 'newProject': return <NewProject />
     case 'event': return <EventDrawer key={dialog.id} id={dialog.id} />
     case 'newEvent': return <NewEvent defaults={dialog.defaults} />
+    case 'dept': return <DeptForm id={dialog.id} />
+    case 'position': return <PositionForm id={dialog.id} dept={dialog.dept} />
   }
 }

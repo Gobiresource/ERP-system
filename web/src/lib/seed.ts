@@ -1,6 +1,7 @@
 // Demo data. All names, companies and numbers are made up. Dates are relative to the day the data is created.
 import type { CalEvent, Company, EventKind, Notice, Person, Priority, Project, State, Task, TaskStatus } from './types'
 import { addDays, ymd, ymdhm } from './format'
+import { seedHr } from './seedHr'
 
 let n = 0
 const uid = (p: string) => `${p}${++n}`
@@ -18,9 +19,9 @@ export function seed(): State {
   const ago = (minutes: number) => new Date(now.getTime() - minutes * 6e4).toISOString()
 
   const companies: Company[] = [
-    { id: 'c1', name: 'Говь Ресурс ХХК', hue: 'blue' },
-    { id: 'c2', name: 'Говь Логистик ХХК', hue: 'green' },
-    { id: 'c3', name: 'Говь Трейд ХХК', hue: 'orange' },
+    { id: 'c1', name: 'Говь Ресурс ХХК', hue: 'blue', code: 'ГР' },
+    { id: 'c2', name: 'Говь Логистик ХХК', hue: 'green', code: 'ГЛ' },
+    { id: 'c3', name: 'Говь Трейд ХХК', hue: 'orange', code: 'ГТ' },
   ]
   const all = ['c1', 'c2', 'c3']
 
@@ -217,6 +218,7 @@ export function seed(): State {
     events,
     notices,
     focusLog,
+    ...seedHr(now, people),
     settings: {
       theme: 'system',
       wall: 'ash',

@@ -1,6 +1,6 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { CalEvent, Id, Person, Presence, Project, Settings, State, Task, TaskStatus } from './types'
+import type { CalEvent, Company, Department, Employee, FileItem, Id, Person, Position, Presence, Project, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 
 const KEY = 'erp:v1'
@@ -8,7 +8,14 @@ const KEY = 'erp:v1'
 function load(): State | null {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    return s?.version === 1 ? s : null
+    if (s?.version !== 1) return null
+    // Saved before the HR section existed: add its demo data and keep everything else
+    if (!s.employees) {
+      const fresh = seed()
+      const code = (c: Company) => fresh.companies.find(f => f.id === c.id)?.code ?? c.name.slice(0, 2).toUpperCase()
+      return { ...s, companies: s.companies.map((c: Company) => ({ ...c, code: code(c) })), departments: fresh.departments, positions: fresh.positions, docTypes: fresh.docTypes, employees: fresh.employees }
+    }
+    return s
   } catch {
     return null
   }
@@ -140,8 +147,71 @@ export const actions = {
 
   setSettings: (patch: Partial<Settings>) => set(s => ({ ...s, settings: { ...s.settings, ...patch } })),
   setProfile: (patch: Partial<Pick<Person, 'given' | 'family' | 'email' | 'role' | 'avatar'>>) =>
-    set(s => ({ ...s, people: s.people.map(p => (p.id === s.me ? { ...p, ...patch } : p)) })),
+    set(s => {
+      // The HR records of this user keep the same name and e-mail
+      const { given, family, email } = patch
+      const hr = Object.fromEntries(Object.entries({ given, family, email }).filter(([, v]) => v !== undefined))
+      return {
+        ...s,
+        people: s.people.map(p => (p.id === s.me ? { ...p, ...patch } : p)),
+        employees: Object.keys(hr).length ? s.employees.map(e => (e.user === s.me ? { ...e, ...hr } : e)) : s.employees,
+      }
+    }),
   logFocus: (minutes: number) => set(s => ({ ...s, focusLog: [...s.focusLog, { at: new Date().toISOString(), minutes }] })),
+
+  // Human resources
+  addEmployee(e: Omit<Employee, 'id' | 'company' | 'moves' | 'files' | 'hue'>) {
+    const hues = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'indigo'] as const
+    const note = state.positions.find(p => p.id === e.position)?.name
+    const emp: Employee = { ...e, id: uid('e'), company: state.company, moves: [{ id: uid('m'), date: e.hired, kind: 'hired', note }], files: [], hue: hues[state.employees.length % hues.length] }
+    set(s => ({ ...s, employees: [...s.employees, emp] }))
+    return emp
+  },
+  /** Saves an employee. For an ERP user, the name and e-mail also change on their account and their other HR records. */
+  updateEmployee: (id: Id, patch: Partial<Employee>) =>
+    set(s => {
+      const user = s.employees.find(e => e.id === id)?.user
+      const same = user ? { given: patch.given, family: patch.family, email: patch.email } : {}
+      const keep = Object.fromEntries(Object.entries(same).filter(([, v]) => v !== undefined))
+      return {
+        ...s,
+        employees: s.employees.map(e => (e.id === id ? { ...e, ...patch } : user && e.user === user ? { ...e, ...keep } : e)),
+        people: user ? s.people.map(p => (p.id === user ? { ...p, ...keep } : p)) : s.people,
+      }
+    }),
+  /** Adds or replaces one document of the personal file */
+  setFile: (id: Id, item: FileItem) =>
+    set(s => ({ ...s, employees: s.employees.map(e => (e.id === id ? { ...e, files: [...e.files.filter(f => f.type !== item.type), item] } : e)) })),
+  removeFile(id: Id, type: Id) {
+    const item = state.employees.find(e => e.id === id)?.files.find(f => f.type === type)
+    set(s => ({ ...s, employees: s.employees.map(e => (e.id === id ? { ...e, files: e.files.filter(f => f.type !== type) } : e)) }))
+    return () => item && actions.setFile(id, item)
+  },
+  addDept(d: Pick<Department, 'name' | 'code'>) {
+    const dept: Department = { ...d, id: uid('d'), company: state.company }
+    set(s => ({ ...s, departments: [...s.departments, dept] }))
+    return dept
+  },
+  updateDept: (id: Id, patch: Partial<Department>) =>
+    set(s => ({ ...s, departments: s.departments.map(d => (d.id === id ? { ...d, ...patch } : d)) })),
+  /** Removes an empty department with its positions; returns undo */
+  removeDept(id: Id) {
+    const before = { departments: state.departments, positions: state.positions }
+    set(s => ({ ...s, departments: s.departments.filter(d => d.id !== id), positions: s.positions.filter(p => p.dept !== id) }))
+    return () => set(s => ({ ...s, ...before }))
+  },
+  addPosition(p: Pick<Position, 'dept' | 'name' | 'quota'>) {
+    const pos: Position = { ...p, id: uid('o'), company: state.company }
+    set(s => ({ ...s, positions: [...s.positions, pos] }))
+    return pos
+  },
+  updatePosition: (id: Id, patch: Partial<Position>) =>
+    set(s => ({ ...s, positions: s.positions.map(p => (p.id === id ? { ...p, ...patch } : p)) })),
+  removePosition(id: Id) {
+    const before = state.positions
+    set(s => ({ ...s, positions: s.positions.filter(p => p.id !== id) }))
+    return () => set(s => ({ ...s, positions: before }))
+  },
 
   /** Puts back fresh demo data and returns a function that undoes it */
   reset() {

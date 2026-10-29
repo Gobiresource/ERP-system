@@ -23,8 +23,10 @@ export function CompanySwitcher({ variant }: { variant: 'brand' | 'pill' }) {
     pop.close()
     if (c.id === s.company) return
     actions.switchCompany(c.id)
-    // A project page belongs to one company, so go back to the list
-    if (parse(location.hash).id) go('projects')
+    // A project or employee page belongs to one company, so go back to its list
+    const r = parse(location.hash)
+    if (r.page === 'projects' && r.id) go('projects')
+    else if (r.page === 'hr' && r.id && r.id !== 'employees' && r.id !== 'structure') go('hr', 'employees')
     toast(`Компани солигдлоо: ${c.name}.`, { kind: 'info' })
   }
 

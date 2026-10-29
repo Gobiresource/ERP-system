@@ -1,4 +1,4 @@
-import { CalendarDays, ChartColumn, Folder, House, Settings, SquareCheck, Users } from 'lucide-react'
+import { CalendarDays, ChartColumn, Folder, House, IdCard, Settings, SquareCheck, Users } from 'lucide-react'
 import type { Page } from '../lib/router'
 
 export const NAV: { page: Page; label: string; icon: typeof House; key: string }[] = [
@@ -8,6 +8,7 @@ export const NAV: { page: Page; label: string; icon: typeof House; key: string }
   { page: 'projects', label: 'Төсөл', icon: Folder, key: 'P' },
   { page: 'insights', label: 'Тайлан', icon: ChartColumn, key: 'I' },
   { page: 'team', label: 'Баг', icon: Users, key: 'M' },
+  { page: 'hr', label: 'Хүний нөөц', icon: IdCard, key: 'R' },
   { page: 'preferences', label: 'Тохиргоо', icon: Settings, key: 'S' },
 ]
 

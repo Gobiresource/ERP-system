@@ -16,11 +16,12 @@ import Calendar from './screens/Calendar'
 import Projects from './screens/Projects'
 import Insights from './screens/Insights'
 import Team from './screens/Team'
+import Hr from './screens/Hr'
 import Settings from './screens/Settings'
 
 // All screens ship in one file: a page change never waits for the network (about 100 KB more on first load)
 const SCREENS: Record<Page, ComponentType<{ id?: string }>> = {
-  home: Home, tasks: Tasks, calendar: Calendar, projects: Projects, insights: Insights, team: Team, preferences: Settings,
+  home: Home, tasks: Tasks, calendar: Calendar, projects: Projects, insights: Insights, team: Team, hr: Hr, preferences: Settings,
 }
 
 export function App() {
