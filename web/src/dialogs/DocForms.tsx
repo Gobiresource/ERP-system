@@ -426,7 +426,7 @@ export function FolderForm({ id }: { id?: string }) {
     return true
   }
   return (
-    <FormSheet title={old ? 'Хавтас засах' : 'Шинэ хавтас'} sub="Бичиг хэргийн ажилтан хавтас үүсгэж, бичиг баримтаа ангилна." submit={old ? 'Хадгалах' : 'Үүсгэх'} onSubmit={submit} onClose={close} errors={errors}>
+    <FormSheet title={old ? 'Хавтас засах' : 'Хавтас үүсгэх'} sub="Бичиг хэргийн ажилтан хавтас үүсгэж, бичиг баримтаа ангилна." submit={old ? 'Хадгалах' : 'Үүсгэх'} onSubmit={submit} onClose={close} errors={errors}>
       <Field id="fo-name" label="Нэр" error={errors['fo-name']} wide>
         <input {...fieldAria('fo-name', errors['fo-name'])} value={f.name} onChange={e => { setF({ ...f, name: e.target.value }); setErrors({}) }} placeholder="Жишээ нь: Тушаал" data-autofocus />
       </Field>

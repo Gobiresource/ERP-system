@@ -35,10 +35,10 @@ export default function Folders({ look }: { look: Look }) {
       <DocsNav at="" />
       <PageHead
         title="Бичиг хэрэг"
-        sub="Бичиг хэргийн хавтаснууд: танд хамаарах бичиг баримт, журам, маягт. Хэрэгтэй бичиг баримтаа бичиг хэргээс хүсэж болно."
+        sub="Бичиг хэргийн хавтас: танд хамаарах бичиг баримт, журам, маягт. Хэрэгтэй бичиг баримтаа бичиг хэргээс хүсэж болно."
         actions={
           <>
-            <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'folder' })}><FolderPlus className="ico" />Шинэ хавтас</button>
+            <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'folder' })}><FolderPlus className="ico" />Хавтас үүсгэх</button>
             <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'docRequest' })}><Send className="ico" />Бичиг баримт хүсэх</button>
           </>
         }

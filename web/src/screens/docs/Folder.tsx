@@ -47,7 +47,7 @@ export default function FolderPage({ id }: { id: string }) {
       <a className="dback" href="#docs" data-enter><ChevronLeft className="ico" />Бүх хавтас</a>
       <PageHead
         title={f.name}
-        sub={docs.length ? `${docs.length} бичиг баримт` : 'Хоосон хавтас'}
+        sub={docs.length ? `${docs.length} бичиг баримт` : 'Хоосон'}
         lead={<span className={`dfolder hue--${f.hue}`} aria-hidden="true"><FolderOpen className="ico" /></span>}
         actions={
           <>
@@ -60,7 +60,7 @@ export default function FolderPage({ id }: { id: string }) {
       />
       <Menu state={pop} label={f.name}>
         <MenuItem icon={<Pencil className="ico" />} onSelect={() => { pop.close(); open({ kind: 'folder', id: f.id }) }}>Хавтас засах</MenuItem>
-        <MenuItem icon={<Trash2 className="ico" />} danger onSelect={remove} disabled={all.length ? 'Хоосон хавтсыг л устгана. Бичиг баримтуудыг эхлээд өөр хавтас руу зөөнө үү.' : undefined}>
+        <MenuItem icon={<Trash2 className="ico" />} danger onSelect={remove} disabled={all.length ? 'Хоосон хавтсыг л устгана. Бичиг баримтыг эхлээд өөр хавтас руу зөөнө үү.' : undefined}>
           Хавтас устгах
         </MenuItem>
       </Menu>
@@ -71,7 +71,7 @@ export default function FolderPage({ id }: { id: string }) {
         </ul>
       ) : (
         <section className="card glass" data-enter>
-          <Empty icon={<FolderOpen className="ico" />} title="Хавтас хоосон" text="Бичиг баримт нэмбэл энд харагдана." />
+          <Empty icon={<FolderOpen className="ico" />} title="Бичиг баримт алга" text="Бичиг баримт нэмбэл энд харагдана." />
         </section>
       )}
     </div>
