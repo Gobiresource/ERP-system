@@ -2,8 +2,10 @@
 import { getState } from '../lib/store'
 import { focus, getUi, open, setFinder, setIslandOpen } from '../lib/ui'
 import { go, type Page } from '../lib/router'
+import { NAV } from './nav'
 
-const GO: Record<string, Page> = { KeyH: 'home', KeyT: 'tasks', KeyC: 'calendar', KeyP: 'projects', KeyI: 'insights', KeyM: 'team', KeyS: 'preferences' }
+/** G then a page's letter (shell/nav.ts) */
+const GO: Record<string, Page> = Object.fromEntries(NAV.map(n => [`Key${n.key}`, n.page]))
 
 const typing = (el: Element | null) =>
   !!el && (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el as HTMLElement).isContentEditable)

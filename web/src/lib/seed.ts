@@ -2,6 +2,7 @@
 import type { CalEvent, Company, EventKind, Notice, Person, Priority, Project, State, Task, TaskStatus } from './types'
 import { addDays, ymd, ymdhm } from './format'
 import { seedHr } from './seedHr'
+import { seedDrafts } from './draft'
 
 let n = 0
 const uid = (p: string) => `${p}${++n}`
@@ -219,6 +220,7 @@ export function seed(): State {
     notices,
     focusLog,
     ...seedHr(now, people),
+    drafts: seedDrafts(now, 'u1'),
     settings: {
       theme: 'system',
       wall: 'ash',

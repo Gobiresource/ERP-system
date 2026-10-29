@@ -3,7 +3,7 @@
 import type { State, Task } from './types'
 import { addDays, monthDayDots, parse, ymd } from './format'
 import { scoped } from './store'
-import { toast } from './ui'
+import { saveBlob } from './files'
 
 export type Range = 7 | 30 | 90
 
@@ -146,13 +146,5 @@ export function toCsv(rows: (string | number)[][]) {
   return '﻿' + rows.map(r => r.map(esc).join(',')).join('\r\n')
 }
 
-/** Saves rows as a CSV file. A preview frame blocks downloads, so it says so instead of doing nothing. */
-export function downloadCsv(name: string, rows: (string | number)[][]) {
-  if (window.self !== window.top) return toast('Энэ туршилтын хуудаснаас файл татах боломжгүй. Үндсэн систем дээр ажиллана.', { kind: 'info' })
-  const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
+/** Saves rows as a CSV file */
+export const downloadCsv = (name: string, rows: (string | number)[][]) => saveBlob(name, new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }))

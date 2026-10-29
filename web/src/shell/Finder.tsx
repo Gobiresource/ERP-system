@@ -1,6 +1,6 @@
 // Search (Ctrl K): pages, tasks, projects, events and people of the current company in one list.
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { CalendarDays, ChevronRight, Search } from 'lucide-react'
+import { CalendarDays, ChevronRight, NotebookPen, Search } from 'lucide-react'
 import { scoped, useApp } from '../lib/store'
 import { open, setFinder, useUi } from '../lib/ui'
 import { go } from '../lib/router'
@@ -79,13 +79,17 @@ function FinderDialog() {
     add(sc.people.filter(x => has(x.given, x.family, x.role, x.team)).map(x => ({
       id: x.id, group: 'Хүмүүс', title: short(x), sub: `${x.role}, ${x.team}`, lead: <Avatar person={x} size="md" />, run: () => open({ kind: 'person', id: x.id }),
     })))
+    // Ноорог: my boards, also by what their cards say
+    add(s.drafts.filter(d => d.company === s.company && d.owner === s.me && has(d.name, ...d.cards.map(c => c.text ?? c.file?.name))).map(d => ({
+      id: d.id, group: 'Ноорог', title: d.name, sub: `${d.cards.length} зүйл`, lead: <span className="lead"><NotebookPen className="ico" /></span>, run: () => go('draft', d.id),
+    })))
     // HR records, also by code, registration number and phone
     add(hr.employees.filter(x => has(x.given, x.family, x.code, x.regNo, x.phone)).map(x => ({
       id: x.id, group: 'Ажилтан', title: short(x), sub: `${x.code}, ${hr.position(x.position)?.name ?? ''}, ${EMP_STATUS[x.status].toLowerCase()}`,
       lead: <EmpAvatar e={x} size="md" />, run: () => go('hr', x.id),
     })))
     return out
-  }, [q, sc, hr])
+  }, [q, sc, hr, s])
 
   const current = Math.min(active, Math.max(0, hits.length - 1))
   const close = () => setFinder(false)

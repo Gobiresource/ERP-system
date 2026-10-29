@@ -135,6 +135,9 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .seg__btn[aria-pressed="true"], .seg__btn[aria-checked="true"] { color: var(--text); }
 .seg__btn .ico { width: 17px; height: 17px; }
 .seg--sm .seg__btn { height: 28px; padding: 0 11px; font-size: 13px; }
+/* Tabs between the pages of one section (src/ui/SubNav.tsx) */
+.subnav { display: flex; margin-bottom: 18px; }
+.subnav .seg__btn[aria-current="page"] { color: var(--text); }
 
 /* Switch (an <input type="checkbox" role="switch">) */
 .switch {

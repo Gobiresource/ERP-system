@@ -1,20 +1,23 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { CalEvent, Company, Department, Employee, FileItem, Id, Person, Position, Presence, Project, Settings, State, Task, TaskStatus } from './types'
+import type { CalEvent, Company, Department, Draft, DraftCard, Employee, FileItem, Id, Person, Position, Presence, Project, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
+import { seedDrafts } from './draft'
 
 const KEY = 'erp:v1'
 
 function load(): State | null {
   try {
-    const s = JSON.parse(localStorage.getItem(KEY) ?? 'null')
+    let s = JSON.parse(localStorage.getItem(KEY) ?? 'null')
     if (s?.version !== 1) return null
     // Saved before the HR section existed: add its demo data and keep everything else
     if (!s.employees) {
       const fresh = seed()
       const code = (c: Company) => fresh.companies.find(f => f.id === c.id)?.code ?? c.name.slice(0, 2).toUpperCase()
-      return { ...s, companies: s.companies.map((c: Company) => ({ ...c, code: code(c) })), departments: fresh.departments, positions: fresh.positions, docTypes: fresh.docTypes, employees: fresh.employees }
+      s = { ...s, companies: s.companies.map((c: Company) => ({ ...c, code: code(c) })), departments: fresh.departments, positions: fresh.positions, docTypes: fresh.docTypes, employees: fresh.employees }
     }
+    // Saved before Ноорог existed
+    if (!s.drafts) s = { ...s, drafts: seedDrafts(new Date(), s.me) }
     return s
   } catch {
     return null
@@ -211,6 +214,22 @@ export const actions = {
     const before = state.positions
     set(s => ({ ...s, positions: s.positions.filter(p => p.id !== id) }))
     return () => set(s => ({ ...s, positions: before }))
+  },
+
+  // Ноорог
+  addDraft(name: string, cards: DraftCard[] = []) {
+    const d: Draft = { id: uid('b'), company: state.company, owner: state.me, name, cards, view: { x: 40, y: 40, z: 1 }, updated: new Date().toISOString() }
+    set(s => ({ ...s, drafts: [d, ...s.drafts] }))
+    return d
+  },
+  /** Saves a board. Looking around (the view) does not count as a change. */
+  updateDraft: (id: Id, patch: Partial<Pick<Draft, 'name' | 'cards' | 'view'>>) =>
+    set(s => ({ ...s, drafts: s.drafts.map(d => (d.id === id ? { ...d, ...patch, updated: patch.name !== undefined || patch.cards ? new Date().toISOString() : d.updated } : d)) })),
+  removeDraft(id: Id) {
+    const i = state.drafts.findIndex(d => d.id === id)
+    const d = state.drafts[i]
+    set(s => ({ ...s, drafts: s.drafts.filter(x => x.id !== id) }))
+    return () => set(s => ({ ...s, drafts: [...s.drafts.slice(0, i), d, ...s.drafts.slice(i)] }))
   },
 
   /** Puts back fresh demo data and returns a function that undoes it */

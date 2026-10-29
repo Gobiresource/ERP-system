@@ -1,7 +1,4 @@
-/* Human resources: page nav, overview cards, employee table, employee page, the employee form, structure */
-
-.hrnav { display: flex; margin-bottom: 18px; }
-.hrnav .seg__btn[aria-current="page"] { color: var(--text); }
+/* Human resources: overview cards, employee table, employee page, the employee form, structure */
 
 /* Employee status pills (same shape as project status) */
 .estatus--active { --st: var(--green); }

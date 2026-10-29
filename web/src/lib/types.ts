@@ -217,6 +217,49 @@ export interface Employee {
   hue: Hue
 }
 
+// Drafts (Ноорог): free boards where an employee pins notes, checklists, pictures, links and files.
+// Each employee has their own boards in each ХХК. Pictures and files live in the browser's file store (lib/files.ts).
+
+export type CardKind = 'note' | 'todo' | 'title' | 'image' | 'link' | 'file'
+
+/** A file on a board. `id` is its key in the file store. */
+export interface BoardFile {
+  id: Id
+  name: string
+  type: string
+  size: number
+  pages?: number
+}
+
+/** One thing on a board. x, y, w, h are board pixels; h is the least height, text can make a card taller. */
+export interface DraftCard {
+  id: Id
+  kind: CardKind
+  x: number
+  y: number
+  w: number
+  h: number
+  /** Slight turn in degrees, like paper on a desk */
+  tilt: number
+  /** Paper colour; none is plain white */
+  hue?: Hue
+  text?: string
+  items?: Subtask[]
+  url?: string
+  file?: BoardFile
+}
+
+export interface Draft {
+  id: Id
+  company: Id
+  owner: Id
+  name: string
+  cards: DraftCard[]
+  /** Where the board was last looked at: offset in screen pixels and zoom */
+  view: { x: number; y: number; z: number }
+  updated: string // ISO
+}
+
 export interface State {
   version: 1
   me: Id
@@ -232,5 +275,6 @@ export interface State {
   positions: Position[]
   docTypes: DocType[]
   employees: Employee[]
+  drafts: Draft[]
   settings: Settings
 }

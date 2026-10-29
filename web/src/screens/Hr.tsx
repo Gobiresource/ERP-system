@@ -1,12 +1,11 @@
 // Human resources (Хүний нөөц): overview, employees, one employee, the employee form, and structure with headcount.
 // Built from the HR plan the user brought (docs/decisions.md, 2026-10-29). One ХХК at a time, like the rest of the app.
-import { useRef } from 'react'
 import '../styles/screens/hr.css'
 import type { EmpStatus, Employee } from '../lib/types'
 import { useApp } from '../lib/store'
-import { useLens } from '../lib/motion'
 import { EMP_STATUS } from '../lib/hr'
 import { Avatar } from '../ui/bits'
+import { SubNav } from '../ui/SubNav'
 import Overview from './hr/Overview'
 import Employees from './hr/Employees'
 import EmployeePage from './hr/EmployeePage'
@@ -25,21 +24,7 @@ export default function Hr({ id }: { id?: string }) {
 const TABS = [['', 'Тойм'], ['employees', 'Ажилтан'], ['structure', 'Бүтэц, орон тоо']] as const
 
 /** The HR pages, above each page title */
-export function HrNav({ at }: { at: (typeof TABS)[number][0] }) {
-  const track = useRef<HTMLDivElement>(null)
-  const lens = useRef<HTMLSpanElement>(null)
-  useLens(track, lens, '[aria-current="page"]', at)
-  return (
-    <nav className="hrnav" aria-label="Хүний нөөц" data-enter>
-      <div className="seg" ref={track}>
-        <span className="seg__pill" ref={lens} aria-hidden="true" />
-        {TABS.map(([id, label]) => (
-          <a key={id} className="seg__btn" href={id ? `#hr-${id}` : '#hr'} aria-current={at === id ? 'page' : undefined}>{label}</a>
-        ))}
-      </div>
-    </nav>
-  )
-}
+export const HrNav = ({ at }: { at: (typeof TABS)[number][0] }) => <SubNav label="Хүний нөөц" base="hr" tabs={TABS} at={at} />
 
 /** The user's own avatar when the employee uses the ERP, otherwise initials */
 export function EmpAvatar({ e, size = 'sm' }: { e: Employee; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' }) {
