@@ -260,6 +260,47 @@ export interface Draft {
   updated: string // ISO
 }
 
+// Бичиг хэрэг: documents that HR and the office share with employees (their contract, orders, certificates, rules, forms),
+// and requests to the office for a document.
+
+export type DocKind = 'contract' | 'order' | 'certificate' | 'rule' | 'decision' | 'letter' | 'form' | 'template'
+
+/** A document in the office's keeping. `to` says who sees it: everyone in the ХХК, or only these users. */
+export interface Doc {
+  id: Id
+  company: Id
+  name: string
+  kind: DocKind
+  /** In the browser's file store. A demo document has none until first opened: it is drawn from `text`. */
+  file?: BoardFile
+  /** Demo documents only: the lines its page is drawn from */
+  text?: string[]
+  to: 'all' | Id[]
+  by: Id
+  added: string // ISO
+}
+
+export type ReqStatus = 'sent' | 'working' | 'ready' | 'done' | 'declined'
+
+/** A request to the office for a document */
+export interface DocRequest {
+  id: Id
+  company: Id
+  by: Id
+  what: string
+  purpose: string
+  where?: string
+  /** On paper with the stamp, to collect from the office; otherwise as a file */
+  paper: boolean
+  copies: number
+  need: string // YYYY-MM-DD
+  note?: string
+  status: ReqStatus
+  steps: { status: ReqStatus; at: string; by: Id; note?: string }[]
+  /** The document sent back, for a request by file */
+  doc?: Id
+}
+
 export interface State {
   version: 1
   me: Id
@@ -276,5 +317,7 @@ export interface State {
   docTypes: DocType[]
   employees: Employee[]
   drafts: Draft[]
+  docs: Doc[]
+  requests: DocRequest[]
   settings: Settings
 }

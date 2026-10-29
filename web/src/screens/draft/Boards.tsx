@@ -12,7 +12,6 @@ import { toast } from '../../lib/ui'
 import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
-import { DraftNav } from '../Draft'
 
 let swept = false
 const create = (name: string, cards: DraftCard[] = []) => go('draft', actions.addDraft(name, cards).id)
@@ -24,17 +23,17 @@ export default function Boards() {
   const mine = s.drafts.filter(d => d.company === s.company && d.owner === s.me).sort((a, b) => b.updated.localeCompare(a.updated))
   const previews = useMemo(() => TEMPLATES.map(t => t.cards()), [])
 
-  // Once per visit, drop stored files that no board uses any more (deleted cards, older copies of a PDF)
+  // Once per visit, drop stored files that no board or document uses any more (deleted cards, older copies of a PDF)
   useEffect(() => {
     if (swept) return
     swept = true
-    const keep = new Set(getState().drafts.flatMap(d => d.cards.flatMap(c => (c.file ? [c.file.id] : []))))
+    const s = getState()
+    const keep = new Set([...s.drafts.flatMap(d => d.cards.flatMap(c => (c.file ? [c.file.id] : []))), ...s.docs.flatMap(d => (d.file ? [d.file.id] : []))])
     sweepFiles(keep).catch(() => {})
   }, [])
 
   return (
     <div ref={ref}>
-      <DraftNav at="" />
       <PageHead
         title="Ноорог"
         sub="Санаа, тэмдэглэл, зураг, файлаа самбарт чөлөөтэй байрлуулна."

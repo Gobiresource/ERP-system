@@ -26,6 +26,7 @@ export function Sheet({ kind = 'modal', label, onClose, children, wide, closeBut
   useLayoutEffect(() => {
     const d = ref.current!
     if (!d.open) d.showModal()
+    d.querySelector<HTMLElement>('[data-autofocus]')?.focus()
     if (phone()) enter([d], { transform: 'translateY(100%)' }, { duration: 0.5, ease: 'power3.out' })
     else if (kind === 'drawer') enter([d], { opacity: 0, transform: 'translateX(60px)' }, { duration: 0.5, ease: 'power3.out' })
     else enter([d], { opacity: 0, transform: 'scale(.92)' }, { duration: 0.5, ease: 'back.out(1.6)' })

@@ -32,7 +32,7 @@ export function Invite() {
   return (
     <FormSheet title="Шинэ ажилтан" sub="Шинэ ажилтан энэ компанийн багт нэмэгдэнэ." submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors}>
       <Field id="inv-given" label="Нэр" error={errors['inv-given']}>
-        <input {...fieldAria('inv-given', errors['inv-given'])} value={f.given} onChange={set('given')} autoComplete="given-name" placeholder="Сараа" autoFocus />
+        <input {...fieldAria('inv-given', errors['inv-given'])} value={f.given} onChange={set('given')} autoComplete="given-name" placeholder="Сараа" data-autofocus />
       </Field>
       <Field id="inv-family" label="Овог" error={errors['inv-family']}>
         <input {...fieldAria('inv-family', errors['inv-family'])} value={f.family} onChange={set('family')} autoComplete="family-name" placeholder="Бат" />

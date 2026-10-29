@@ -295,13 +295,13 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .field__label { font-size: 13px; font-weight: 600; color: var(--text-2); }
 .field__hint { font-size: 12.5px; color: var(--text-3); }
 .field__error { font-size: 13px; font-weight: 600; color: var(--bad-ink); }
-.field input, .field select, .field textarea, .input {
+.field input:not([type=checkbox], [type=radio]), .field select, .field textarea, .input {
   width: 100%; min-height: 46px; padding: 11px 14px; border: 0; border-radius: 14px;
   background: var(--fill); color: var(--text); font-size: 16px;
   transition: background .2s, box-shadow .2s;
 }
 .field textarea { min-height: 92px; resize: vertical; }
-.field input:focus, .field select:focus, .field textarea:focus, .input:focus {
+.field input:not([type=checkbox], [type=radio]):focus, .field select:focus, .field textarea:focus, .input:focus {
   outline: none; background: var(--fill-2); box-shadow: 0 0 0 2.5px var(--accent-ink);
 }
 .field [aria-invalid="true"] { box-shadow: 0 0 0 2px var(--danger); }
@@ -323,6 +323,12 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .block > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .block h3 { font: 650 15px/1.2 var(--font); }
 @media (width <= 420px) { .meta { grid-template-columns: 1fr; } }
+
+/* A notice in the page, e.g. a problem that stays until closed (board, PDF tool, documents) */
+.pnote { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 10px 10px 10px 16px; border-radius: 16px; background: var(--fill); font-size: 14.5px; }
+.pnote p { flex: 1; }
+.pnote--bad { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--bad-ink); font-weight: 560; }
+.pnote--bad .ibtn { color: inherit; }
 
 /* Empty state */
 .empty { display: grid; justify-items: center; gap: 6px; padding: 28px 16px; text-align: center; color: var(--text-2); }

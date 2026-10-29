@@ -69,8 +69,14 @@ export async function openPdf(file: Blob, name: string, id: string): Promise<{ s
   return { src: { id, name, view, doc }, pages }
 }
 
+/** Opens a PDF only to look at it */
+export async function viewPdf(file: Blob) {
+  const js = await loadPdfjs()
+  return js.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
+}
+
 /** A picture of a page as the PDF shows it (its own rotation, not the user's turns), `size` pixels on the longer side */
-export async function drawPage(src: Source, index: number, size: number, turn = 0): Promise<HTMLCanvasElement> {
+export async function drawPage(src: Pick<Source, 'view'>, index: number, size: number, turn = 0): Promise<HTMLCanvasElement> {
   const page = await src.view.getPage(index + 1)
   const base = page.getViewport({ scale: 1 })
   const viewport = page.getViewport({ scale: size / Math.max(base.width, base.height), rotation: (page.rotate + turn) % 360 })
@@ -80,6 +86,17 @@ export async function drawPage(src: Source, index: number, size: number, turn = 
   await page.render({ canvas, viewport }).promise
   page.cleanup()
   return canvas
+}
+
+/** A PDF from page pictures (PNG), each filling an A4 page */
+export async function imagesToPdf(pngs: Blob[]) {
+  const lib = await loadPdfLib()
+  const out = await lib.PDFDocument.create()
+  for (const png of pngs) {
+    const img = await out.embedPng(new Uint8Array(await png.arrayBuffer()))
+    out.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 })
+  }
+  return new Blob([(await out.save()) as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
 }
 
 /** Builds the new file from the pages in their order, with their turns and signatures */

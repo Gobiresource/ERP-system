@@ -13,8 +13,8 @@ import { toast } from '../../lib/ui'
 import { PageHead } from '../../ui/PageHead'
 import { Sheet, useCloseSheet } from '../../ui/Sheet'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
-import { DraftNav } from '../Draft'
-import { forget } from './Board'
+import { DocsNav } from '../Docs'
+import { forget } from '../draft/Board'
 
 const THUMB = 360
 const INK = '#1d2b6e'
@@ -49,7 +49,7 @@ export default function Pdf({ from }: { from?: string }) {
   const pick = useRef<HTMLInputElement>(null)
   const savePop = usePopover()
 
-  // Opened from a file on a board: #draft-pdf-<board>-<card>
+  // Opened from a file on a board: #docs-pdf-<board>-<card>
   const [boardId, cardId] = from?.split('-') ?? []
   const board = s.drafts.find(d => d.id === boardId && d.company === s.company && d.owner === s.me)
   const card = board?.cards.find(c => c.id === cardId && c.file)
@@ -260,7 +260,7 @@ export default function Pdf({ from }: { from?: string }) {
 
   return (
     <div ref={ref} className="pdf" onDragOver={e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault() }} onDrop={onDrop}>
-      <DraftNav at="pdf" />
+      <DocsNav at="pdf" />
       <PageHead
         title="PDF засах"
         sub={card && board ? `${card.file!.name}, ${board.name} самбараас` : 'Файл нэгтгэх, хуудас эргүүлэх, зөөх, устгах, гарын үсэг зурах. Файл төхөөрөмжөөс гарахгүй.'}
@@ -305,7 +305,7 @@ export default function Pdf({ from }: { from?: string }) {
                 <ul className="pfiles card glass">
                   {onBoards.map(({ d, c }) => (
                     <li key={c.id}>
-                      <a href={`#draft-pdf-${d.id}-${c.id}`} className="pfiles__row" onClick={e => { e.preventDefault(); go('draft', `pdf-${d.id}-${c.id}`) }}>
+                      <a href={`#docs-pdf-${d.id}-${c.id}`} className="pfiles__row" onClick={e => { e.preventDefault(); go('docs', `pdf-${d.id}-${c.id}`) }}>
                         <span className="dfile__ico is-pdf" aria-hidden="true">PDF</span>
                         <span className="pfiles__text"><b>{c.file!.name}</b><small>{d.name}</small></span>
                       </a>

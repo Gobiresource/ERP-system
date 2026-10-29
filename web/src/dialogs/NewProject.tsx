@@ -35,7 +35,7 @@ export function NewProject() {
   return (
     <FormSheet title="Шинэ төсөл" submit="Үүсгэх" onSubmit={submit} onClose={close} errors={errors}>
       <Field id="np-name" label="Нэр" error={errors['np-name']} wide>
-        <input {...fieldAria('np-name', errors['np-name'])} value={f.name} onChange={set('name')} placeholder="Хаврын борлуулалтын аян" autoFocus />
+        <input {...fieldAria('np-name', errors['np-name'])} value={f.name} onChange={set('name')} placeholder="Хаврын борлуулалтын аян" data-autofocus />
       </Field>
       <Field id="np-goal" label="Зорилго" hint="Багийнхан бүгд санахуйц нэг хоёр өгүүлбэр." wide optional>
         <textarea id="np-goal" aria-describedby="np-goal-hint" value={f.goal} onChange={set('goal')} />

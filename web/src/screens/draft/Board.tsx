@@ -12,7 +12,6 @@ import { COLOURED, KIND, PAPER, SIZE, cardSummary, cid, fileSize, host, newCard,
 import { getFile, putFile, saveBlob, useFileUrl } from '../../lib/files'
 import { toast } from '../../lib/ui'
 import { PageHead } from '../../ui/PageHead'
-import { DraftNav } from '../Draft'
 
 type View = Draft['view']
 type Edit = () => Partial<DraftCard>
@@ -83,7 +82,6 @@ function Missing() {
   usePageEnter(ref)
   return (
     <div ref={ref}>
-      <DraftNav at="" />
       <PageHead title="Самбар олдсонгүй" sub="Устгагдсан эсвэл өөр ХХК-ийн самбар байж магадгүй." actions={<a className="btn btn--glass" href="#draft">Ноорог руу буцах</a>} />
     </div>
   )
@@ -312,7 +310,7 @@ function Desk({ d }: { d: Draft }) {
     saveBlob(c.file!.name, blob)
   }
   const openCard = (c: DraftCard) => {
-    if (isPdf(c)) go('draft', `pdf-${d.id}-${c.id}`)
+    if (isPdf(c)) go('docs', `pdf-${d.id}-${c.id}`)
     else if (c.kind === 'file') download(c)
     else if (EDITABLE.includes(c.kind)) { setSel(c.id); setEditing(c.id) }
   }

@@ -1,6 +1,6 @@
-// Search (Ctrl K): pages, tasks, projects, events and people of the current company in one list.
+// Search (Ctrl K): pages, tasks, projects, events, people, boards, documents and HR records of the current company in one list.
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { CalendarDays, ChevronRight, NotebookPen, Search } from 'lucide-react'
+import { CalendarDays, ChevronRight, FileText, NotebookPen, Search } from 'lucide-react'
 import { scoped, useApp } from '../lib/store'
 import { open, setFinder, useUi } from '../lib/ui'
 import { go } from '../lib/router'
@@ -9,6 +9,7 @@ import { enter } from '../lib/motion'
 import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
 import { NAV } from './nav'
 import { EMP_STATUS, hrScoped } from '../lib/hr'
+import { DOC_KIND, seen } from '../lib/docs'
 import { EmpAvatar } from '../screens/Hr'
 
 interface Hit {
@@ -57,6 +58,8 @@ function FinderDialog() {
     add(NAV.filter(n => has(n.label)).map(n => ({
       id: `page-${n.page}`, group: 'Хуудас', title: n.label, lead: <span className="lead"><n.icon className="ico" /></span>, run: () => go(n.page),
     })))
+    // The PDF tool sits inside Бичиг хэрэг; typing "PDF" finds it
+    if (t && has('PDF засах')) add([{ id: 'page-pdf', group: 'Хуудас', title: 'PDF засах', sub: 'Бичиг хэрэг', lead: <span className="lead"><FileText className="ico" /></span>, run: () => go('docs', 'pdf') }])
     if (!t) return out
     add(sc.tasks.filter(x => has(x.title)).map(x => {
       const p = sc.project(x.project)
@@ -82,6 +85,10 @@ function FinderDialog() {
     // Ноорог: my boards, also by what their cards say
     add(s.drafts.filter(d => d.company === s.company && d.owner === s.me && has(d.name, ...d.cards.map(c => c.text ?? c.file?.name))).map(d => ({
       id: d.id, group: 'Ноорог', title: d.name, sub: `${d.cards.length} зүйл`, lead: <span className="lead"><NotebookPen className="ico" /></span>, run: () => go('draft', d.id),
+    })))
+    // Бичиг хэрэг: the documents I can see
+    add(s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name)).map(d => ({
+      id: d.id, group: 'Бичиг баримт', title: d.name, sub: DOC_KIND[d.kind], lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),
     })))
     // HR records, also by code, registration number and phone
     add(hr.employees.filter(x => has(x.given, x.family, x.code, x.regNo, x.phone)).map(x => ({

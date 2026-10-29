@@ -34,7 +34,7 @@ export function DeptForm({ id }: { id?: string }) {
   return (
     <FormSheet title={d ? 'Хэлтэс засах' : 'Хэлтэс нэмэх'} submit={d ? 'Хадгалах' : 'Нэмэх'} onSubmit={submit} onClose={close} errors={errors}>
       <Field id="df-name" label="Нэр" error={errors['df-name']} wide>
-        <input {...fieldAria('df-name', errors['df-name'])} value={f.name} onChange={set('name')} autoFocus />
+        <input {...fieldAria('df-name', errors['df-name'])} value={f.name} onChange={set('name')} data-autofocus />
       </Field>
       <Field id="df-code" label="Товч код" hint="Жагсаалт, тайланд харагдана. Жишээ нь: САН" error={errors['df-code']}>
         <input {...fieldAria('df-code', errors['df-code'], true)} value={f.code} onChange={set('code')} spellCheck={false} style={{ maxWidth: '10ch' }} />
@@ -77,7 +77,7 @@ export function PositionForm({ id, dept }: { id?: string; dept?: string }) {
   return (
     <FormSheet title={p ? 'Албан тушаал засах' : 'Албан тушаал нэмэх'} submit={p ? 'Хадгалах' : 'Нэмэх'} onSubmit={submit} onClose={close} errors={errors}>
       <Field id="pf-name" label="Нэр" error={errors['pf-name']} wide>
-        <input {...fieldAria('pf-name', errors['pf-name'])} value={f.name} onChange={set('name')} autoFocus />
+        <input {...fieldAria('pf-name', errors['pf-name'])} value={f.name} onChange={set('name')} data-autofocus />
       </Field>
       <Field id="pf-dept" label="Хэлтэс">
         <select id="pf-dept" value={f.dept} onChange={set('dept')}>

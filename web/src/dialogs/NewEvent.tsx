@@ -37,7 +37,7 @@ export function NewEvent({ defaults = {} }: { defaults?: Partial<CalEvent> }) {
   return (
     <FormSheet title="Шинэ тов" submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors}>
       <Field id="ne-title" label="Нэр" error={errors['ne-title']} wide>
-        <input {...fieldAria('ne-title', errors['ne-title'])} value={f.title} onChange={set('title')} placeholder="Төслийн хэлэлцүүлэг" autoFocus />
+        <input {...fieldAria('ne-title', errors['ne-title'])} value={f.title} onChange={set('title')} placeholder="Төслийн хэлэлцүүлэг" data-autofocus />
       </Field>
       <Field id="ne-date" label="Огноо" error={errors['ne-date']}>
         <input {...fieldAria('ne-date', errors['ne-date'])} type="date" value={f.date} onChange={set('date')} />

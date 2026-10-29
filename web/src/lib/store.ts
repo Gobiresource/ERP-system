@@ -1,8 +1,9 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { CalEvent, Company, Department, Draft, DraftCard, Employee, FileItem, Id, Person, Position, Presence, Project, Settings, State, Task, TaskStatus } from './types'
+import type { CalEvent, Company, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, Person, Position, Presence, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
+import { seedDocs } from './docs'
 
 const KEY = 'erp:v1'
 
@@ -18,6 +19,8 @@ function load(): State | null {
     }
     // Saved before Ноорог existed
     if (!s.drafts) s = { ...s, drafts: seedDrafts(new Date(), s.me) }
+    // Saved before Бичиг хэрэг existed
+    if (!s.docs) s = { ...s, ...seedDocs(new Date()) }
     return s
   } catch {
     return null
@@ -231,6 +234,28 @@ export const actions = {
     set(s => ({ ...s, drafts: s.drafts.filter(x => x.id !== id) }))
     return () => set(s => ({ ...s, drafts: [...s.drafts.slice(0, i), d, ...s.drafts.slice(i)] }))
   },
+
+  // Бичиг хэрэг
+  addDoc(d: Pick<Doc, 'name' | 'kind' | 'file' | 'to'>) {
+    const doc: Doc = { ...d, id: uid('dc'), company: state.company, by: state.me, added: new Date().toISOString() }
+    set(s => ({ ...s, docs: [doc, ...s.docs] }))
+    return doc
+  },
+  updateDoc: (id: Id, patch: Partial<Doc>) => set(s => ({ ...s, docs: s.docs.map(d => (d.id === id ? { ...d, ...patch } : d)) })),
+  addRequest(r: Pick<DocRequest, 'what' | 'purpose' | 'where' | 'paper' | 'copies' | 'need' | 'note'>) {
+    const at = new Date().toISOString()
+    const req: DocRequest = { ...r, id: uid('rq'), company: state.company, by: state.me, status: 'sent', steps: [{ status: 'sent', at, by: state.me }] }
+    set(s => ({ ...s, requests: [req, ...s.requests] }))
+    return req
+  },
+  /** Moves a request to its next step; `doc` is the file sent back */
+  stepRequest: (id: Id, status: ReqStatus, more: { note?: string; doc?: Id } = {}) =>
+    set(s => ({
+      ...s,
+      requests: s.requests.map(r => (r.id === id
+        ? { ...r, status, doc: more.doc ?? r.doc, steps: [...r.steps, { status, at: new Date().toISOString(), by: s.me, note: more.note }] }
+        : r)),
+    })),
 
   /** Puts back fresh demo data and returns a function that undoes it */
   reset() {

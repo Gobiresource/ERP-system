@@ -41,7 +41,7 @@ export function NewTask({ defaults = {} }: { defaults?: Partial<Task> }) {
   return (
     <FormSheet title="Шинэ ажил" submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors}>
       <Field id="nt-title" label="Ажлын нэр" error={errors['nt-title']} wide>
-        <input {...fieldAria('nt-title', errors['nt-title'])} value={f.title} onChange={set('title')} placeholder="Юу хийх вэ?" autoFocus />
+        <input {...fieldAria('nt-title', errors['nt-title'])} value={f.title} onChange={set('title')} placeholder="Юу хийх вэ?" data-autofocus />
       </Field>
       <Field id="nt-project" label="Төсөл">
         <select id="nt-project" value={f.project} onChange={set('project')}>

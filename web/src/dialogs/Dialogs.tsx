@@ -8,6 +8,7 @@ import { NewProject } from './NewProject'
 import { EventDrawer } from './EventDrawer'
 import { NewEvent } from './NewEvent'
 import { DeptForm, PositionForm } from './HrForms'
+import { DocAdd, DocSheet, RequestForm, RequestSheet } from './DocForms'
 
 /** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
 export function Dialogs() {
@@ -24,5 +25,9 @@ export function Dialogs() {
     case 'newEvent': return <NewEvent defaults={dialog.defaults} />
     case 'dept': return <DeptForm id={dialog.id} />
     case 'position': return <PositionForm id={dialog.id} dept={dialog.dept} />
+    case 'doc': return <DocSheet key={dialog.id} id={dialog.id} />
+    case 'docAdd': return <DocAdd />
+    case 'docRequest': return <RequestForm />
+    case 'request': return <RequestSheet key={dialog.id} id={dialog.id} office={dialog.office} />
   }
 }
