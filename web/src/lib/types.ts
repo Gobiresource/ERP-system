@@ -283,6 +283,74 @@ export interface Doc {
   updated?: string // ISO
 }
 
+// Гэрээ байгуулах: the user's own HR system's contract process (docs/decisions.md, 2026-10-29), except that finance and the
+// lawyer look at the contract at the same time, and everyone works in one text instead of passing files around.
+
+export type ContractStage = 'draft' | 'review' | 'clerk' | 'director' | 'register' | 'deliver' | 'done' | 'canceled'
+/** Who decides at a stage, set for each company */
+export type ProcessRole = 'finance' | 'legal' | 'clerk' | 'director'
+export type ContractType = 'work' | 'sale' | 'service' | 'lease' | 'employment'
+
+/** A numbered part of the contract: its heading and what it says */
+export interface Clause {
+  id: Id
+  title: string
+  body: string
+}
+
+/** The text as one person left it */
+export interface ContractVersion {
+  id: Id
+  by: Id
+  at: string // ISO
+  clauses: Clause[]
+}
+
+/** What happened to a contract. Steps of the process stay; a note or an opinion can be taken off by its writer. */
+export interface ContractEvent {
+  id: Id
+  by: Id
+  at: string // ISO
+  kind: 'start' | 'send' | 'approve' | 'return' | 'register' | 'deliver' | 'cancel' | 'ask' | 'opinion' | 'note'
+  /** Approve: the part of the review, or the stage that was passed */
+  role?: ProcessRole
+  /** Send, return: where it went */
+  to?: ContractStage
+  /** Ask: whose opinion */
+  people?: Id[]
+  text?: string
+}
+
+export interface Contract {
+  id: Id
+  company: Id
+  title: string
+  /** Харилцагч: the other side */
+  party: string
+  kind: ContractType
+  /** ₮ */
+  amount?: number
+  /** Хариуцсан ажилтан: who started it; writes the draft and sends it */
+  owner: Id
+  stage: ContractStage
+  /** Sent back: where it goes once fixed, so that those who already agreed are not asked again */
+  resume?: ContractStage
+  /** Finance and the lawyer agree each on their own, at the same time */
+  agreed: ProcessRole[]
+  /** Whose opinion the writer asked for, and whether it came */
+  asked: { to: Id; done?: boolean }[]
+  clauses: Clause[]
+  versions: ContractVersion[]
+  events: ContractEvent[]
+  /** Given by the office once the director approved */
+  number?: string
+  regDate?: string // YYYY-MM-DD
+  /** The signed and stamped copy */
+  scan?: BoardFile
+  created: string // ISO
+  updated: string // ISO
+}
+
 // Чат: two people (direct) or a named group. One list for the whole group of companies, not for one ХХК.
 
 export interface Chat {
@@ -361,5 +429,8 @@ export interface State {
   requests: DocRequest[]
   chats: Chat[]
   messages: Message[]
+  contracts: Contract[]
+  /** Each company's people for the contract process */
+  roles: Record<Id, Record<ProcessRole, Id>>
   settings: Settings
 }

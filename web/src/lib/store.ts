@@ -1,10 +1,11 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { CalEvent, Chat, Company, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, Message, Person, Position, Presence, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, Message, Person, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
+import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
 import { companyMark } from './format'
 
 const KEY = 'erp:v1'
@@ -29,6 +30,11 @@ function load(): State | null {
     }
     // Saved before Чат existed
     if (!s.chats) s = { ...s, ...seedChats(new Date(), s) }
+    // Saved before Гэрээ existed: the lawyer and the office clerk join, with the demo contracts
+    if (!s.contracts) {
+      const add = seed().people.filter(p => ['u15', 'u16'].includes(p.id) && !s.people.some((x: Person) => x.id === p.id))
+      s = { ...s, people: [...s.people, ...add], ...seedContracts(new Date()) }
+    }
     return s
   } catch {
     return null
@@ -88,6 +94,7 @@ export function scoped(s: State): Scoped {
 
 const uid = (p: string) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 const patchTask = (id: Id, fn: (t: Task) => Task) => set(s => ({ ...s, tasks: s.tasks.map(t => (t.id === id ? fn(t) : t)) }))
+const patchContract = (id: Id, fn: (c: Contract, s: State) => Contract) => set(s => ({ ...s, contracts: s.contracts.map(c => (c.id === id ? fn(c, s) : c)) }))
 
 export const actions = {
   switchCompany: (company: Id) => set(s => ({ ...s, company })),
@@ -293,6 +300,102 @@ export const actions = {
     return was
   },
   restoreMessage: (was: Message) => set(s => ({ ...s, messages: s.messages.map(m => (m.id === was.id ? was : m)) })),
+
+  // Гэрээ. Who may do a step is checked here, as a server would: a hidden button is not enough (the user's HR system does
+  // the same). `who` is the person acting, which the demo lets one change.
+  /** Starts a contract from its kind's text; whoever starts it writes it (Хариуцсан ажилтан) */
+  addContract(c: Pick<Contract, 'title' | 'party' | 'kind' | 'amount'>, who: Id) {
+    const at = new Date().toISOString()
+    const clauses = clausesFor(c.kind, c.party, c.amount)
+    const contract: Contract = {
+      ...c, id: uid('ct'), company: state.company, owner: who, stage: 'draft', agreed: [], asked: [], clauses,
+      versions: [{ id: uid('cv'), by: who, at, clauses }], events: [{ id: uid('ce'), by: who, at, kind: 'start' }], created: at, updated: at,
+    }
+    set(s => ({ ...s, contracts: [contract, ...s.contracts] }))
+    return contract
+  },
+  /** The text as it is typed. One person's edits stay one version until the next step of the process. */
+  editContract(id: Id, who: Id, clauses: Clause[]) {
+    patchContract(id, (c, s) => {
+      if (!canEdit(c, rolesOf(s, c.company), who)) return c
+      const at = new Date().toISOString()
+      const last = c.versions.at(-1)
+      const step = c.events.filter(e => e.kind !== 'note' && e.kind !== 'opinion' && e.kind !== 'ask').at(-1)
+      const same = last && last.by === who && (!step || step.at < last.at)
+      return { ...c, clauses, updated: at, versions: same ? [...c.versions.slice(0, -1), { ...last, at, clauses }] : [...c.versions, { id: uid('cv'), by: who, at, clauses }] }
+    })
+  },
+  /**
+   * A step of the process; true when it was allowed. Sending and approving go back to where the contract was sent back
+   * from, if it was, else to the next stage. Sending back goes to the writer (the director may choose the office) and
+   * remembers where from, so that those who already agreed are not asked again.
+   */
+  contractStep(id: Id, who: Id, step: 'send' | 'approve' | 'return' | 'deliver' | 'cancel', o: { text?: string; to?: ContractStage } = {}) {
+    let done = false
+    patchContract(id, (c, s) => {
+      const roles = rolesOf(s, c.company)
+      const may = deciders(c, roles).includes(who)
+      const at = new Date().toISOString()
+      const ev = (e: Omit<ContractEvent, 'id' | 'by' | 'at'>): ContractEvent => ({ id: uid('ce'), by: who, at, ...e })
+      const to = (stage: ContractStage, events: ContractEvent[], more: Partial<Contract> = {}) => {
+        done = true
+        return { ...c, stage, ...more, events: [...c.events, ...events], updated: at }
+      }
+      if (step === 'send' && c.stage === 'draft' && may) {
+        const next = c.resume ?? 'review'
+        return to(next, [ev({ kind: 'send', to: next })], { resume: undefined })
+      }
+      if (step === 'approve' && may && c.stage === 'review') {
+        // Finance and the lawyer agree each on their own; the contract moves on once both have
+        const mine = reviewsOf(c, roles, who)
+        const agreed = [...c.agreed, ...mine]
+        return to(REVIEW.every(r => agreed.includes(r)) ? STAGE.review.next! : 'review', mine.map(role => ev({ kind: 'approve', role, text: o.text })), { agreed })
+      }
+      if (step === 'approve' && may && (c.stage === 'clerk' || c.stage === 'director')) {
+        const role: ProcessRole = c.stage
+        return to(c.resume ?? STAGE[c.stage].next!, [ev({ kind: 'approve', role, text: o.text })], { resume: undefined })
+      }
+      if (step === 'return' && may && (c.stage === 'review' || c.stage === 'clerk' || c.stage === 'director')) {
+        const back = c.stage === 'director' && o.to === 'clerk' ? 'clerk' : 'draft'
+        return to(back, [ev({ kind: 'return', to: back, text: o.text })], { resume: c.resume ?? c.stage })
+      }
+      if (step === 'deliver' && may && c.stage === 'deliver') return to('done', [ev({ kind: 'deliver' })])
+      if (step === 'cancel' && c.stage === 'draft' && c.owner === who) return to('canceled', [ev({ kind: 'cancel', text: o.text })])
+      return c
+    })
+    return done
+  },
+  /** The office numbers the approved contract; the number must be new in its company. Returns what is wrong, or null. */
+  registerContract(id: Id, who: Id, r: { number: string; date: string; scan?: BoardFile }) {
+    const c = state.contracts.find(x => x.id === id)
+    if (!c || c.stage !== 'register' || rolesOf(state, c.company).clerk !== who) return 'Энэ алхмыг хийх эрх танд байхгүй.'
+    const number = r.number.trim()
+    if (state.contracts.some(x => x.company === c.company && x.id !== id && x.number === number)) return 'Энэ дугаарыг өөр гэрээнд олгосон байна. Өөр дугаар бичнэ үү.'
+    const at = new Date().toISOString()
+    patchContract(id, x => ({ ...x, number, regDate: r.date, scan: r.scan ?? x.scan, stage: 'deliver', events: [...x.events, { id: uid('ce'), by: who, at, kind: 'register', text: number }], updated: at }))
+    return null
+  },
+  /** While drafting, the writer asks colleagues what they think */
+  askOpinion(id: Id, who: Id, people: Id[], text: string) {
+    patchContract(id, c => {
+      if (c.stage !== 'draft' || c.owner !== who || !people.length) return c
+      const at = new Date().toISOString()
+      return { ...c, asked: [...c.asked.filter(a => !people.includes(a.to)), ...people.map(to => ({ to }))], events: [...c.events, { id: uid('ce'), by: who, at, kind: 'ask', people, text: text || undefined }], updated: at }
+    })
+  },
+  /** Anyone may write a note; from someone who was asked, it is their opinion */
+  contractNote(id: Id, who: Id, text: string) {
+    patchContract(id, c => {
+      const at = new Date().toISOString()
+      const opinion = c.asked.some(a => a.to === who && !a.done)
+      return { ...c, asked: c.asked.map(a => (a.to === who ? { ...a, done: true } : a)), events: [...c.events, { id: uid('ce'), by: who, at, kind: opinion ? 'opinion' : 'note', text }], updated: at }
+    })
+  },
+  /** Only one's own note or opinion comes off; the steps of the process stay */
+  dropContractNote: (id: Id, who: Id, event: Id) =>
+    patchContract(id, c => ({ ...c, events: c.events.filter(e => !(e.id === event && e.by === who && (e.kind === 'note' || e.kind === 'opinion'))) })),
+  /** A company's people for the process (an admin's job in the real system) */
+  setRoles: (company: Id, roles: Record<ProcessRole, Id>) => set(s => ({ ...s, roles: { ...s.roles, [company]: roles } })),
 
   // Бичиг хэрэг
   /** Into a company's folder: the current one unless another is given */

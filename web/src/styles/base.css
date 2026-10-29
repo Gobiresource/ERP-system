@@ -137,6 +137,8 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .seg--sm .seg__btn { height: 28px; padding: 0 11px; font-size: 13px; }
 /* Tabs between the pages of one section (src/ui/SubNav.tsx) */
 .subnav { display: flex; margin-bottom: 18px; }
+/* On a phone the tabs scroll sideways rather than push the page wider */
+@media (width <= 760px) { .subnav { margin: -4px -4px 14px; padding: 4px; overflow-x: auto; scrollbar-width: none; } .subnav::-webkit-scrollbar { display: none; } }
 .subnav .seg__btn[aria-current="page"] { color: var(--text); }
 
 /* Switch (an <input type="checkbox" role="switch">) */

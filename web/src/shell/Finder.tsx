@@ -1,6 +1,6 @@
 // Search (Ctrl K): pages, tasks, projects, events, people, boards, documents and HR records of the current company in one list.
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { CalendarDays, ChevronRight, FileText, FolderOpen, MessagesSquare, NotebookPen, Search } from 'lucide-react'
+import { CalendarDays, ChevronRight, FilePen, FileText, FolderOpen, MessagesSquare, NotebookPen, Search } from 'lucide-react'
 import { scoped, useApp } from '../lib/store'
 import { chatName, myChats } from '../lib/chat'
 import { open, setFinder, useUi } from '../lib/ui'
@@ -11,6 +11,7 @@ import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
 import { NAV } from './nav'
 import { EMP_STATUS, hrScoped } from '../lib/hr'
 import { DOC_KIND, seen } from '../lib/docs'
+import { STAGE } from '../lib/contracts'
 import { EmpAvatar } from '../screens/Hr'
 
 interface Hit {
@@ -98,6 +99,10 @@ function FinderDialog() {
     })))
     add(s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name)).map(d => ({
       id: d.id, group: 'Бичиг баримт', title: d.name, sub: DOC_KIND[d.kind], lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),
+    })))
+    // Contracts, also by the other side and the number
+    add(s.contracts.filter(c => c.company === s.company && has(c.title, c.party, c.number ?? '')).map(c => ({
+      id: c.id, group: 'Гэрээ', title: c.title, sub: `${c.party}, ${STAGE[c.stage].pill.toLowerCase()}`, lead: <span className="lead"><FilePen className="ico" /></span>, run: () => go('docs', `contract-${c.id}`),
     })))
     // HR records, also by code, registration number and phone
     add(hr.employees.filter(x => has(x.given, x.family, x.code, x.regNo, x.phone)).map(x => ({

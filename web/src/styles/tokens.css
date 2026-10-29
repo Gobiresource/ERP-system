@@ -60,6 +60,17 @@
   --scrim: rgb(20 24 50 / .16);
   /* Behind a file looked at over the whole screen (dialogs/Viewer.tsx) */
   --view-bg: #d9dde7;
+  /* A contract's sheet of paper, and what a version added or took out (screens/docs/Contract.tsx) */
+  --paper: #ffffff;
+  --paper-ink: #1b1d26;
+  --paper-mute: #5b5f6e;
+  --paper-brand: #1d2b6e;
+  --paper-rule: rgb(29 43 110 / .18);
+  --paper-hover: rgb(20 40 120 / .05);
+  --ins-bg: #d8f3e0;
+  --ins-ink: #0c5c27;
+  --del-bg: #fde0e0;
+  --del-ink: #9b1c26;
   --gel-hi: rgb(255 255 255 / .72);
   --gel-lo: rgb(255 255 255 / .34);
   --gel-rim: #fff;
@@ -125,6 +136,16 @@
   --well: rgb(150 150 175 / .16);
   --scrim: rgb(0 0 0 / .4);
   --view-bg: #121317;
+  --paper: #1c1d24;
+  --paper-ink: #ececf2;
+  --paper-mute: #a6a8b6;
+  --paper-brand: #a9b8ff;
+  --paper-rule: rgb(255 255 255 / .14);
+  --paper-hover: rgb(255 255 255 / .05);
+  --ins-bg: rgb(48 196 92 / .2);
+  --ins-ink: #86e3a6;
+  --del-bg: rgb(255 90 100 / .2);
+  --del-ink: #ffa0a7;
   --gel-hi: rgb(255 255 255 / .2);
   --gel-lo: rgb(255 255 255 / .07);
   --gel-rim: rgb(255 255 255 / .4);

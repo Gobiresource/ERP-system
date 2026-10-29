@@ -5,6 +5,7 @@ import { seedHr } from './seedHr'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
+import { seedContracts } from './contracts'
 
 let n = 0
 const uid = (p: string) => `${p}${++n}`
@@ -46,10 +47,13 @@ export function seed(): State {
     person('u12', 'Ариунаа', 'Хишигт', 'Хүний нөөцийн менежер', 'Хүний нөөц', all, 'online', 'purple', 'ariunaa'),
     person('u13', 'Үүрцайх', 'Лхагва', 'Агуулахын эрхлэгч', 'Үйл ажиллагаа', ['c2'], 'away', 'teal', 'uurtsaikh'),
     person('u14', 'Ганзориг', 'Мөнх', 'Мэдээллийн технологийн инженер', 'Үйл ажиллагаа', ['c1'], 'focus', 'indigo', 'ganzorig'),
+    // The lawyer and the office clerk of the contract process (Гэрээ)
+    person('u15', 'Энхжин', 'Баатар', 'Хуульч', 'Хууль эрх зүй', all, 'online', 'teal', 'enkhjin'),
+    person('u16', 'Нандин', 'Цэрэндорж', 'Бичиг хэргийн ажилтан', 'Захиргаа', all, 'away', 'orange', 'nandin'),
   ]
   // A different emoji for everyone in the demo; each person can change theirs in Settings
   const emoji = ['horse-face', 'grinning-face', 'fox', 'smiling-face-with-sunglasses', 'panda', 'smiling-face-with-smiling-eyes', 'owl',
-    'star-struck', 'rabbit-face', 'winking-face', 'two-hump-camel', 'hugging-face', 'wolf', 'cowboy-hat-face']
+    'star-struck', 'rabbit-face', 'winking-face', 'two-hump-camel', 'hugging-face', 'wolf', 'cowboy-hat-face', 'face-with-monocle', 'cat-face']
   people.forEach((p, i) => { p.avatar = emoji[i] })
 
   const ms = (list: [string, number, boolean][]) => list.map(([name, off, done]) => ({ id: uid('m'), name, date: day(off), done }))
@@ -226,6 +230,7 @@ export function seed(): State {
     drafts: seedDrafts(now, 'u1'),
     ...docs,
     ...seedChats(now, { tasks, events, docs: docs.docs }),
+    ...seedContracts(now),
     settings: {
       theme: 'system',
       wall: 'ash',

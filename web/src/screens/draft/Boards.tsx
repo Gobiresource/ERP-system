@@ -23,12 +23,13 @@ export default function Boards() {
   const mine = s.drafts.filter(d => d.company === s.company && d.owner === s.me).sort((a, b) => b.updated.localeCompare(a.updated))
   const previews = useMemo(() => TEMPLATES.map(t => t.cards()), [])
 
-  // Once per visit, drop stored files that no board or document uses any more (deleted cards, older copies of a PDF)
+  // Once per visit, drop stored files that no board, document, message or contract uses any more (deleted cards, older
+  // copies of a PDF)
   useEffect(() => {
     if (swept) return
     swept = true
     const s = getState()
-    const keep = new Set([...s.drafts.flatMap(d => d.cards.flatMap(c => (c.file ? [c.file.id] : []))), ...s.docs.flatMap(d => (d.file ? [d.file.id] : [])), ...s.messages.flatMap(m => m.files.map(f => f.id))])
+    const keep = new Set([...s.drafts.flatMap(d => d.cards.flatMap(c => (c.file ? [c.file.id] : []))), ...s.docs.flatMap(d => (d.file ? [d.file.id] : [])), ...s.messages.flatMap(m => m.files.map(f => f.id)), ...s.contracts.flatMap(c => (c.scan ? [c.scan.id] : []))])
     sweepFiles(keep).catch(() => {})
   }, [])
 

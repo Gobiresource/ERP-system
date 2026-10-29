@@ -1,5 +1,5 @@
-// Бичиг хэрэг: a folder for each ХХК with its documents by category (an employee's own, rules, forms, templates), requests
-// to the office for a document, and the PDF tool (docs/decisions.md, 2026-10-29).
+// Бичиг хэрэг: a folder for each ХХК with its documents by category (an employee's own, rules, forms, templates), contracts
+// and their approval, requests to the office for a document, and the PDF tool (docs/decisions.md, 2026-10-29).
 import { BookOpenText, ClipboardList, FileCheck, FilePen, FileText, Mail, ScrollText, Stamp } from 'lucide-react'
 import '../styles/screens/docs.css'
 import type { DocKind, DocRequest } from '../lib/types'
@@ -8,19 +8,28 @@ import { SubNav } from '../ui/SubNav'
 import Folders from './docs/Folders'
 import FolderPage from './docs/Folder'
 import Requests from './docs/Requests'
+import Contracts, { useContractTodo } from './docs/Contracts'
+import ContractPage from './docs/Contract'
 import Pdf from './docs/Pdf'
 
 export default function Docs({ id }: { id?: string }) {
   if (id === 'requests') return <Requests />
+  if (id === 'contracts') return <Contracts />
+  if (id?.startsWith('contract-')) return <ContractPage key={id} id={id.slice(9)} />
   // #docs-pdf, or #docs-pdf-<board>-<card> to edit a PDF that sits on a board
   if (id === 'pdf' || id?.startsWith('pdf-')) return <Pdf from={id.slice(4) || undefined} />
   if (id?.startsWith('folder-')) return <FolderPage key={id} id={id.slice(7)} />
   return <Folders />
 }
 
-const TABS = [['', 'Бичиг баримт'], ['requests', 'Хүсэлт'], ['pdf', 'PDF засах']] as const
+const TABS = [['', 'Бичиг баримт'], ['contracts', 'Гэрээ'], ['requests', 'Хүсэлт'], ['pdf', 'PDF засах']] as const
 
-export const DocsNav = ({ at }: { at: (typeof TABS)[number][0] }) => <SubNav label="Бичиг хэрэг" base="docs" tabs={TABS} at={at} />
+/** The section's tabs; Гэрээ counts the contracts waiting for the person */
+export function DocsNav({ at }: { at: (typeof TABS)[number][0] }) {
+  const n = useContractTodo()
+  const tabs = TABS.map(([key, text]) => [key, key === 'contracts' && n ? <>{text}<span className="seg__count">{n}<span className="sr-only"> хийх</span></span></> : text] as const)
+  return <SubNav label="Бичиг хэрэг" base="docs" tabs={tabs} at={at} />
+}
 
 export const KIND_ICON: Record<DocKind, typeof Stamp> = {
   contract: FilePen, order: Stamp, certificate: FileCheck, rule: BookOpenText, decision: ScrollText, letter: Mail, form: ClipboardList, template: FileText,

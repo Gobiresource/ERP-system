@@ -1,11 +1,12 @@
 // Demo documents and prepared certificates are drawn as an A4 page (letterhead, title, text, signature line) and kept as a PDF.
 // Every page says "ЖИШЭЭ" across it: these are samples of the prototype, not real documents.
-import type { Doc, DocRequest } from './types'
+import type { Contract, Doc, DocRequest } from './types'
 import { actions, getState } from './store'
 import { getFile, putFile, saveBlob } from './files'
 import { imagesToPdf } from './pdf'
 import { cid } from './draft'
 import { dateDots, parse, short } from './format'
+import { CONTRACT_KIND, contractLines, rolesOf } from './contracts'
 
 const W = 1240 // A4 at 150 dpi
 const H = 1754
@@ -27,17 +28,37 @@ function wrap(x: CanvasRenderingContext2D, text: string, width: number) {
   return rows
 }
 
-export async function paperPdf(p: { company: string; title: string; lines: string[]; date: string; signer?: string }) {
+/** A line of text, or a clause heading in bold */
+export type PaperLine = string | { head: string }
+
+/**
+ * An A4 document: the letterhead and title on the first page, then the text, onto as many pages as it needs, and the
+ * signature lines at the end. `number` goes on the right of the date line.
+ */
+export async function paperPdf(p: { company: string; title: string; lines: PaperLine[]; date: string; number?: string; signer?: string; signers?: string[] }) {
   await document.fonts.load(`700 34px ${FONT}`)
   await document.fonts.load(`400 28px ${FONT}`)
-  const c = document.createElement('canvas')
-  c.width = W
-  c.height = H
-  const x = c.getContext('2d')!
-  x.fillStyle = '#fff'
-  x.fillRect(0, 0, W, H)
+  const pages: HTMLCanvasElement[] = []
+  let x!: CanvasRenderingContext2D
+  let y = 0
+  const newPage = () => {
+    const c = document.createElement('canvas')
+    c.width = W
+    c.height = H
+    x = c.getContext('2d')!
+    x.fillStyle = '#fff'
+    x.fillRect(0, 0, W, H)
+    x.fillStyle = '#1b1d26'
+    pages.push(c)
+    y = 170
+  }
+  /** Starts a new page when `h` more pixels would not fit above the foot */
+  const room = (h: number) => {
+    if (y + h > H - 190) newPage()
+  }
 
-  // Letterhead
+  // Letterhead, date and number, title
+  newPage()
   x.fillStyle = '#1d2b6e'
   x.font = `700 34px ${FONT}`
   x.fillText(p.company, M, 160)
@@ -49,38 +70,67 @@ export async function paperPdf(p: { company: string; title: string; lines: strin
   x.fillStyle = '#1b1d26'
   x.font = `400 24px ${FONT}`
   x.fillText(p.date, M, 284)
-
-  // Title and text
+  if (p.number) {
+    x.textAlign = 'right'
+    x.fillText(p.number, W - M, 284)
+    x.textAlign = 'left'
+  }
   x.font = `700 40px ${FONT}`
   x.textAlign = 'center'
-  wrap(x, p.title, W - 2 * M).forEach((row, i) => x.fillText(row, W / 2, 400 + i * 52))
+  const title = wrap(x, p.title, W - 2 * M)
+  title.forEach((row, i) => x.fillText(row, W / 2, 400 + i * 52))
   x.textAlign = 'left'
-  x.font = `400 28px ${FONT}`
-  let y = 520
+  y = 400 + title.length * 52 + 68
+
+  // The text: a heading keeps its first rows with it
   for (const line of p.lines) {
-    for (const row of wrap(x, line, W - 2 * M)) {
+    const head = typeof line !== 'string'
+    x.font = `${head ? 700 : 400} 28px ${FONT}`
+    const rows = wrap(x, head ? line.head : line, W - 2 * M)
+    if (head) room(46 * 3 + 12)
+    for (const row of rows) {
+      room(46)
+      x.font = `${head ? 700 : 400} 28px ${FONT}`
       x.fillText(row, M, y)
       y += 46
     }
-    y += 16
+    y += head ? 4 : 16
   }
-  if (p.signer) x.fillText(p.signer, M, Math.max(y + 90, H - 420))
+  const signers = p.signers ?? (p.signer ? [p.signer] : [])
+  if (signers.length) {
+    y += 70
+    room(signers.length * 80)
+    x.font = `400 28px ${FONT}`
+    // A short text keeps its signature low on the page, as before
+    if (pages.length === 1 && !p.signers) y = Math.max(y + 20, H - 420)
+    for (const line of signers) {
+      x.fillText(line, M, y)
+      y += 80
+    }
+  }
 
-  // Marked as a sample, across the page and at the foot
-  x.save()
-  x.translate(W / 2, H / 2)
-  x.rotate(-Math.PI / 6)
-  x.textAlign = 'center'
-  x.fillStyle = 'rgba(200, 30, 50, 0.1)'
-  x.font = `800 200px ${FONT}`
-  x.fillText('ЖИШЭЭ', 0, 70)
-  x.restore()
-  x.fillStyle = '#8a8d99'
-  x.font = `400 20px ${FONT}`
-  x.fillText('Туршилтын хувилбарын жишээ бичиг баримт', M, H - 90)
+  // Every page is marked as a sample, across it and at its foot, and numbered when there are several
+  pages.forEach((c, i) => {
+    const d = c.getContext('2d')!
+    d.save()
+    d.translate(W / 2, H / 2)
+    d.rotate(-Math.PI / 6)
+    d.textAlign = 'center'
+    d.fillStyle = 'rgba(200, 30, 50, 0.1)'
+    d.font = `800 200px ${FONT}`
+    d.fillText('ЖИШЭЭ', 0, 70)
+    d.restore()
+    d.fillStyle = '#8a8d99'
+    d.font = `400 20px ${FONT}`
+    d.fillText('Туршилтын хувилбарын жишээ бичиг баримт', M, H - 90)
+    if (pages.length > 1) {
+      d.textAlign = 'right'
+      d.fillText(`${i + 1} / ${pages.length}`, W - M, H - 90)
+    }
+  })
 
-  const png = await new Promise<Blob>((ok, fail) => c.toBlob(b => (b ? ok(b) : fail(new Error('canvas'))), 'image/png'))
-  return imagesToPdf([png])
+  const pngs = await Promise.all(pages.map(c => new Promise<Blob>((ok, fail) => c.toBlob(b => (b ? ok(b) : fail(new Error('canvas'))), 'image/png'))))
+  return imagesToPdf(pngs)
 }
 
 const signer = (id: string) => {
@@ -100,6 +150,21 @@ export async function docBlob(d: Doc): Promise<Blob | undefined> {
     actions.updateDoc(d.id, { file })
   } catch { /* shown this time, drawn again next time */ }
   return blob
+}
+
+/** A contract's paper copy as it reads now: its number once registered, both sides to sign at the end */
+export function contractPdf(c: Contract) {
+  const s = getState()
+  const company = companyName(c.company)
+  const head = s.people.find(p => p.id === rolesOf(s, c.company).director)
+  return paperPdf({
+    company,
+    title: c.title,
+    date: dateDots(c.regDate ? parse(c.regDate) : new Date()),
+    number: `№ ${c.number ?? '________'}`,
+    lines: [`${CONTRACT_KIND[c.kind]}. Талууд: ${company}, ${c.party}.`, ...contractLines(c)],
+    signers: [`${company}   ________________   ${head ? short(head) : ''}`, `${c.party}   ________________`],
+  })
 }
 
 export async function downloadDoc(d: Doc) {

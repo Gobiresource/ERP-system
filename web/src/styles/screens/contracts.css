@@ -1,0 +1,161 @@
+/* Гэрээ (screens/docs/Contracts.tsx, Contract.tsx): the list, then one contract as a sheet of paper beside its progress,
+   versions and history. The paper is solid: people read and type on it for a long time. */
+
+/* Demo only: who the pages act as */
+.actas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 14px; padding: 8px 12px; border-radius: 14px; background: var(--fill); font-size: 13.5px; }
+.actas__tag { padding: 2px 8px; border-radius: 999px; background: var(--glass-solid); color: var(--accent-ink); font-weight: 650; font-size: 12px; box-shadow: 0 0 0 1px var(--sep); }
+.actas label { color: var(--text-2); }
+.actas select { min-width: 0; max-width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: 10px; background: var(--glass-solid); color: var(--text); font: 600 13.5px var(--font); box-shadow: 0 0 0 1px var(--sep); }
+.seg__count { min-width: 18px; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: #fff; font: 650 11.5px/1.3 var(--font); font-variant-numeric: tabular-nums; }
+
+/* The list */
+.ctlist { padding: 6px; }
+.ctlist ul { display: grid; gap: 2px; }
+.ctrow {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto 92px; align-items: center; gap: 14px; padding: 10px 12px; border-radius: 14px;
+  color: var(--text); text-decoration: none; transition: background .2s;
+}
+@media (hover: hover) { .ctrow:hover { background: var(--fill-hover); } }
+.ctrow:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: -2px; }
+.ctrow__ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); }
+.ctrow__text { display: grid; min-width: 0; }
+.ctrow__text b, .ctrow__text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctrow__text b { font-size: 15px; font-weight: 600; }
+.ctrow__text small { font-size: 13px; color: var(--text-2); }
+.ctrow__todo { padding: 4px 10px; border-radius: 999px; background: var(--accent); color: #fff; font: 650 12.5px/1.2 var(--font); white-space: nowrap; }
+.ctrow__owner { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.ctrow__state { display: grid; justify-items: end; gap: 5px; }
+.ctrow__at { font-size: 12.5px; color: var(--text-2); text-align: right; white-space: nowrap; }
+
+/* A contract's stage in a word */
+.ctpill { padding: 2px 9px; border-radius: 999px; background: var(--fill-2); color: var(--text-2); font: 650 12px/1.4 var(--font); white-space: nowrap; }
+.ctpill--review, .ctpill--clerk, .ctpill--director, .ctpill--register, .ctpill--deliver { background: var(--accent-soft); color: var(--accent-ink); }
+.ctpill--back { background: color-mix(in srgb, var(--danger) 9%, transparent); color: var(--bad-ink); }
+.ctpill--done { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--ok-ink); }
+
+/* A dot for each stage; review is a pair, finance and the lawyer */
+.ctdots { display: flex; align-items: center; gap: 4px; }
+.ctdots li, .ctdots i { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--fill-2); }
+.ctdots li.ctdots__pair { display: flex; gap: 2px; width: auto; height: auto; background: none; }
+.ctdots i { width: 6px; }
+.ctdots .is-past { background: var(--ok-ink); }
+.ctdots .is-now { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.ctdots.is-off li, .ctdots.is-off i { background: var(--fill-2); box-shadow: none; }
+
+/* One contract */
+.dback + .head { margin-top: 4px; }
+.ctgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); align-items: start; gap: 20px; }
+.ctside { display: grid; gap: 16px; min-width: 0; }
+.ctside .card { padding: 18px; }
+.ctside h2 { font: 650 15px/1.3 var(--font); }
+.ctside h2 .tnum { color: var(--text-2); font-weight: 600; }
+
+/* The sheet of paper */
+.paper {
+  min-width: 0; padding: 48px 56px 40px; border-radius: 8px; background: var(--paper); color: var(--paper-ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 16px 44px -20px rgb(10 20 60 / .4);
+}
+.paper__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid var(--paper-rule); }
+.paper__co { font: 700 16px/1.3 var(--font); color: var(--paper-brand); }
+.paper__no { justify-self: end; font-size: 14px; color: var(--paper-mute); white-space: nowrap; }
+.paper__name { grid-column: 1 / -1; margin-top: 20px; font: 700 23px/1.3 var(--font); text-align: center; text-wrap: balance; }
+.paper__kind { grid-column: 1 / -1; font-size: 14px; color: var(--paper-mute); text-align: center; text-wrap: balance; }
+.paper__clauses { display: grid; gap: 20px; }
+.paper__clauses h3 { margin-bottom: 4px; font: 650 16px/1.45 var(--font); }
+.paper__clauses p { font-size: 15.5px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.paper__lock { margin-top: 28px; padding-top: 14px; border-top: 1px dashed var(--paper-rule); font-size: 13px; color: var(--paper-mute); }
+
+/* Typing straight into it: fields look like the text until pointed at or focused */
+.paper__clauses.is-edit { gap: 14px; }
+.paper__h { display: flex; align-items: center; gap: 4px; }
+.paper__n { flex: none; font: 650 16px/1.45 var(--font); }
+.paper__title, .paper__body {
+  min-width: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; transition: background .15s;
+}
+.paper__title { flex: 1; padding: 2px 6px; font: 650 16px/1.45 var(--font); }
+.paper__body { display: block; width: calc(100% + 12px); margin: 2px -6px 0; padding: 4px 6px; overflow: hidden; resize: none; font: 400 15.5px/1.7 var(--font); }
+@media (hover: hover) { .paper__title:hover, .paper__body:hover { background: var(--paper-hover); } }
+.paper__title:focus, .paper__body:focus { outline: 2px solid var(--accent-ink); outline-offset: 0; background: var(--paper-hover); }
+.paper__drop { color: var(--paper-mute); opacity: 0; transition: opacity .15s; }
+.paper__clauses li:hover .paper__drop, .paper__clauses li:focus-within .paper__drop { opacity: 1; }
+@media (hover: none) { .paper__drop { opacity: 1; } }
+.paper__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--paper-rule); }
+.paper__saved { font-size: 13px; color: var(--paper-mute); }
+
+/* A version's changes */
+.paper__diff { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 22px; padding: 10px 12px; border-radius: 12px; background: var(--paper-hover); font-size: 14px; }
+.paper ins { padding: 0 2px; border-radius: 3px; background: var(--ins-bg); color: var(--ins-ink); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.paper del { padding: 0 2px; border-radius: 3px; background: var(--del-bg); color: var(--del-ink); text-decoration: line-through; }
+.paper__clauses.is-diff li.is-new { padding-left: 12px; box-shadow: inset 3px 0 0 var(--ok-ink); }
+.paper__clauses.is-diff li.is-gone { padding-left: 12px; box-shadow: inset 3px 0 0 var(--bad-ink); }
+
+/* Progress and what to do */
+.ctstate { display: grid; gap: 14px; }
+.ctstate__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ctback { display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--danger) 10%, transparent); font-size: 13.5px; line-height: 1.45; }
+.ctback .ico { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--bad-ink); }
+.ctsteps li { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding-bottom: 12px; }
+.ctsteps li:not(:last-child)::before { position: absolute; top: 24px; bottom: 2px; left: 10px; width: 2px; border-radius: 1px; background: var(--sep); content: ''; }
+.ctsteps li.is-past:not(:last-child)::before { background: color-mix(in srgb, var(--ok-ink) 45%, transparent); }
+.ctsteps__dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--fill-2); }
+.ctsteps__dot .ico { width: 14px; height: 14px; stroke-width: 3; }
+.ctsteps .is-past .ctsteps__dot { background: var(--ok-ink); box-shadow: none; color: var(--glass-solid); }
+.ctsteps .is-now .ctsteps__dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.ctsteps__text { display: grid; gap: 1px; min-width: 0; padding-top: 1px; }
+.ctsteps__text b { font-size: 14px; font-weight: 600; }
+.ctsteps li:not(.is-past):not(.is-now) .ctsteps__text b { color: var(--text-2); font-weight: 500; }
+.ctsteps__text small { font-size: 12.5px; color: var(--text-2); }
+.ctsteps__text small.is-ok { color: var(--ok-ink); }
+.ctsteps.is-off { opacity: .6; }
+.ctact { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--sep); }
+.ctact > .btn--accent { width: 100%; }
+.ctact__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ctact__row .btn { flex: 1 1 auto; }
+.ctact__more { display: flex; flex-wrap: wrap; gap: 8px; }
+.ctact__hint, .ctact__wait { font-size: 13px; line-height: 1.45; color: var(--text-2); }
+.ctact__ask { display: flex; gap: 8px; font-size: 13.5px; line-height: 1.45; color: var(--accent-ink); }
+.ctact__ask .ico { flex: none; width: 18px; height: 18px; }
+
+/* Versions */
+.ctver ul { display: grid; gap: 2px; margin-top: 10px; }
+.ctver__row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border-radius: 12px; color: var(--text); text-align: left; }
+@media (hover: hover) { .ctver__row:hover { background: var(--fill-hover); } }
+.ctver__row[aria-pressed="true"] { background: var(--accent-soft); }
+.ctver__row:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: -2px; }
+.ctver__text { display: grid; flex: 1; min-width: 0; }
+.ctver__text b { font-size: 14px; font-weight: 600; }
+.ctver__text small { font-size: 12.5px; color: var(--text-2); }
+.ctver__now { padding: 2px 8px; border-radius: 999px; background: var(--fill-2); color: var(--text); font: 650 11.5px/1.4 var(--font); }
+
+/* History */
+.ctlog ol { display: grid; gap: 12px; margin: 12px 0 14px; }
+.ctlog li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: start; gap: 10px; }
+.ctlog__main p { font-size: 13.5px; line-height: 1.45; }
+.ctlog__main time { margin-left: 4px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.ctlog q { display: block; margin-top: 5px; padding: 8px 10px; border-radius: 10px; background: var(--fill); font-size: 13.5px; line-height: 1.5; quotes: none; }
+.ctlog q.is-back { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.ctlog__form { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--sep); }
+.ctlog__form textarea { width: 100%; min-height: 64px; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--fill); color: var(--text); font: 14px/1.5 var(--font); resize: vertical; }
+.ctlog__form textarea:focus { outline: 2.5px solid var(--accent-ink); outline-offset: 0; }
+.ctlog__form .btn { justify-self: end; }
+
+@media (width <= 1100px) {
+  .ctgrid { grid-template-columns: minmax(0, 1fr); }
+  /* Progress above the paper, versions and history below */
+  .ctside { display: contents; }
+  .ctstate { order: -1; }
+  .ctver, .ctlog { order: 1; }
+}
+@media (width <= 760px) {
+  /* Name and the other side on top, the whole width; progress and what to do under them */
+  .ctrow { grid-template-areas: "ico text text" "ico state todo"; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px 12px; }
+  .ctrow__ico { grid-area: ico; align-self: start; }
+  .ctrow__text { grid-area: text; }
+  .ctrow__text b, .ctrow__text small { white-space: normal; }
+  .ctrow__state { display: flex; flex-wrap: wrap; grid-area: state; align-items: center; gap: 6px 8px; min-width: 0; }
+  .ctrow__todo, .ctrow__owner { grid-area: todo; align-self: start; justify-self: end; }
+  .ctrow__at { display: none; }
+  .paper { padding: 26px 18px 24px; border-radius: 6px; }
+  .paper__name { font-size: 20px; }
+  .paper__clauses p, .paper__body { font-size: 16px; }
+}

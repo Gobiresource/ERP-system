@@ -1,8 +1,8 @@
 // Tabs between the pages of one section, above each page title (Хүний нөөц, Ноорог)
-import { useRef } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { useLens } from '../lib/motion'
 
-export function SubNav({ label, base, tabs, at }: { label: string; base: string; tabs: readonly (readonly [string, string])[]; at: string }) {
+export function SubNav({ label, base, tabs, at }: { label: string; base: string; tabs: readonly (readonly [string, ReactNode])[]; at: string }) {
   const track = useRef<HTMLDivElement>(null)
   const lens = useRef<HTMLSpanElement>(null)
   useLens(track, lens, '[aria-current="page"]', at)

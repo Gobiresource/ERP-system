@@ -25,6 +25,12 @@ export type Dialog =
   | { kind: 'chatGroup'; id: Id }
   | { kind: 'file'; file: BoardFile }
   | { kind: 'readers'; id: Id }
+  | { kind: 'newContract' }
+  | { kind: 'contractReason'; id: Id; step: 'return' | 'cancel' }
+  | { kind: 'contractRegister'; id: Id }
+  | { kind: 'contractAsk'; id: Id }
+  | { kind: 'contractPdf'; id: Id }
+  | { kind: 'processRoles' }
   | null
 
 export interface Note {
@@ -48,9 +54,11 @@ export interface Ui {
   note: Note | null
   islandOpen: boolean
   focus: Focus
+  /** Demo only: the person the contract pages act as, to try every step of the process (null: me) */
+  actAs: Id | null
 }
 
-let ui: Ui = { dialog: null, finder: false, note: null, islandOpen: false, focus: { status: 'idle', total: 0, endsAt: 0, left: 0 } }
+let ui: Ui = { dialog: null, finder: false, note: null, islandOpen: false, focus: { status: 'idle', total: 0, endsAt: 0, left: 0 }, actAs: null }
 const subs = new Set<() => void>()
 const subscribe = (f: () => void) => (subs.add(f), () => void subs.delete(f))
 const set = (patch: Partial<Ui>) => {
@@ -65,6 +73,7 @@ export const open = (dialog: Dialog) => set({ dialog })
 export const close = () => set({ dialog: null })
 export const setFinder = (finder: boolean) => set({ finder })
 export const setIslandOpen = (islandOpen: boolean) => set({ islandOpen })
+export const setActAs = (actAs: Id | null) => set({ actAs })
 
 let noteId = 0
 let noteTimer = 0
