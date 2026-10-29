@@ -12,6 +12,7 @@ import { Dialogs } from './dialogs/Dialogs'
 import { pageLabel } from './shell/nav'
 import Home from './screens/Home'
 import Tasks from './screens/Tasks'
+import Chat from './screens/Chat'
 import Calendar from './screens/Calendar'
 import Projects from './screens/Projects'
 import Draft from './screens/Draft'
@@ -23,7 +24,7 @@ import Settings from './screens/Settings'
 
 // All screens ship in one file: a page change never waits for the network (about 100 KB more on first load)
 const SCREENS: Record<Page, ComponentType<{ id?: string }>> = {
-  home: Home, tasks: Tasks, calendar: Calendar, projects: Projects, draft: Draft, insights: Insights, team: Team, hr: Hr, docs: Docs, preferences: Settings,
+  home: Home, tasks: Tasks, chat: Chat, calendar: Calendar, projects: Projects, draft: Draft, insights: Insights, team: Team, hr: Hr, docs: Docs, preferences: Settings,
 }
 
 export function App() {

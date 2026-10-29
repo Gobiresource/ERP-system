@@ -9,6 +9,7 @@ import { EventDrawer } from './EventDrawer'
 import { NewEvent } from './NewEvent'
 import { DeptForm, PositionForm } from './HrForms'
 import { CompanyForm, DocAdd, DocSheet, RequestForm, RequestSheet } from './DocForms'
+import { ChatGroup, NewChat, Picture } from './ChatForms'
 
 /** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
 export function Dialogs() {
@@ -31,5 +32,8 @@ export function Dialogs() {
     case 'company': return <CompanyForm id={dialog.id} />
     case 'docRequest': return <RequestForm />
     case 'request': return <RequestSheet key={dialog.id} id={dialog.id} office={dialog.office} />
+    case 'newChat': return <NewChat />
+    case 'chatGroup': return <ChatGroup key={dialog.id} id={dialog.id} />
+    case 'picture': return <Picture key={dialog.file.id} file={dialog.file} />
   }
 }

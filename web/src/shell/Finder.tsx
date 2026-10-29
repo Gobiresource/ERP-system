@@ -1,7 +1,8 @@
 // Search (Ctrl K): pages, tasks, projects, events, people, boards, documents and HR records of the current company in one list.
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { CalendarDays, ChevronRight, FileText, FolderOpen, NotebookPen, Search } from 'lucide-react'
+import { CalendarDays, ChevronRight, FileText, FolderOpen, MessagesSquare, NotebookPen, Search } from 'lucide-react'
 import { scoped, useApp } from '../lib/store'
+import { chatName, myChats } from '../lib/chat'
 import { open, setFinder, useUi } from '../lib/ui'
 import { go } from '../lib/router'
 import { dueLabel, hm, parse, short } from '../lib/format'
@@ -85,6 +86,11 @@ function FinderDialog() {
     // Ноорог: my boards, also by what their cards say
     add(s.drafts.filter(d => d.company === s.company && d.owner === s.me && has(d.name, ...d.cards.map(c => c.text ?? c.file?.name))).map(d => ({
       id: d.id, group: 'Ноорог', title: d.name, sub: `${d.cards.length} зүйл`, lead: <span className="lead"><NotebookPen className="ico" /></span>, run: () => go('draft', d.id),
+    })))
+    // Чат: my chats by their name
+    add(myChats(s).filter(c => has(chatName(c, s.people, s.me))).map(c => ({
+      id: `chat-${c.id}`, group: 'Чат', title: chatName(c, s.people, s.me), sub: c.kind === 'group' ? `${c.members.length} гишүүн` : 'Чат',
+      lead: <span className="lead"><MessagesSquare className="ico" /></span>, run: () => go('chat', c.id),
     })))
     // Бичиг хэрэг: the folder of each company I work in, and the documents I can see
     add(s.companies.filter(c => sc.me.companies.includes(c.id) && has(c.name)).map(c => ({

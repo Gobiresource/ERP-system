@@ -1,7 +1,7 @@
 // Pages live in the address hash: #tasks, #project-p1, #hr-employees, #draft-b1. Plain names only, so links also work inside a preview page.
 import { useSyncExternalStore } from 'react'
 
-export const PAGES = ['home', 'tasks', 'calendar', 'projects', 'draft', 'insights', 'team', 'hr', 'docs', 'preferences'] as const
+export const PAGES = ['home', 'tasks', 'chat', 'calendar', 'projects', 'draft', 'insights', 'team', 'hr', 'docs', 'preferences'] as const
 export type Page = (typeof PAGES)[number]
 export interface Route { page: Page; id?: string }
 
@@ -14,6 +14,8 @@ export function parse(hash: string): Route {
   // (the PDF tool was at #draft-pdf before)
   if (h.startsWith('docs-')) return { page: 'docs', id: h.slice(5) }
   if (h === 'draft-pdf' || h.startsWith('draft-pdf-')) return { page: 'docs', id: h.slice(6) }
+  // Чат: #chat, #chat-<chat>
+  if (h.startsWith('chat-')) return { page: 'chat', id: h.slice(5) }
   // Ноорог: #draft, #draft-<board>
   if (h.startsWith('draft-')) return { page: 'draft', id: h.slice(6) }
   return { page: (PAGES as readonly string[]).includes(h) ? (h as Page) : 'home' }

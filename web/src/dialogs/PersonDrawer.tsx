@@ -1,5 +1,5 @@
 // A colleague's profile: status, workload, open tasks, this week's events, projects.
-import { ChevronRight, Clock, Mail, PartyPopper } from 'lucide-react'
+import { ChevronRight, Clock, Mail, MessageSquare, PartyPopper } from 'lucide-react'
 import '../styles/screens/team.css'
 import type { Presence } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
@@ -40,6 +40,12 @@ export function PersonDrawer({ id }: { id: string }) {
             </div>
           </div>
         </div>
+
+        {!me && (
+          <button type="button" className="btn btn--accent prof__chat" onClick={() => { close(); go('chat', actions.directChat(p.id).id) }}>
+            <MessageSquare className="ico" />Чатлах
+          </button>
+        )}
 
         {me && (
           <div className="prof__status">

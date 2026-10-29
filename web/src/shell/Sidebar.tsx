@@ -5,12 +5,14 @@ import { useLens } from '../lib/motion'
 import { CompanySwitcher } from './CompanySwitcher'
 import { AccountMenu } from './AccountMenu'
 import { NAV } from './nav'
+import { myChats, unread } from '../lib/chat'
 
 export function Sidebar() {
   const s = useApp()
   const route = useRoute()
   const { tasks, projects } = scoped(s)
   const open = tasks.filter(t => t.assignees.includes(s.me) && t.status !== 'done').length
+  const fresh = myChats(s).reduce((n, c) => n + unread(c, s.messages, s.me), 0)
   const pinned = projects.filter(p => p.pinned)
   const track = useRef<HTMLDivElement>(null)
   const lens = useRef<HTMLSpanElement>(null)
@@ -28,6 +30,9 @@ export function Sidebar() {
               <span className="nav__text">{n.label}</span>
               {n.page === 'tasks' && open > 0 && (
                 <span className="nav__count">{open}<span className="sr-only"> дуусаагүй ажил</span></span>
+              )}
+              {n.page === 'chat' && fresh > 0 && (
+                <span className="nav__count">{fresh}<span className="sr-only"> шинэ мессеж</span></span>
               )}
             </a>
           ))}

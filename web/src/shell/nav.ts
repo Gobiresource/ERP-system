@@ -1,9 +1,10 @@
-import { CalendarDays, ChartColumn, Files, Folder, House, IdCard, NotebookPen, Settings, SquareCheck, Users } from 'lucide-react'
+import { CalendarDays, ChartColumn, Files, Folder, House, IdCard, MessagesSquare, NotebookPen, Settings, SquareCheck, Users } from 'lucide-react'
 import type { Page } from '../lib/router'
 
 export const NAV: { page: Page; label: string; icon: typeof House; key: string }[] = [
   { page: 'home', label: 'Нүүр', icon: House, key: 'H' },
   { page: 'tasks', label: 'Ажил', icon: SquareCheck, key: 'T' },
+  { page: 'chat', label: 'Чат', icon: MessagesSquare, key: 'J' },
   { page: 'calendar', label: 'Календарь', icon: CalendarDays, key: 'C' },
   { page: 'projects', label: 'Төсөл', icon: Folder, key: 'P' },
   { page: 'draft', label: 'Ноорог', icon: NotebookPen, key: 'D' },

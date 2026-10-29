@@ -281,6 +281,39 @@ export interface Doc {
   added: string // ISO
 }
 
+// Чат: two people (direct) or a named group. One list for the whole group of companies, not for one ХХК.
+
+export interface Chat {
+  id: Id
+  kind: 'direct' | 'group'
+  /** Groups only */
+  name?: string
+  hue?: Hue
+  members: Id[]
+  by: Id
+  created: string // ISO
+  /** When each member last read it (ISO): later messages by others are unread */
+  read: Record<Id, string>
+}
+
+/** What a message points to. A person is named in the text as @name; the others show as cards under it. */
+export interface ChatRef {
+  kind: 'person' | 'task' | 'event' | 'doc'
+  id: Id
+  label: string
+}
+
+export interface Message {
+  id: Id
+  chat: Id
+  by: Id
+  at: string // ISO
+  text: string
+  refs: ChatRef[]
+  /** Files and pictures sent with it, in the browser's file store */
+  files: BoardFile[]
+}
+
 export type ReqStatus = 'sent' | 'working' | 'ready' | 'done' | 'declined'
 
 /** A request to the office for a document */
@@ -320,5 +353,7 @@ export interface State {
   drafts: Draft[]
   docs: Doc[]
   requests: DocRequest[]
+  chats: Chat[]
+  messages: Message[]
   settings: Settings
 }

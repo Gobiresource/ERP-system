@@ -1,6 +1,6 @@
 // Screen state that is not saved: which window is open, the island message, the focus timer.
 import { useSyncExternalStore } from 'react'
-import type { Id, Task, CalEvent } from './types'
+import type { BoardFile, Id, Task, CalEvent } from './types'
 import { actions, getState } from './store'
 
 export type Dialog =
@@ -20,6 +20,9 @@ export type Dialog =
   | { kind: 'company'; id?: Id }
   | { kind: 'docRequest' }
   | { kind: 'request'; id: Id; office?: boolean }
+  | { kind: 'newChat' }
+  | { kind: 'chatGroup'; id: Id }
+  | { kind: 'picture'; file: BoardFile }
   | null
 
 export interface Note {

@@ -1,6 +1,6 @@
 // Top toolbar: search, create, light/dark, notifications (and the company + personal menu on small screens).
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { AtSign, BadgeCheck, Bell, CalendarClock, CalendarPlus, CircleCheck, FolderPlus, ListChecks, Moon, Plus, Search, SquareCheck, Sun, UserPlus } from 'lucide-react'
+import { AtSign, BadgeCheck, Bell, CalendarClock, CalendarPlus, CircleCheck, FolderPlus, ListChecks, MessageSquarePlus, Moon, Plus, Search, SquareCheck, Sun, UserPlus } from 'lucide-react'
 import type { NoteKind } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { focus, open, setFinder } from '../lib/ui'
@@ -68,6 +68,7 @@ function CreateMenu() {
         <MenuItem icon={<SquareCheck className="ico" />} onSelect={pick(() => open({ kind: 'newTask' }))}>Шинэ ажил</MenuItem>
         <MenuItem icon={<CalendarPlus className="ico" />} onSelect={pick(() => open({ kind: 'newEvent' }))}>Шинэ тов</MenuItem>
         <MenuItem icon={<FolderPlus className="ico" />} onSelect={pick(() => open({ kind: 'newProject' }))}>Шинэ төсөл</MenuItem>
+        <MenuItem icon={<MessageSquarePlus className="ico" />} onSelect={pick(() => open({ kind: 'newChat' }))}>Шинэ чат</MenuItem>
         <hr />
         <MenuItem icon={<Moon className="ico" />} onSelect={pick(() => focus.start(minutes))}>{minutes} минут төвлөрөх</MenuItem>
       </Menu>

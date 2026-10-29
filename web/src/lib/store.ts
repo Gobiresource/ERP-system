@@ -1,9 +1,10 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { CalEvent, Company, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, Person, Position, Presence, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { CalEvent, Chat, Company, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, Message, Person, Position, Presence, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
+import { seedChats } from './chat'
 import { companyMark } from './format'
 
 const KEY = 'erp:v1'
@@ -26,6 +27,8 @@ function load(): State | null {
     if (s.tasks.some((t: Partial<Task>) => !t.assignees)) {
       s = { ...s, tasks: s.tasks.map(({ assignee, ...t }: Task & { assignee?: Id }) => ({ ...t, assignees: t.assignees ?? (assignee ? [assignee] : []) })) }
     }
+    // Saved before Чат existed
+    if (!s.chats) s = { ...s, ...seedChats(new Date(), s) }
     return s
   } catch {
     return null
@@ -246,6 +249,32 @@ export const actions = {
     set(s => ({ ...s, drafts: s.drafts.filter(x => x.id !== id) }))
     return () => set(s => ({ ...s, drafts: [...s.drafts.slice(0, i), d, ...s.drafts.slice(i)] }))
   },
+
+  // Чат
+  /** My chat with this person, made the first time */
+  directChat(person: Id) {
+    const found = state.chats.find(c => c.kind === 'direct' && c.members.includes(person) && c.members.includes(state.me))
+    if (found) return found
+    const at = new Date().toISOString()
+    const chat: Chat = { id: uid('ch'), kind: 'direct', members: [state.me, person], by: state.me, created: at, read: { [state.me]: at } }
+    set(s => ({ ...s, chats: [...s.chats, chat] }))
+    return chat
+  },
+  addGroup(g: Pick<Chat, 'name' | 'hue' | 'members'>) {
+    const at = new Date().toISOString()
+    const chat: Chat = { ...g, id: uid('ch'), kind: 'group', by: state.me, created: at, read: { [state.me]: at } }
+    set(s => ({ ...s, chats: [...s.chats, chat] }))
+    return chat
+  },
+  updateChat: (id: Id, patch: Pick<Chat, 'name' | 'members'>) => set(s => ({ ...s, chats: s.chats.map(c => (c.id === id ? { ...c, ...patch } : c)) })),
+  /** Sending also marks the chat read up to now */
+  sendMessage(chat: Id, m: Pick<Message, 'text' | 'refs' | 'files'>) {
+    const at = new Date().toISOString()
+    const msg: Message = { ...m, id: uid('cm'), chat, by: state.me, at }
+    set(s => ({ ...s, messages: [...s.messages, msg], chats: s.chats.map(c => (c.id === chat ? { ...c, read: { ...c.read, [s.me]: at } } : c)) }))
+    return msg
+  },
+  readChat: (chat: Id) => set(s => ({ ...s, chats: s.chats.map(c => (c.id === chat ? { ...c, read: { ...c.read, [s.me]: new Date().toISOString() } } : c)) })),
 
   // Бичиг хэрэг
   /** Into a company's folder: the current one unless another is given */

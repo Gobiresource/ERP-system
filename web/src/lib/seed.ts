@@ -4,6 +4,7 @@ import { addDays, ymd, ymdhm } from './format'
 import { seedHr } from './seedHr'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
+import { seedChats } from './chat'
 
 let n = 0
 const uid = (p: string) => `${p}${++n}`
@@ -209,6 +210,7 @@ export function seed(): State {
     }
   }
 
+  const docs = seedDocs(now)
   return {
     version: 1,
     me: 'u1',
@@ -222,7 +224,8 @@ export function seed(): State {
     focusLog,
     ...seedHr(now, people),
     drafts: seedDrafts(now, 'u1'),
-    ...seedDocs(now),
+    ...docs,
+    ...seedChats(now, { tasks, events, docs: docs.docs }),
     settings: {
       theme: 'system',
       wall: 'ash',
