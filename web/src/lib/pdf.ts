@@ -88,15 +88,42 @@ export async function drawPage(src: Pick<Source, 'view'>, index: number, size: n
   return canvas
 }
 
-/** A PDF from page pictures (PNG), each filling an A4 page */
-export async function imagesToPdf(pngs: Blob[]) {
+/** A PDF from page pictures (PNG or JPEG), each filling an A4 page */
+export async function imagesToPdf(pics: Blob[]) {
   const lib = await loadPdfLib()
   const out = await lib.PDFDocument.create()
-  for (const png of pngs) {
-    const img = await out.embedPng(new Uint8Array(await png.arrayBuffer()))
+  for (const pic of pics) {
+    const bytes = new Uint8Array(await pic.arrayBuffer())
+    const img = pic.type === 'image/jpeg' ? await out.embedJpg(bytes) : await out.embedPng(bytes)
     out.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 })
   }
   return new Blob([(await out.save()) as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
+}
+
+const toBlob = (bytes: Uint8Array) => new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
+
+/** A file for each group of pages (0-based) of one PDF, the pages copied as they are */
+export async function pickPages(file: Blob, groups: number[][]) {
+  const lib = await loadPdfLib()
+  const src = await lib.PDFDocument.load(new Uint8Array(await file.arrayBuffer()), { ignoreEncryption: true })
+  const out: Blob[] = []
+  for (const g of groups) {
+    const doc = await lib.PDFDocument.create()
+    for (const page of await doc.copyPages(src, g)) doc.addPage(page)
+    out.push(toBlob(await doc.save()))
+  }
+  return out
+}
+
+/** One PDF of several, one after another */
+export async function joinPdfs(files: Blob[]) {
+  const lib = await loadPdfLib()
+  const doc = await lib.PDFDocument.create()
+  for (const f of files) {
+    const src = await lib.PDFDocument.load(new Uint8Array(await f.arrayBuffer()), { ignoreEncryption: true })
+    for (const page of await doc.copyPages(src, src.getPageIndices())) doc.addPage(page)
+  }
+  return toBlob(await doc.save())
 }
 
 /** Builds the new file from the pages in their order, with their turns and signatures */

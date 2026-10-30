@@ -34,6 +34,7 @@ export type Dialog =
   | { kind: 'reportReturn'; id: Id }
   | { kind: 'reportPdf'; id: Id }
   | { kind: 'kpiRules' }
+  | { kind: 'scanSplit'; id: Id; ai: boolean }
   | null
 
 export interface Note {

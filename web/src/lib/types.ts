@@ -301,8 +301,14 @@ export interface ScanItem {
   thumb?: Id
   by: Id
   added: string
-  /** waiting and reading: AI's turn; manual: no AI, the office fills it in */
-  state: 'waiting' | 'reading' | 'read' | 'failed' | 'manual'
+  /** waiting, splitting and reading: AI's turn; manual: no AI, the office fills it in */
+  state: 'waiting' | 'splitting' | 'reading' | 'read' | 'failed' | 'manual'
+  /** Looked through for several papers in one file (or one page only, or cut from a stack already) */
+  mapped?: boolean
+  /** A paper cut from a stack scanned into one file: that file's name and its pages in it */
+  from?: { batch: Id; name: string; pages: number[] }
+  /** On the demo stack: where AI would split it, the blank pages, and what it would read from each paper */
+  suggest?: { starts: number[]; blank: number[]; readings: ScanReading[] }
   /** What AI read. On a demo paper: what it would read, shown as an example. */
   reading?: ScanReading
   sample?: boolean

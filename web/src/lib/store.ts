@@ -460,7 +460,10 @@ export const actions = {
   setKpi: (company: Id, rules: KpiRules) => set(s => ({ ...s, kpi: { ...s.kpi, [company]: rules } })),
 
   // Скан оруулах
-  addScans: (items: ScanItem[]) => set(s => ({ ...s, scans: [...items, ...s.scans] })),
+  /** New scans go last: AI reads them in the order they came, like the paper stack */
+  addScans: (items: ScanItem[]) => set(s => ({ ...s, scans: [...s.scans, ...items] })),
+  /** A stack's place in the inbox goes to the papers cut from it */
+  replaceScan: (id: Id, items: ScanItem[]) => set(s => ({ ...s, scans: s.scans.flatMap(x => (x.id === id ? items : [x])) })),
   setScan: (id: Id, patch: Partial<ScanItem>) => set(s => ({ ...s, scans: s.scans.map(x => (x.id === id ? { ...x, ...patch } : x)) })),
   addAiCost: (usd: number) => set(s => ({ ...s, aiSpent: s.aiSpent + usd })),
   /** Takes a scan out of the inbox; returns undo */

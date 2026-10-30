@@ -1,6 +1,7 @@
 // Scanned papers → what they are. The office uploads scans in Бичиг хэрэг; the browser sends a few pages as pictures,
 // and this asks a vision model through OpenRouter which of our ХХК the paper belongs to, what kind it is, its title,
-// number, date, other side and sum (docs/decisions.md, 2026-10-30). The key stays here, never in the browser.
+// number, date, other side and sum (docs/decisions.md, 2026-10-30). A stack scanned into one file is split first: small
+// pictures of its pages, and AI says where each paper begins and which pages are blank. The key stays here, never in the browser.
 // Only endpoints that keep nothing are used (provider.zdr), and none that may collect the data for training.
 // Web-standard Request and Response only, so the same code runs on Node (main.ts), Cloudflare Workers or Deno.
 import type { ContractType, DocKind, ScanReading } from '../src/lib/types.ts'
@@ -19,10 +20,18 @@ const TYPES: ContractType[] = ['work', 'sale', 'service', 'lease', 'employment']
 export const MAX_PAGES = 3
 /** Characters of one page's data URL, about 3 MB */
 const MAX_PAGE = 4_000_000
+/** Small page pictures looked at in one go when splitting a stack, and their size */
+export const MAX_SPLIT = 17
+const MAX_SMALL = 1_500_000
 
-/** What the browser sends: page pictures as data URLs, the file's name, and our companies to tell which one it is */
-export interface ScanRequest { pages: string[]; name: string; companies: { id: string; name: string }[] }
+/**
+ * What the browser sends: page pictures as data URLs, the file's name, and our companies to tell which one it is. To
+ * split a stack (`task: 'split'`): the pictures are pages `first`, `first + 1`…; with `context`, the first of them is
+ * the last page of the part before, shown only to tell whether the next one goes on with it.
+ */
+export interface ScanRequest { task?: 'read' | 'split'; pages: string[]; name: string; companies: { id: string; name: string }[]; first?: number; context?: boolean }
 export interface ScanResponse { reading: ScanReading; model: string; cost: number | null }
+export interface SplitResponse { starts: number[]; blank: number[]; model: string; cost: number | null }
 
 const text = (description: string) => ({ type: 'string', description })
 const maybe = (description: string) => ({ type: ['string', 'null'], description })
@@ -46,6 +55,22 @@ const SCHEMA = {
     notes: maybe('A short note in Mongolian for the clerk when something needs checking'),
   },
 }
+
+const SPLIT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['starts', 'blank'],
+  properties: {
+    starts: { type: 'array', items: { type: 'integer' }, description: 'Page numbers where a new paper begins' },
+    blank: { type: 'array', items: { type: 'integer' }, description: 'Page numbers that are blank' },
+  },
+}
+
+const SPLIT_PROMPT = `These pictures are pages of a stack of office papers of a Mongolian company, scanned together in order. Tell where each paper begins.
+- A page begins a new paper when it has its own heading (ГЭРЭЭ, ТУШААЛ, ШИЙДВЭР, АЛБАН БИЧИГ, a letterhead with a new number and date) or its page numbering starts again at 1.
+- A page goes on with the paper before it when its text continues, when it holds the signatures and stamps, or when it is that paper's appendix (хавсралт).
+- A page is blank when it shows nothing but scanner noise, often the empty back of a sheet.
+Each picture comes after its page number. List the page numbers that begin a paper, and those that are blank.`
 
 const prompt = (companies: ScanRequest['companies']) => `You read scanned office papers of a Mongolian group of companies. They are mostly in Cyrillic Mongolian, sometimes English, Russian or Chinese. From the page pictures, fill in the JSON.
 
@@ -87,12 +112,14 @@ export async function handleScan(req: Request, env: ScanEnv): Promise<Response> 
   } catch {
     return json({ error: 'Хүсэлт буруу байна.' }, 400)
   }
-  const pages = Array.isArray(body.pages) ? body.pages.slice(0, MAX_PAGES) : []
-  if (!pages.length || pages.some(p => typeof p !== 'string' || p.length > MAX_PAGE || !/^data:image\/(jpeg|png|webp);base64,/.test(p))) {
+  const split = body.task === 'split'
+  const pages = Array.isArray(body.pages) ? body.pages.slice(0, split ? MAX_SPLIT : MAX_PAGES) : []
+  if (!pages.length || pages.some(p => typeof p !== 'string' || p.length > (split ? MAX_SMALL : MAX_PAGE) || !/^data:image\/(jpeg|png|webp);base64,/.test(p))) {
     return json({ error: 'Хуудасны зургийг уншиж чадсангүй.' }, 400)
   }
   const companies = (Array.isArray(body.companies) ? body.companies : []).filter(c => typeof c?.id === 'string' && typeof c?.name === 'string').slice(0, 50)
   try {
+    if (split) return json(await splitStack(env.OPENROUTER_API_KEY, models, pages, Math.max(1, Math.floor(Number(body.first) || 1)), body.context === true))
     return json(await read(env.OPENROUTER_API_KEY, models, pages, companies, String(body.name ?? '').slice(0, 200)))
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : 'AI хариу өгсөнгүй.' }, 502)
@@ -100,13 +127,32 @@ export async function handleScan(req: Request, env: ScanEnv): Promise<Response> 
 }
 
 async function read(key: string, models: string[], pages: string[], companies: ScanRequest['companies'], name: string): Promise<ScanResponse> {
+  const user = [{ type: 'text', text: `File: ${name || 'unnamed'}. Pages shown: ${pages.length}.` }, ...pages.map(url => ({ type: 'image_url', image_url: { url } }))]
+  const r = await ask(key, models, prompt(companies), user, 'scan_reading', SCHEMA)
+  return { reading: tidy(r.raw, companies), model: r.model, cost: r.cost }
+}
+
+async function splitStack(key: string, models: string[], pages: string[], first: number, context: boolean): Promise<SplitResponse> {
+  const user = pages.flatMap((url, i) => [
+    { type: 'text', text: context && i === 0 ? `Page ${first} (the end of the part before; only to tell whether page ${first + 1} goes on with it)` : `Page ${first + i}` },
+    { type: 'image_url', image_url: { url } },
+  ])
+  const r = await ask(key, models, SPLIT_PROMPT, user, 'stack_split', SPLIT_SCHEMA)
+  return { ...tidySplit(r.raw, context ? first + 1 : first, first + pages.length - 1), model: r.model, cost: r.cost }
+}
+
+/** Page numbers from `lo` to `hi` only, once each, in order */
+export function tidySplit(raw: Record<string, unknown>, lo: number, hi: number) {
+  const pick = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).filter((n): n is number => Number.isInteger(n) && n >= lo && n <= hi))].sort((a, b) => a - b)
+  return { starts: pick(raw.starts), blank: pick(raw.blank) }
+}
+
+/** One question to a vision model, answered in the shape of `schema` */
+async function ask(key: string, models: string[], system: string, user: unknown[], name: string, schema: object) {
   const body = JSON.stringify({
     models,
-    messages: [
-      { role: 'system', content: prompt(companies) },
-      { role: 'user', content: [{ type: 'text', text: `File: ${name || 'unnamed'}. Pages shown: ${pages.length}.` }, ...pages.map(url => ({ type: 'image_url', image_url: { url } }))] },
-    ],
-    response_format: { type: 'json_schema', json_schema: { name: 'scan_reading', strict: true, schema: SCHEMA } },
+    messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+    response_format: { type: 'json_schema', json_schema: { name, strict: true, schema } },
     provider: { zdr: true, data_collection: 'deny', require_parameters: true },
     reasoning: { effort: 'low' },
     max_tokens: 2000,
@@ -128,8 +174,8 @@ async function read(key: string, models: string[], pages: string[], companies: S
     const content: unknown = data?.choices?.[0]?.message?.content
     if (typeof content !== 'string') throw new Error('AI хариу өгсөнгүй.')
     // Some models wrap the JSON in a code fence even when asked not to
-    const raw = JSON.parse(content.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, ''))
-    return { reading: tidy(raw, companies), model: String(data.model ?? models[0]), cost: typeof data.usage?.cost === 'number' ? data.usage.cost : null }
+    const raw: Record<string, unknown> = JSON.parse(content.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, ''))
+    return { raw, model: String(data.model ?? models[0]), cost: typeof data.usage?.cost === 'number' ? (data.usage.cost as number) : null }
   }
 }
 

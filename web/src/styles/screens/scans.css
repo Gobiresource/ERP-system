@@ -1,5 +1,5 @@
 /* Скан оруулах (screens/docs/Scans.tsx): whether AI reads, where scans go in, and a card for each paper with its page
-   beside what it will be filed as. */
+   beside what it will be filed as; one line for a paper AI is sure of. Cutting a file by hand: dialogs/ScanForms.tsx. */
 
 /* AI on or off */
 .saibar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; padding: 10px 14px; border-radius: 14px; background: var(--fill); font-size: 13.5px; line-height: 1.45; }
@@ -18,9 +18,11 @@
 .sdrop__text { display: grid; gap: 2px; min-width: 0; }
 .sdrop__text b { font-size: 15px; font-weight: 600; }
 .sdrop__text small { font-size: 13px; color: var(--text-2); }
-/* Phones cannot drag files; they pick them, or take a photo */
+.sdrop__text .sdrop__busy { font-weight: 600; color: var(--accent-ink); }
+.sdrop__btns { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Phones cannot drag files or pick a folder; they pick files, or take a photo */
 .sdrop__tap { display: none; }
-@media (hover: none) { .sdrop__drag { display: none; } .sdrop__tap { display: block; } }
+@media (hover: none) { .sdrop__drag, .sdrop__folder { display: none; } .sdrop__tap { display: block; } }
 
 /* A paper's state */
 .schip { display: inline-flex; flex: none; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, var(--glass-solid)); color: var(--text-2); font: 650 12px/1.5 var(--font); white-space: nowrap; }
@@ -55,6 +57,17 @@
 .scard__ai b { font-weight: 600; }
 .scard__warn { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--danger) 9%, transparent); }
 .scard__warn > .ico { color: var(--bad-ink); }
+/* Where the demo stack would be cut */
+.scard__split { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--accent-soft); font-size: 13.5px; line-height: 1.45; }
+.scard__split > .ico { flex: none; width: 16px; height: 16px; color: var(--accent-ink); }
+.scard__split > span { flex: 1 1 240px; min-width: 0; }
+.scard__split b { font-weight: 600; }
+
+/* A paper AI is sure of: one line, to file or open */
+.scard.is-short { grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 16px; padding-block: 12px; }
+.scard.is-short .scard__main { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.scard.is-short .scard__top { flex: 1 1 360px; min-width: 0; }
+.scard.is-short .scard__name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scard__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 12px; min-inline-size: 0; margin: 0; padding: 0; border: 0; }
 .scard__grid .field--wide { grid-column: span 2; }
 .scard__grid input, .scard__grid select { min-height: 40px; padding-block: 8px; font-size: 15px; }
@@ -67,10 +80,42 @@
 }
 @media (width <= 600px) {
   .scard { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+  .scard.is-short { grid-template-columns: 48px minmax(0, 1fr); align-items: start; gap: 12px; }
+  .scard.is-short .scard__name small { white-space: normal; }
   .scard__grid { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); }
   .scard__grid .field--wide { grid-column: auto; }
   .scard__grid input, .scard__grid select { font-size: 16px; }
   .scard__main { display: contents; }
   .scard__top, .scard__ai { grid-column: 2; }
-  .scard__warn, .scard__acts { grid-column: 1 / -1; }
+  .scard__warn, .scard__acts, .scard__split { grid-column: 1 / -1; }
+}
+
+/* Cutting a file by hand: its pages in rows, a row a paper */
+.ssplit { display: grid; grid-column: 1 / -1; gap: 8px; min-width: 0; }
+.ssplit__help { font-size: 14px; line-height: 1.5; color: var(--text-2); }
+.ssplit__help b { font-weight: 600; color: var(--text); }
+.ssplit__sum { font-size: 14px; font-weight: 600; }
+.ssplit__pages { display: flex; flex-wrap: wrap; gap: 12px; }
+.ssplit__head { flex-basis: 100%; padding-top: 12px; border-top: 1px solid var(--sep); font-size: 14px; font-weight: 600; }
+.ssplit__head:first-child { padding-top: 4px; border-top: 0; }
+/* Wide enough for «Баримт эхлүүлэх» on one line, four to a row */
+.ssplit__page { display: grid; align-content: start; gap: 8px; width: 168px; }
+.ssplit__pic { position: relative; display: block; aspect-ratio: 1 / 1.414; overflow: hidden; border-radius: 8px; background: var(--fill-2); box-shadow: 0 0 0 1px var(--sep); }
+.ssplit__pic img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: opacity .2s; }
+.ssplit__n { position: absolute; top: 8px; left: 8px; min-width: 24px; padding: 2px 8px; border-radius: 999px; background: var(--glass-solid); font: 650 12px/1.4 var(--font); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 1px var(--sep); }
+.ssplit__page.is-out img { opacity: .3; }
+.ssplit__out { position: absolute; inset: auto 8px 8px; padding: 4px 8px; border-radius: 8px; background: color-mix(in srgb, var(--danger) 12%, var(--glass-solid)); color: var(--bad-ink); font: 650 12.5px/1.3 var(--font); text-align: center; }
+.ssplit__btn { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 10px; background: var(--fill); color: var(--text); font: 600 13px/1.2 var(--font); text-align: left; transition: background .2s, box-shadow .2s; }
+.ssplit__btn .ico { flex: none; width: 16px; height: 16px; color: var(--text-2); }
+@media (hover: hover) { .ssplit__btn:hover { background: var(--fill-hover); } }
+.ssplit__btn[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-ink); color: var(--accent-ink); }
+.ssplit__btn--drop[aria-pressed="true"] { background: color-mix(in srgb, var(--danger) 12%, var(--glass-solid)); box-shadow: inset 0 0 0 2px var(--bad-ink); color: var(--bad-ink); }
+.ssplit__btn[aria-pressed="true"] .ico { color: inherit; }
+.ssplit__btn:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
+/* The first page always begins the first paper: room where its cut button would be, so the rows line up */
+.ssplit__gap { min-height: 36px; }
+@media (width <= 600px) {
+  .ssplit__page { width: calc(50% - 6px); }
+  .ssplit__btn, .ssplit__gap { min-height: 44px; }
+  .ssplit__btn { font-size: 14px; }
 }
