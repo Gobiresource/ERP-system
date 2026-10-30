@@ -6,6 +6,7 @@ import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { seedContracts } from './contracts'
+import { seedReports } from './reports'
 
 let n = 0
 const uid = (p: string) => `${p}${++n}`
@@ -215,7 +216,7 @@ export function seed(): State {
   }
 
   const docs = seedDocs(now)
-  return {
+  const state: State = {
     version: 1,
     me: 'u1',
     company: 'c1',
@@ -231,6 +232,8 @@ export function seed(): State {
     ...docs,
     ...seedChats(now, { tasks, events, docs: docs.docs }),
     ...seedContracts(now),
+    reports: [],
+    kpi: {},
     settings: {
       theme: 'system',
       wall: 'ash',
@@ -241,4 +244,5 @@ export function seed(): State {
       focus: { work: 25, rest: 5, autoStart: false },
     },
   }
+  return { ...state, ...seedReports(now, state) }
 }

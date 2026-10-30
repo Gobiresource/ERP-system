@@ -3,13 +3,15 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { actions, useApp } from '../lib/store'
 import { close, toast } from '../lib/ui'
-import { hrScoped } from '../lib/hr'
+import { current, hrScoped } from '../lib/hr'
+import { collator, short } from '../lib/format'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 
 export function DeptForm({ id }: { id?: string }) {
   const hr = hrScoped(useApp())
   const d = id ? hr.dept(id) : undefined
-  const [f, setF] = useState({ name: d?.name ?? '', code: d?.code ?? '' })
+  const [f, setF] = useState({ name: d?.name ?? '', code: d?.code ?? '', head: d?.head ?? '' })
+  const staff = d ? hr.employees.filter(e => e.dept === d.id && current(e)).sort((a, b) => collator.compare(a.given, b.given)) : []
   const [errors, setErrors] = useState<Errors>({})
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
     setF({ ...f, [k]: e.target.value })
@@ -25,7 +27,7 @@ export function DeptForm({ id }: { id?: string }) {
     if (!code) e['df-code'] = 'Товч кодыг бичнэ үү.'
     setErrors(e)
     if (Object.keys(e).length) return false
-    if (d) actions.updateDept(d.id, { name, code })
+    if (d) actions.updateDept(d.id, { name, code, head: f.head || undefined })
     else actions.addDept({ name, code })
     toast(d ? 'Өөрчлөлт хадгалагдлаа.' : 'Хэлтэс нэмэгдлээ.')
     return true
@@ -39,6 +41,14 @@ export function DeptForm({ id }: { id?: string }) {
       <Field id="df-code" label="Товч код" hint="Жагсаалт, тайланд харагдана. Жишээ нь: САН" error={errors['df-code']}>
         <input {...fieldAria('df-code', errors['df-code'], true)} value={f.code} onChange={set('code')} spellCheck={false} style={{ maxWidth: '10ch' }} />
       </Field>
+      {staff.length > 0 && (
+        <Field id="df-head" label="Хэлтсийн дарга" hint="Ажилтнуудын сарын тайланг хүлээн авч үнэлнэ." optional wide>
+          <select id="df-head" aria-describedby="df-head-hint" value={f.head} onChange={set('head')}>
+            <option value="">Сонгоогүй</option>
+            {staff.map(e => <option key={e.id} value={e.id}>{short(e)}, {hr.position(e.position)?.name}</option>)}
+          </select>
+        </Field>
+      )}
     </FormSheet>
   )
 }

@@ -1,7 +1,7 @@
 // One contract. In the middle, its text: one document everyone in the process works in, instead of files passed around
 // (the user's wish, 2026-10-29). Each person's edits are kept as their version, and any version shows what it changed.
 // Beside it: where the contract is, what the person can do now, its versions and its history.
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type TextareaHTMLAttributes } from 'react'
 import { Check, ChevronLeft, FileText, MessageSquareQuote, Plus, Send, Stamp, Trash2, Truck, Undo2, X } from 'lucide-react'
 import '../../styles/screens/contracts.css'
 import type { Clause, Contract, ContractEvent, Id, ProcessRole } from '../../lib/types'
@@ -96,7 +96,7 @@ function Paper({ c, editable, who, view, close }: { c: Contract; editable: boole
 }
 
 /** A body of text that grows with what is in it */
-function Grow({ value, label, onChange }: { value: string; label: string; onChange: (v: string) => void }) {
+export function Grow({ value, label, onChange, className = 'paper__body', ...rest }: { value: string; label: string; onChange: (v: string) => void; className?: string } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>) {
   const ref = useRef<HTMLTextAreaElement>(null)
   useLayoutEffect(() => {
     const el = ref.current
@@ -104,7 +104,7 @@ function Grow({ value, label, onChange }: { value: string; label: string; onChan
     el.style.height = 'auto'
     el.style.height = `${el.scrollHeight}px`
   }, [value])
-  return <textarea ref={ref} rows={1} className="paper__body" value={value} aria-label={label} onChange={e => onChange(e.target.value)} />
+  return <textarea ref={ref} rows={1} className={className} value={value} aria-label={label} onChange={e => onChange(e.target.value)} {...rest} />
 }
 
 /** The text, saved a moment after each change; a person's edits stay one version until the next step of the process */
@@ -164,7 +164,7 @@ function Editor({ c, who }: { c: Contract; who: Id }) {
       </ol>
       <div className="paper__foot">
         <button type="button" className="btn btn--glass btn--sm" onClick={add}><Plus className="ico" />Заалт нэмэх</button>
-        <span className="paper__saved" role="status">{state === 'saving' ? 'Хадгалж байна…' : state === 'saved' ? 'Хадгалагдсан' : 'Бичсэн бүхэн өөрөө хадгалагдана.'}</span>
+        <span className="paper__saved" role="status">{state === 'saving' ? 'Хадгалж байна…' : state === 'saved' ? 'Хадгалагдсан' : 'Өөрчлөлт автоматаар хадгалагдана.'}</span>
       </div>
     </>
   )

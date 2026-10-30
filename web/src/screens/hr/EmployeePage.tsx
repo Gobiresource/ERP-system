@@ -7,6 +7,7 @@ import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
 import { ALERT_DAYS, CONTRACT, MOVE, MOVE_HUE, ageOn, alertsOf, dots, fileScore, fileState, hrScoped, readRegNo, tenure, whenEnds, type FileState } from '../../lib/hr'
 import { addDays, daysFromToday, short, today, ymd } from '../../lib/format'
+import { bossOf } from '../../lib/reports'
 import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
 import { Empty } from '../../ui/bits'
@@ -109,7 +110,9 @@ function Row({ label, children }: { label: string; children?: React.ReactNode })
 
 /** One sheet of ruled rows, a topic per heading: reads like the paper form, not a wall of boxes */
 function General({ e }: { e: Employee }) {
-  const hr = hrScoped(useApp())
+  const s = useApp()
+  const hr = hrScoped(s)
+  const boss = bossOf(s, e)
   const reg = readRegNo(e.regNo)
   const prob = e.probationEnd ? daysFromToday(e.probationEnd) : null
   return (
@@ -136,6 +139,7 @@ function General({ e }: { e: Employee }) {
           <Row label="Ажилтны код"><span className="tnum">{e.code}</span></Row>
           <Row label="Хэлтэс">{hr.dept(e.dept)?.name}</Row>
           <Row label="Албан тушаал">{hr.position(e.position)?.name}</Row>
+          <Row label="Шууд удирдлага">{boss === 'none' ? 'Байхгүй, сарын тайлан өгөхгүй' : boss && `${short(boss)}, ${hr.position(boss.position)?.name}`}</Row>
           <Row label="Ажилд орсон огноо"><span className="tnum">{dots(e.hired)}</span></Row>
           <Row label="Туршилтын хугацаа">
             {e.probationEnd ? <span className="tnum">{dots(e.probationEnd)}{prob !== null && prob >= 0 ? ` хүртэл` : ''}</span> : e.moves.some(m => m.kind === 'confirmed') ? 'Дууссан' : e.status === 'probation' ? null : 'Туршилтгүй'}

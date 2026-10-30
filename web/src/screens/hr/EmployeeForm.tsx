@@ -7,15 +7,16 @@ import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
 import { toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { CONTRACT, EMP_STATUS, EMP_STATUSES, ageOn, dots, hrScoped, nextCode, readRegNo } from '../../lib/hr'
-import { short, today, ymd } from '../../lib/format'
+import { CONTRACT, EMP_STATUS, EMP_STATUSES, ageOn, current, dots, hrScoped, nextCode, readRegNo } from '../../lib/hr'
+import { bossOf } from '../../lib/reports'
+import { collator, short, today, ymd } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Field, fieldAria, type Errors } from '../../ui/FormSheet'
 
 interface Form {
   clan: string; family: string; given: string; regNo: string; phone: string; email: string; address: string; education: string; profession: string
   cName: string; cRelation: string; cPhone: string
-  code: string; dept: string; position: string; hired: string; probationEnd: string; status: EmpStatus
+  code: string; dept: string; position: string; manager: string; hired: string; probationEnd: string; status: EmpStatus
   kind: ContractKind; cNo: string; cStart: string; cEnd: string
 }
 type Key = keyof Form
@@ -47,7 +48,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
       clan: e?.clan ?? '', family: e?.family ?? '', given: e?.given ?? '', regNo: e?.regNo ?? '', phone: e?.phone ?? '', email: e?.email ?? '',
       education: e?.education ?? '', profession: e?.profession ?? '', address: e?.address ?? '',
       cName: e?.contact?.name ?? '', cRelation: e?.contact?.relation ?? '', cPhone: e?.contact?.phone ?? '',
-      dept, position: e?.position ?? free?.id ?? '', code: e?.code ?? nextCode(company.code, s.employees.filter(x => x.company === s.company)),
+      dept, position: e?.position ?? free?.id ?? '', manager: e?.manager ?? '', code: e?.code ?? nextCode(company.code, s.employees.filter(x => x.company === s.company)),
       status: e?.status ?? 'active', hired: e?.hired ?? today(), probationEnd: e?.probationEnd ?? '',
       kind: e?.contract.kind ?? 'open', cNo: e?.contract.no ?? '', cStart: e?.contract.start ?? today(), cEnd: e?.contract.end ?? '',
     }
@@ -129,7 +130,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
       regNo: readRegNo(f.regNo)!.value, phone: phoneDigits(f.phone.trim()), email: opt(f.email), address: opt(f.address),
       education: opt(f.education), profession: opt(f.profession),
       contact: f.cName.trim() ? { name: f.cName.trim(), relation: f.cRelation.trim(), phone: phoneDigits(f.cPhone.trim()) } : undefined,
-      dept: f.dept, position: f.position, hired: f.hired, probationEnd: opt(f.probationEnd),
+      dept: f.dept, position: f.position, manager: f.manager || undefined, hired: f.hired, probationEnd: opt(f.probationEnd),
       contract: { kind: f.kind, no: f.cNo.trim(), start: f.cStart, end: f.kind === 'open' ? undefined : f.cEnd },
       status: editing ? f.status : f.probationEnd && f.probationEnd >= today() ? 'probation' : 'active',
     }
@@ -145,6 +146,10 @@ export default function EmployeeForm({ id }: { id?: string }) {
   }
 
   const reg = readRegNo(f.regNo)
+  // Who scores the monthly report when nobody is set: the head of the chosen department, else the director
+  const found = bossOf(s, { ...(editing ?? { id: '', company: s.company }), dept: f.dept, manager: undefined } as Employee)
+  const auto = found === 'none' ? undefined : found
+  const bosses = hr.employees.filter(x => current(x) && x.id !== editing?.id && x.id !== auto?.id).sort((a, b) => collator.compare(a.given, b.given))
   const pos = hr.positions.find(p => p.id === f.position)
   const free = pos ? pos.quota - (hr.filled.get(pos.id) ?? 0) + (editing?.position === pos.id && editing.status !== 'left' ? 1 : 0) : 0
   const back = editing ? `#hr-${editing.id}` : '#hr-employees'
@@ -233,6 +238,13 @@ export default function EmployeeForm({ id }: { id?: string }) {
               hint={pos ? (free > 0 ? `${free} сул орон тоо байна` : 'Сул орон тоо байхгүй. Орон тоо хэтэрнэ.') : undefined}>
               <select {...aria('position', !!pos)} value={f.position} onChange={set('position')}>
                 {hr.positions.filter(p => p.dept === f.dept).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </Field>
+            <Field id="ef-manager" label="Шууд удирдлага" hint="Сарын тайланг хүлээн авч үнэлнэ.">
+              <select id="ef-manager" aria-describedby="ef-manager-hint" value={f.manager} onChange={set('manager')}>
+                <option value="">{auto ? `${short(auto)}, ${f.dept && hr.dept(f.dept)?.head === auto.id ? 'хэлтсийн дарга' : 'захирал'}` : 'Сонгоогүй'}</option>
+                {bosses.map(x => <option key={x.id} value={x.id}>{short(x)}, {hr.position(x.position)?.name}</option>)}
+                <option value="none">Байхгүй, сарын тайлан өгөхгүй</option>
               </select>
             </Field>
             <Field id="ef-code" label="Ажилтны код" error={err('code')}>

@@ -12,6 +12,7 @@ import { CompanyForm, DocAdd, DocSheet, RequestForm, RequestSheet } from './DocF
 import { ChatGroup, NewChat, Readers } from './ChatForms'
 import { FileSheet } from './Viewer'
 import { ContractAsk, ContractPdf, ContractReason, ContractRegister, NewContract, ProcessRoles } from './ContractForms'
+import { KpiRules, ReportPdf, ReportReturn } from './ReportForms'
 
 /** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
 export function Dialogs() {
@@ -45,5 +46,8 @@ export function Dialogs() {
     case 'contractAsk': return <ContractAsk key={dialog.id} id={dialog.id} />
     case 'contractPdf': return <ContractPdf key={dialog.id} id={dialog.id} />
     case 'processRoles': return <ProcessRoles />
+    case 'reportReturn': return <ReportReturn key={dialog.id} id={dialog.id} />
+    case 'reportPdf': return <ReportPdf key={dialog.id} id={dialog.id} />
+    case 'kpiRules': return <KpiRules />
   }
 }

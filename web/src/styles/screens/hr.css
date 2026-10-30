@@ -71,6 +71,8 @@
 .hr-ages .hr-bar i { background: var(--teal); }
 
 /* Employee table */
+.dcard__boss { margin-top: 2px; font-size: 13.5px; color: var(--text-2); }
+.dcard__boss b { font-weight: 600; color: var(--text); }
 .etable-card { padding-bottom: 8px; }
 .etable-wrap { margin: 0 -8px; overflow-x: auto; }
 .etable { width: 100%; border-collapse: collapse; font-size: 14px; }

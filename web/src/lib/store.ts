@@ -1,11 +1,12 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, Message, Person, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, KpiRules, Message, MonthReport, Person, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
+import { bandOf, dueOf, findReport, kpiOf, managerOf, nextMonth, seedReports, total } from './reports'
 import { companyMark } from './format'
 
 const KEY = 'erp:v1'
@@ -34,6 +35,16 @@ function load(): State | null {
     if (!s.contracts) {
       const add = seed().people.filter(p => ['u15', 'u16'].includes(p.id) && !s.people.some((x: Person) => x.id === p.id))
       s = { ...s, people: [...s.people, ...add], ...seedContracts(new Date()) }
+    }
+    // Saved before Сарын тайлан existed: department heads, the general director above the reports, and the demo reports
+    if (!s.reports) {
+      const fresh = seed()
+      s = {
+        ...s,
+        departments: s.departments.map((d: Department) => ({ ...d, head: d.head ?? fresh.departments.find(f => f.id === d.id)?.head })),
+        employees: s.employees.map((e: Employee) => ({ ...e, manager: e.manager ?? fresh.employees.find(f => f.id === e.id)?.manager })),
+      }
+      s = { ...s, ...seedReports(new Date(), s) }
     }
     return s
   } catch {
@@ -396,6 +407,55 @@ export const actions = {
     patchContract(id, c => ({ ...c, events: c.events.filter(e => !(e.id === event && e.by === who && (e.kind === 'note' || e.kind === 'opinion'))) })),
   /** A company's people for the process (an admin's job in the real system) */
   setRoles: (company: Id, roles: Record<ProcessRole, Id>) => set(s => ({ ...s, roles: { ...s.roles, [company]: roles } })),
+
+  // Сарын тайлан
+  /** Saves what a person writes in their report while it is theirs to write (a draft, or one sent back); the first save makes it */
+  saveReport(company: Id, person: Id, month: string, text: Pick<MonthReport, 'done' | 'issues' | 'plan'>) {
+    set(s => {
+      const r = findReport(s, company, person, month)
+      const updated = new Date().toISOString()
+      if (!r) return { ...s, reports: [{ id: uid('mr'), company, person, month, ...text, status: 'draft', updated }, ...s.reports] }
+      if (r.status !== 'draft' && r.status !== 'returned') return s
+      return { ...s, reports: s.reports.map(x => (x.id === r.id ? { ...x, ...text, updated } : x)) }
+    })
+  },
+  /** The writer sends their report to their manager; false when it cannot go */
+  sendReport(company: Id, person: Id, month: string, who: Id) {
+    const r = findReport(state, company, person, month)
+    const manager = managerOf(state, company, person)
+    if (who !== person || !r || !manager || (r.status !== 'draft' && r.status !== 'returned')) return false
+    const at = new Date().toISOString()
+    set(s => ({ ...s, reports: s.reports.map(x => (x.id === r.id ? { ...x, status: 'sent', manager, sent: at, updated: at } : x)) }))
+    return true
+  },
+  /**
+   * The manager scores a sent report, or changes the score: points 1–5 for each criterion. A report keeps the criteria it
+   * was first scored on. With `tasks`, each plan line becomes the writer's task, due at the end of next month.
+   */
+  scoreReport(id: Id, who: Id, points: Record<Id, number>, comment: string, tasks: boolean) {
+    const r = state.reports.find(x => x.id === id)
+    if (!r || r.manager !== who || (r.status !== 'sent' && r.status !== 'scored')) return false
+    const scores = (r.scores ?? kpiOf(state, r.company).criteria).map(c => ({ ...c, points: points[c.id] }))
+    if (scores.some(c => !(c.points >= 1 && c.points <= 5))) return false
+    const at = new Date().toISOString()
+    const plan = r.plan.map(l => (tasks && !l.task && l.text.trim() ? { ...l, task: uid('t') } : l))
+    const made: Task[] = plan.filter((l, i) => l.task && !r.plan[i].task).map(l => ({
+      id: l.task!, company: r.company, title: l.text.trim(), status: 'todo', prio: 'medium', assignees: [r.person],
+      due: dueOf(nextMonth(r.month)), estimate: 4, subtasks: [], comments: [], createdAt: at,
+    }))
+    const scored: MonthReport = { ...r, plan, status: 'scored', scores, band: bandOf(kpiOf(state, r.company).bands, total(scores)), comment: comment || undefined, scored: at, updated: at }
+    set(s => ({ ...s, tasks: [...made, ...s.tasks], reports: s.reports.map(x => (x.id === id ? scored : x)) }))
+    return true
+  },
+  /** The manager sends a report back to its writer with the reason */
+  returnReport(id: Id, who: Id, reason: string) {
+    const r = state.reports.find(x => x.id === id)
+    if (!r || r.manager !== who || r.status !== 'sent' || !reason) return false
+    const at = new Date().toISOString()
+    set(s => ({ ...s, reports: s.reports.map(x => (x.id === id ? { ...x, status: 'returned', reason, updated: at } : x)) }))
+    return true
+  },
+  setKpi: (company: Id, rules: KpiRules) => set(s => ({ ...s, kpi: { ...s.kpi, [company]: rules } })),
 
   // Бичиг хэрэг
   /** Into a company's folder: the current one unless another is given */

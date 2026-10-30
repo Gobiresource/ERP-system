@@ -113,13 +113,13 @@ export function Progress({ c }: { c: Contract }) {
 
 /**
  * Demo only: work as another person of the process, to try each step (the writer, finance, the lawyer, the office, the
- * director, and anyone asked for an opinion). The real system knows who signed in.
+ * director, and anyone asked for an opinion; or `ids`). The real system knows who signed in.
  */
-export function ActAs() {
+export function ActAs({ ids: given }: { ids?: Id[] }) {
   const s = useApp()
   const who = useActor()
   const roles = rolesOf(s, s.company)
-  const ids = [...new Set<Id>([s.me, ...ROLES.map(r => roles[r]), ...s.contracts.filter(c => c.company === s.company).flatMap(c => [c.owner, ...c.asked.map(a => a.to)])])]
+  const ids = given ?? [...new Set<Id>([s.me, ...ROLES.map(r => roles[r]), ...s.contracts.filter(c => c.company === s.company).flatMap(c => [c.owner, ...c.asked.map(a => a.to)])])]
   const label = (id: Id) => {
     const p = s.people.find(x => x.id === id)
     const role = ROLES.find(r => roles[r] === id)

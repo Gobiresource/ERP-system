@@ -31,6 +31,9 @@ export type Dialog =
   | { kind: 'contractAsk'; id: Id }
   | { kind: 'contractPdf'; id: Id }
   | { kind: 'processRoles' }
+  | { kind: 'reportReturn'; id: Id }
+  | { kind: 'reportPdf'; id: Id }
+  | { kind: 'kpiRules' }
   | null
 
 export interface Note {

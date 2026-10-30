@@ -142,7 +142,7 @@ const HUES: Hue[] = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'indig
 const EXECS = ['Ерөнхий захирал', 'Гүйцэтгэх захирал', 'Дэд захирал', 'Санхүү хариуцсан захирал']
 
 /** Small fixed-seed random numbers, so the demo looks the same every time */
-function rng(seed: number) {
+export function rng(seed: number) {
   return () => {
     seed = (seed + 0x6d2b79f5) | 0
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
@@ -256,6 +256,12 @@ export function seedHr(now: Date, people: Person[]) {
       m.id = `${c}-m${y}-${count.get(y)}`
     }
     for (const e of company) e.moves.sort((a, b) => b.date.localeCompare(a.date))
+    // Хэлтсийн дарга: whoever holds the department's first position, in Удирдлага the executive director. The general
+    // director gives no monthly report.
+    const holder = (name: string) => company.find(e => e.status !== 'left' && positions.find(p => p.id === e.position)?.name === name)
+    for (const [, code, list] of plan) departments.find(d => d.id === `${c}-${code}`)!.head = holder(code === 'УДР' ? 'Гүйцэтгэх захирал' : list[0][0])?.id
+    const top = holder('Ерөнхий захирал')
+    if (top) top.manager = 'none'
     employees.push(...company)
   }
   return { departments, positions, docTypes, employees }

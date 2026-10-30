@@ -1,12 +1,13 @@
 // Demo documents and prepared certificates are drawn as an A4 page (letterhead, title, text, signature line) and kept as a PDF.
 // Every page says "ЖИШЭЭ" across it: these are samples of the prototype, not real documents.
-import type { Contract, Doc, DocRequest } from './types'
+import type { Contract, Doc, DocRequest, MonthReport } from './types'
 import { actions, getState } from './store'
 import { getFile, putFile, saveBlob } from './files'
 import { imagesToPdf } from './pdf'
 import { cid } from './draft'
-import { dateDots, parse, short } from './format'
+import { dateDots, monthTitle, parse, short } from './format'
 import { CONTRACT_KIND, contractLines, rolesOf } from './contracts'
+import { total } from './reports'
 
 const W = 1240 // A4 at 150 dpi
 const H = 1754
@@ -192,5 +193,31 @@ export function requestPdf(r: DocRequest) {
       ...(r.where ? [`Хаана өгөх: ${r.where}`] : []),
       'Ажилтны хүсэлтээр олгов.',
     ],
+  })
+}
+
+/** A monthly report as the sheet the employee used to hand in, with the manager's score when it has one */
+export function reportPdf(r: MonthReport) {
+  const s = getState()
+  const p = s.people.find(x => x.id === r.person)
+  const m = s.people.find(x => x.id === r.manager)
+  const e = s.employees.find(x => x.user === r.person && x.company === r.company)
+  const position = e && s.positions.find(x => x.id === e.position)?.name
+  const lines: PaperLine[] = [
+    `${p ? `${p.family} ${p.given}` : ''}${position ? `, ${position}` : ''}`,
+    { head: '1. Хийсэн ажил' }, ...r.done.map(l => `• ${l.text}`),
+    { head: '2. Асуудал, санал' }, r.issues || 'Бичээгүй.',
+    { head: '3. Дараа сарын төлөвлөгөө' }, ...r.plan.map(l => `• ${l.text}`),
+  ]
+  if (r.scores && r.band) {
+    lines.push({ head: 'Үнэлгээ' }, ...r.scores.map(c => `${c.name} (${c.weight}%): ${c.points} оноо`),
+      `Нийт ${total(r.scores)} оноо, ${r.band.name.toLowerCase()}. Урамшуулал ${r.band.bonus}%.`, ...(r.comment ? [`Сэтгэгдэл: ${r.comment}`] : []))
+  }
+  return paperPdf({
+    company: companyName(r.company),
+    title: `${monthTitle(parse(`${r.month}-01`))}ын тайлан`,
+    date: dateDots(r.sent ? new Date(r.sent) : new Date()),
+    lines,
+    signers: [`Тайлан гаргасан:   ________________   ${p ? short(p) : ''}`, `Хянаж үнэлсэн:   ________________   ${m ? short(m) : ''}`],
   })
 }

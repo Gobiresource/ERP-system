@@ -5,7 +5,8 @@ import type { Department } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { hrScoped } from '../../lib/hr'
+import { current, hrScoped } from '../../lib/hr'
+import { short } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
 import { Ring } from '../../ui/charts'
@@ -46,6 +47,7 @@ function DeptCard({ d }: { d: Department }) {
   const q = list.reduce((n, p) => n + p.quota, 0)
   const f = list.reduce((n, p) => n + Math.min(p.quota, hr.filled.get(p.id) ?? 0), 0)
   const people = list.reduce((n, p) => n + (hr.filled.get(p.id) ?? 0), 0)
+  const head = hr.employees.find(e => e.id === d.head && current(e))
   const remove = () => {
     pop.close()
     toast(`${d.name} хэлтэс устгагдлаа.`, { undo: actions.removeDept(d.id) })
@@ -59,6 +61,7 @@ function DeptCard({ d }: { d: Department }) {
           <div>
             <h2 className="card__title" id={`dc-${d.id}`}>{d.name} <span className="badge">{d.code}</span></h2>
             <p className="card__sub">{q} орон тооноос {f} нь бүрдсэн</p>
+            <p className="dcard__boss">Хэлтсийн дарга: {head ? <b>{short(head)}</b> : 'сонгоогүй'}</p>
           </div>
         </div>
         <button ref={pop.anchor} type="button" className="ibtn ibtn--sm" aria-label={`${d.name}: үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>

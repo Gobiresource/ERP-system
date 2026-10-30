@@ -11,11 +11,30 @@ import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { Avatar, ProjectChip } from '../ui/bits'
 import { Columns, DataTable, Donut, LineChart } from '../ui/charts'
+import { SubNav } from '../ui/SubNav'
+import Reports, { useReportTodo } from './insights/Reports'
+import ReportPage from './insights/Report'
 
 const pct = (cur: number, prev: number) => (prev ? Math.round(((cur - prev) / prev) * 100) : 0)
 const signed = (n: number, unit = '') => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)}${unit}`
 
-export default function Insights() {
+// Тайлан: the team's numbers (Үзүүлэлт), and each employee's monthly report (Сарын тайлан)
+export default function Insights({ id }: { id?: string }) {
+  if (id === 'reports') return <Reports />
+  if (id?.startsWith('report-')) return <ReportPage key={id} id={id.slice(7)} />
+  return <Numbers />
+}
+
+const TABS = [['', 'Үзүүлэлт'], ['reports', 'Сарын тайлан']] as const
+
+/** The section's tabs; Сарын тайлан counts the reports waiting for the person */
+export function InsightsNav({ at }: { at: (typeof TABS)[number][0] }) {
+  const n = useReportTodo()
+  const tabs = TABS.map(([key, text]) => [key, key === 'reports' && n ? <>{text}<span className="seg__count">{n}<span className="sr-only"> хийх</span></span></> : text] as const)
+  return <SubNav label="Тайлан" base="insights" tabs={tabs} at={at} />
+}
+
+function Numbers() {
   const s = useApp()
   const sc = scoped(s)
   const ref = useRef<HTMLDivElement>(null)
@@ -40,6 +59,7 @@ export default function Insights() {
 
   return (
     <div ref={ref}>
+      <InsightsNav at="" />
       <PageHead
         title="Тайлан"
         sub={`Баг ${days} хэрхэн ажилласан бэ?`}

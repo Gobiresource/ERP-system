@@ -14,6 +14,8 @@ export function parse(hash: string): Route {
   // (the PDF tool was at #draft-pdf before)
   if (h.startsWith('docs-')) return { page: 'docs', id: h.slice(5) }
   if (h === 'draft-pdf' || h.startsWith('draft-pdf-')) return { page: 'docs', id: h.slice(6) }
+  // Тайлан: #insights, #insights-reports, #insights-report-<person>-<YYYY-MM>
+  if (h.startsWith('insights-')) return { page: 'insights', id: h.slice(9) }
   // Чат: #chat, #chat-<chat>
   if (h.startsWith('chat-')) return { page: 'chat', id: h.slice(5) }
   // Ноорог: #draft, #draft-<board>

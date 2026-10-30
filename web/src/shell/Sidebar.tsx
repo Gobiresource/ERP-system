@@ -7,6 +7,7 @@ import { AccountMenu } from './AccountMenu'
 import { NAV } from './nav'
 import { myChats, unread } from '../lib/chat'
 import { useContractTodo } from '../screens/docs/Contracts'
+import { useReportTodo } from '../screens/insights/Reports'
 
 export function Sidebar() {
   const s = useApp()
@@ -15,6 +16,7 @@ export function Sidebar() {
   const open = tasks.filter(t => t.assignees.includes(s.me) && t.status !== 'done').length
   const fresh = myChats(s).reduce((n, c) => n + unread(c, s.messages, s.me), 0)
   const contracts = useContractTodo()
+  const reports = useReportTodo()
   const pinned = projects.filter(p => p.pinned)
   const track = useRef<HTMLDivElement>(null)
   const lens = useRef<HTMLSpanElement>(null)
@@ -35,6 +37,9 @@ export function Sidebar() {
               )}
               {n.page === 'chat' && fresh > 0 && (
                 <span className="nav__count">{fresh}<span className="sr-only"> шинэ зурвас</span></span>
+              )}
+              {n.page === 'insights' && reports > 0 && (
+                <span className="nav__count">{reports}<span className="sr-only"> хийх тайлан</span></span>
               )}
               {n.page === 'docs' && contracts > 0 && (
                 <span className="nav__count">{contracts}<span className="sr-only"> хийх гэрээ</span></span>

@@ -149,6 +149,8 @@ export interface Department {
   name: string
   /** Short code for lists and reports, e.g. "САН" */
   code: string
+  /** Хэлтсийн дарга (an employee): the department's people give their monthly report to them */
+  head?: Id
 }
 
 /** Албан тушаал, with its headcount (орон тоо) */
@@ -216,6 +218,8 @@ export interface Employee {
   moves: Move[]
   files: FileItem[]
   hue: Hue
+  /** Шууд удирдлага (an employee) when not the head of the department; 'none' for the top, who gives no monthly report */
+  manager?: Id | 'none'
 }
 
 // Drafts (Ноорог): free boards where an employee pins notes, checklists, pictures, links and files.
@@ -409,6 +413,43 @@ export interface DocRequest {
   doc?: Id
 }
 
+// Сарын тайлан: by the last day of each month an employee writes what they did, their problems and ideas, and next month's
+// plan; their direct manager scores it on the ХХК's criteria, and the score sets the bonus (docs/decisions.md, 2026-10-30).
+
+/** A line of a report. A line of work done may come from a task or a contract; a plan line may become a task. */
+export interface ReportLine { id: Id; text: string; task?: Id; contract?: Id }
+export type ReportStatus = 'draft' | 'sent' | 'returned' | 'scored'
+/** A KPI criterion; `weight` is its share of the score, the weights adding up to 100 */
+export interface Criterion { id: Id; name: string; hint: string; weight: number }
+/** From `min` points up (out of 100) a report gets this grade and this share of the bonus, in % */
+export interface Band { min: number; name: string; bonus: number }
+export interface KpiRules { criteria: Criterion[]; bands: Band[] }
+
+export interface MonthReport {
+  id: Id
+  company: Id
+  /** Who writes it */
+  person: Id
+  /** YYYY-MM */
+  month: string
+  done: ReportLine[]
+  issues: string
+  plan: ReportLine[]
+  status: ReportStatus
+  /** Who scores it, set when it is sent */
+  manager?: Id
+  sent?: string
+  /** Why the manager sent it back */
+  reason?: string
+  /** The criteria as they were when it was scored, each with its points from 1 to 5 */
+  scores?: (Criterion & { points: number })[]
+  /** The grade the score fell in when scored */
+  band?: Band
+  comment?: string
+  scored?: string
+  updated: string
+}
+
 export interface State {
   version: 1
   me: Id
@@ -432,5 +473,8 @@ export interface State {
   contracts: Contract[]
   /** Each company's people for the contract process */
   roles: Record<Id, Record<ProcessRole, Id>>
+  reports: MonthReport[]
+  /** Each company's monthly report criteria and bonus grades */
+  kpi: Record<Id, KpiRules>
   settings: Settings
 }
