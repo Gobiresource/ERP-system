@@ -1,6 +1,6 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, KpiRules, Message, MonthReport, Person, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, KpiRules, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
@@ -46,6 +46,8 @@ function load(): State | null {
       }
       s = { ...s, ...seedReports(new Date(), s) }
     }
+    // Saved before Скан оруулах existed
+    if (!s.scans) s = { ...s, scans: [], aiSpent: 0 }
     return s
   } catch {
     return null
@@ -456,6 +458,32 @@ export const actions = {
     return true
   },
   setKpi: (company: Id, rules: KpiRules) => set(s => ({ ...s, kpi: { ...s.kpi, [company]: rules } })),
+
+  // Скан оруулах
+  addScans: (items: ScanItem[]) => set(s => ({ ...s, scans: [...items, ...s.scans] })),
+  setScan: (id: Id, patch: Partial<ScanItem>) => set(s => ({ ...s, scans: s.scans.map(x => (x.id === id ? { ...x, ...patch } : x)) })),
+  addAiCost: (usd: number) => set(s => ({ ...s, aiSpent: s.aiSpent + usd })),
+  /** Takes a scan out of the inbox; returns undo */
+  dropScan(id: Id) {
+    const i = state.scans.findIndex(x => x.id === id)
+    const it = state.scans[i]
+    set(s => ({ ...s, scans: s.scans.filter(x => x.id !== id) }))
+    return () => set(s => ({ ...s, scans: [...s.scans.slice(0, i), it, ...s.scans.slice(i)] }))
+  },
+  /** Files a scan into its ХХК's folder, in the category of its kind, for everyone there to see; returns the document and undo */
+  fileScan(id: Id, who: Id) {
+    const i = state.scans.findIndex(x => x.id === id)
+    const it = state.scans[i]
+    if (!it) return null
+    const f = it.to
+    const amount = Number(f.amount.replace(/[\s,]/g, ''))
+    const doc: Doc = {
+      id: uid('d'), company: f.company, name: f.title.trim(), kind: f.kind, file: it.file, to: 'all', by: who, added: new Date().toISOString(),
+      paper: { number: f.number.trim() || undefined, date: f.date || undefined, party: f.party.trim() || undefined, amount: amount > 0 ? amount : undefined },
+    }
+    set(s => ({ ...s, docs: [doc, ...s.docs], scans: s.scans.filter(x => x.id !== id) }))
+    return { doc, undo: () => set(s => ({ ...s, docs: s.docs.filter(d => d.id !== doc.id), scans: [...s.scans.slice(0, i), it, ...s.scans.slice(i)] })) }
+  },
 
   // Бичиг хэрэг
   /** Into a company's folder: the current one unless another is given */

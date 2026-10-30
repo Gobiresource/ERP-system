@@ -271,7 +271,8 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
     position: fixed; z-index: 30; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     display: flex; align-items: center; gap: 10px;
   }
-  .tabbar__bar { flex: 1; min-width: 0; height: 64px; padding: 4px; border-radius: 999px; }
+  /* Less see-through than other glass: its small words sit over whatever scrolls by, pictures too */
+  .tabbar__bar { --glass: var(--glass-thick); flex: 1; min-width: 0; height: 64px; padding: 4px; border-radius: 999px; }
   .tabbar__track { position: relative; display: flex; height: 100%; }
   .tabbar__lens { position: absolute; top: 0; left: 0; border-radius: 999px; background: var(--lens); box-shadow: var(--lens-glow); pointer-events: none; opacity: 0; }
   .tab {

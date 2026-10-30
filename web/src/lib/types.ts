@@ -270,6 +270,49 @@ export interface Draft {
 
 export type DocKind = 'contract' | 'order' | 'certificate' | 'rule' | 'decision' | 'letter' | 'form' | 'template'
 
+/**
+ * What AI read from a scanned paper (server/scan.ts asks for exactly this). `company` is one of our ХХК, by id; the other
+ * fields are null when the page does not show them. Dates are YYYY-MM-DD.
+ */
+export interface ScanReading {
+  kind: DocKind
+  contractType: ContractType | null
+  company: Id | null
+  title: string
+  number: string | null
+  date: string | null
+  parties: string[]
+  amount: number | null
+  currency: string | null
+  expires: string | null
+  summary: string
+  confidence: 'high' | 'medium' | 'low'
+  notes: string | null
+}
+
+/** What the office files a scan as: the reading, with their changes. Text fields as typed; `amount` in figures. */
+export interface ScanFields { company: Id; kind: DocKind; title: string; number: string; date: string; party: string; amount: string }
+
+/** A scanned paper in the office's inbox (Бичиг хэрэг → Скан оруулах) until it is filed into a folder */
+export interface ScanItem {
+  id: Id
+  file: BoardFile
+  /** A small picture of the first page, in the file store */
+  thumb?: Id
+  by: Id
+  added: string
+  /** waiting and reading: AI's turn; manual: no AI, the office fills it in */
+  state: 'waiting' | 'reading' | 'read' | 'failed' | 'manual'
+  /** What AI read. On a demo paper: what it would read, shown as an example. */
+  reading?: ScanReading
+  sample?: boolean
+  model?: string
+  /** What the reading cost, in US dollars */
+  cost?: number
+  error?: string
+  to: ScanFields
+}
+
 /** A document in its ХХК's folder, in the category of its kind. `to` says who sees it: everyone in the ХХК, or only these users. */
 export interface Doc {
   id: Id
@@ -285,6 +328,8 @@ export interface Doc {
   added: string // ISO
   /** Last changed: its details or its file */
   updated?: string // ISO
+  /** A filed paper scan: what it says of itself */
+  paper?: { number?: string; date?: string; party?: string; amount?: number }
 }
 
 // Гэрээ байгуулах: the user's own HR system's contract process (docs/decisions.md, 2026-10-29), except that finance and the
@@ -476,5 +521,8 @@ export interface State {
   reports: MonthReport[]
   /** Each company's monthly report criteria and bonus grades */
   kpi: Record<Id, KpiRules>
+  scans: ScanItem[]
+  /** All AI readings of scans so far, in US dollars */
+  aiSpent: number
   settings: Settings
 }

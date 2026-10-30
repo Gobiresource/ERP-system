@@ -9,6 +9,7 @@ import { usePageEnter } from '../../lib/motion'
 import { DOC_KIND, DOC_KINDS, seen } from '../../lib/docs'
 import { downloadDoc } from '../../lib/paper'
 import { dateDots } from '../../lib/format'
+import { dots } from '../../lib/hr'
 import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
 import { DocTile, DocsNav, KIND_ICON } from '../Docs'
@@ -86,7 +87,7 @@ function Paper({ d }: { d: Doc }) {
       <button type="button" className="dpaper__open" onClick={() => open({ kind: 'doc', id: d.id })}>
         <DocTile kind={d.kind} />
         <b>{d.name}</b>
-        <small>{DOC_KIND[d.kind]}, {dateDots(new Date(d.added))}</small>
+        <small>{DOC_KIND[d.kind]}, {d.paper?.date ? dots(d.paper.date) : dateDots(new Date(d.added))}{d.paper?.number ? `, № ${d.paper.number}` : ''}</small>
         <span className="dpaper__lines" aria-hidden="true"><i /><i /><i /><i /></span>
         {isNew(d) && <span className="drow__new">Шинэ</span>}
       </button>

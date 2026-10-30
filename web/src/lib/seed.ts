@@ -234,6 +234,8 @@ export function seed(): State {
     ...seedContracts(now),
     reports: [],
     kpi: {},
+    scans: [],
+    aiSpent: 0,
     settings: {
       theme: 'system',
       wall: 'ash',

@@ -29,7 +29,7 @@ export default function Boards() {
     if (swept) return
     swept = true
     const s = getState()
-    const keep = new Set([...s.drafts.flatMap(d => d.cards.flatMap(c => (c.file ? [c.file.id] : []))), ...s.docs.flatMap(d => (d.file ? [d.file.id] : [])), ...s.messages.flatMap(m => m.files.map(f => f.id)), ...s.contracts.flatMap(c => (c.scan ? [c.scan.id] : []))])
+    const keep = new Set([...s.drafts.flatMap(d => d.cards.flatMap(c => (c.file ? [c.file.id] : []))), ...s.docs.flatMap(d => (d.file ? [d.file.id] : [])), ...s.messages.flatMap(m => m.files.map(f => f.id)), ...s.contracts.flatMap(c => (c.scan ? [c.scan.id] : [])), ...s.scans.flatMap(it => [it.file.id, ...(it.thumb ? [it.thumb] : [])])])
     sweepFiles(keep).catch(() => {})
   }, [])
 

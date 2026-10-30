@@ -1,0 +1,76 @@
+/* Скан оруулах (screens/docs/Scans.tsx): whether AI reads, where scans go in, and a card for each paper with its page
+   beside what it will be filed as. */
+
+/* AI on or off */
+.saibar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; padding: 10px 14px; border-radius: 14px; background: var(--fill); font-size: 13.5px; line-height: 1.45; }
+.saibar > .ico { flex: none; width: 18px; height: 18px; color: var(--text-2); }
+.saibar > span { flex: 1 1 280px; min-width: 0; }
+.saibar.is-on { background: var(--accent-soft); }
+.saibar.is-on > .ico { color: var(--accent-ink); }
+
+/* Where scans go in */
+.sdrop {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; margin-bottom: 18px; padding: 26px 20px;
+  border: 2px dashed var(--sep); border-radius: 20px; background: var(--fill); text-align: left; transition: background .2s, border-color .2s;
+}
+.sdrop.is-over { border-color: var(--accent-ink); background: var(--accent-soft); }
+.sdrop__ico { flex: none; width: 28px; height: 28px; color: var(--accent-ink); }
+.sdrop__text { display: grid; gap: 2px; min-width: 0; }
+.sdrop__text b { font-size: 15px; font-weight: 600; }
+.sdrop__text small { font-size: 13px; color: var(--text-2); }
+/* Phones cannot drag files; they pick them, or take a photo */
+.sdrop__tap { display: none; }
+@media (hover: none) { .sdrop__drag { display: none; } .sdrop__tap { display: block; } }
+
+/* A paper's state */
+.schip { display: inline-flex; flex: none; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, var(--glass-solid)); color: var(--text-2); font: 650 12px/1.5 var(--font); white-space: nowrap; }
+.schip .ico { width: 13px; height: 13px; }
+.schip.is-busy, .schip.is-medium { background: color-mix(in srgb, var(--accent) 14%, var(--glass-solid)); color: var(--accent-ink); }
+.schip.is-high { background: color-mix(in srgb, var(--green) 16%, var(--glass-solid)); color: var(--ok-ink); }
+.schip.is-low, .schip.is-bad { background: color-mix(in srgb, var(--danger) 10%, var(--glass-solid)); color: var(--bad-ink); }
+.schip.is-sample { background: var(--glass-solid); color: var(--text); box-shadow: 0 0 0 1px var(--sep); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+/* A paper: its first page, then what it will be filed as */
+.scards { display: grid; gap: 14px; }
+.scard { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: start; gap: 18px; }
+.scard__thumb {
+  display: grid; place-items: center; aspect-ratio: 1 / 1.414; overflow: hidden; border-radius: 8px; background: var(--fill-2); color: var(--text-2);
+  box-shadow: 0 1px 2px rgb(0 0 0 / .1), 0 8px 20px -10px rgb(10 20 60 / .35); transition: transform .2s;
+}
+.scard__thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+@media (hover: hover) { .scard__thumb:hover { transform: translateY(-2px); } }
+.scard__thumb:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
+.scard__main { display: grid; gap: 10px; min-width: 0; }
+.scard__top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.scard__name { display: grid; flex: 1 1 200px; min-width: 0; }
+.scard__name b { overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.scard__name small { font-size: 12.5px; color: var(--text-2); }
+.scard__ai, .scard__warn { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 8px; font-size: 13.5px; line-height: 1.45; }
+.scard__ai > .ico, .scard__warn > .ico { flex: none; width: 16px; height: 16px; margin-top: 2px; }
+.scard__ai > span { flex: 1; min-width: 0; }
+.scard__ai > .ico { color: var(--accent-ink); }
+.scard__ai b { font-weight: 600; }
+.scard__warn { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--danger) 9%, transparent); }
+.scard__warn > .ico { color: var(--bad-ink); }
+.scard__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 12px; min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+.scard__grid .field--wide { grid-column: span 2; }
+.scard__grid input, .scard__grid select { min-height: 40px; padding-block: 8px; font-size: 15px; }
+.scard__grid:disabled { opacity: .55; }
+.scard__acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.scard__cost { margin-left: auto; font-size: 12px; color: var(--text-2); }
+
+@media (width <= 1100px) {
+  .scard__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (width <= 600px) {
+  .scard { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+  .scard__grid { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); }
+  .scard__grid .field--wide { grid-column: auto; }
+  .scard__grid input, .scard__grid select { font-size: 16px; }
+  .scard__main { display: contents; }
+  .scard__top, .scard__ai { grid-column: 2; }
+  .scard__warn, .scard__acts { grid-column: 1 / -1; }
+}

@@ -10,7 +10,8 @@ import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, FOLDER_HUES, PURPOSES, REQ_STATUS, 
 import { docBlob, downloadDoc, requestPdf } from '../lib/paper'
 import { putFile } from '../lib/files'
 import { cid } from '../lib/draft'
-import { addDaysYmd, dateDots, daysFromToday, dueLabel, hm, short, today } from '../lib/format'
+import { addDaysYmd, dateDots, daysFromToday, dueLabel, hm, num, short, today } from '../lib/format'
+import { dots } from '../lib/hr'
 import { Sheet } from '../ui/Sheet'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 import { Avatar } from '../ui/bits'
@@ -32,7 +33,8 @@ export function DocSheet({ id }: { id: string }) {
     )
   }
   const by = s.people.find(p => p.id === d.by)
-  const sub = [DOC_KIND[d.kind], `Нэмсэн: ${by ? `${short(by)}, ` : ''}${dateDots(new Date(d.added))}`, d.updated && `Зассан: ${dateDots(new Date(d.updated))}`].filter(Boolean).join(' · ')
+  const p = d.paper
+  const sub = [DOC_KIND[d.kind], p?.number && `№ ${p.number}`, p?.date && dots(p.date), p?.party, p?.amount && `${num(p.amount)} ₮`, `Нэмсэн: ${by ? `${short(by)}, ` : ''}${dateDots(new Date(d.added))}`, d.updated && `Зассан: ${dateDots(new Date(d.updated))}`].filter(Boolean).join(' · ')
   return (
     <Viewer name={d.name} sub={sub} load={() => docBlob(d)} tools={
       <>

@@ -7,4 +7,7 @@ export default defineConfig({
   plugins: [react()],
   // All screens are in one file on purpose (src/App.tsx), so a page change never waits for the network
   build: { chunkSizeWarningLimit: 700 },
+  // The server (server/main.ts) answers /api when it runs; without it the app works on, with the AI reading switched off
+  server: { proxy: { '/api': 'http://localhost:8787' } },
+  preview: { proxy: { '/api': 'http://localhost:8787' } },
 })

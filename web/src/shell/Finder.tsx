@@ -97,7 +97,7 @@ function FinderDialog() {
     add(s.companies.filter(c => sc.me.companies.includes(c.id) && has(c.name)).map(c => ({
       id: `folder-${c.id}`, group: 'Хавтас', title: c.name, sub: 'Бичиг хэрэг', lead: <span className="lead"><FolderOpen className="ico" /></span>, run: () => go('docs', `folder-${c.id}`),
     })))
-    add(s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name)).map(d => ({
+    add(s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name, d.paper?.number ?? '', d.paper?.party ?? '')).map(d => ({
       id: d.id, group: 'Бичиг баримт', title: d.name, sub: DOC_KIND[d.kind], lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),
     })))
     // Contracts, also by the other side and the number
