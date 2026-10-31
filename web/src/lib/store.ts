@@ -62,6 +62,10 @@ function load(): State | null {
     if (!s.people.some((p: Person) => p.account)) s = { ...s, people: demoAccounts(s) }
     // Saved before Бичиг хэрэг had rights of its own
     if (s.people.some((p: Person) => p.account && Object.values(p.account.access).some(a => !('docs' in a)))) s = { ...s, people: withDocRights(s) }
+    // Saved while filed scans went to everyone: they stay with the office until it shares them. Scans filed since have
+    // 'ds' ids, so one the office has since shared with everyone stays shared.
+    const everyone = (d: Doc) => !!d.paper && d.to === 'all' && !d.id.startsWith('ds')
+    if (s.docs.some(everyone)) s = { ...s, docs: s.docs.map((d: Doc) => (everyone(d) ? { ...d, to: [] } : d)) }
     return s
   } catch {
     return null
@@ -477,7 +481,7 @@ export const actions = {
       }
       if (step === 'return' && may && (c.stage === 'review' || c.stage === 'clerk' || c.stage === 'director')) {
         const back = c.stage === 'director' && o.to === 'clerk' ? 'clerk' : 'draft'
-        return to(back, [ev({ kind: 'return', to: back, text: o.text })], { resume: c.resume ?? c.stage })
+        return to(back, [ev({ kind: 'return', to: back, text: o.text })], { resume: c.stage })
       }
       if (step === 'deliver' && may && c.stage === 'deliver') return to('done', [ev({ kind: 'deliver' })])
       if (step === 'cancel' && c.stage === 'draft' && c.owner === who) return to('canceled', [ev({ kind: 'cancel', text: o.text })])
@@ -485,12 +489,17 @@ export const actions = {
     })
     return done
   },
-  /** The office numbers the approved contract; the number must be new in its company. Returns what is wrong, or null. */
+  /**
+   * The office numbers the approved contract; the number must be new in its company, among its contracts and the paper
+   * contracts filed from scans. Returns what is wrong, or null.
+   */
   registerContract(id: Id, who: Id, r: { number: string; date: string; scan?: BoardFile }) {
     const c = state.contracts.find(x => x.id === id)
     if (!c || c.stage !== 'register' || rolesOf(state, c.company).clerk !== who) return 'Танд энэ алхмыг хийх эрх алга.'
     const number = r.number.trim()
-    if (state.contracts.some(x => x.company === c.company && x.id !== id && x.number === number)) return 'Энэ дугаарыг өөр гэрээнд олгосон байна. Өөр дугаар бичнэ үү.'
+    if (state.contracts.some(x => x.company === c.company && x.id !== id && x.number === number) || state.docs.some(d => d.company === c.company && d.kind === 'contract' && d.paper?.number === number)) {
+      return 'Энэ дугаарыг өөр гэрээнд олгосон байна. Өөр дугаар бичнэ үү.'
+    }
     const at = new Date().toISOString()
     patchContract(id, x => ({ ...x, number, regDate: r.date, scan: r.scan ?? x.scan, stage: 'deliver', events: [...x.events, { id: uid('ce'), by: who, at, kind: 'register', text: number }], updated: at }))
     return null
@@ -592,7 +601,11 @@ export const actions = {
     set(s => ({ ...s, scans: s.scans.filter(x => x.id !== id) }))
     return () => set(s => ({ ...s, scans: [...s.scans.slice(0, i), it, ...s.scans.slice(i)] }))
   },
-  /** Files a scan into its ХХК's folder, in the category of its kind, for everyone there to see; returns the document and undo */
+  /**
+   * Files a scan into its ХХК's folder, in the category of its kind; returns the document and undo. A paper may be about
+   * one person, so only the office and those who see every document see it until the office shares it (Мэдээлэл засах).
+   * Its 'ds' id tells load() it was filed so.
+   */
   fileScan(id: Id, who: Id) {
     const i = state.scans.findIndex(x => x.id === id)
     const it = state.scans[i]
@@ -600,7 +613,7 @@ export const actions = {
     const f = it.to
     const amount = Number(f.amount.replace(/[\s,]/g, ''))
     const doc: Doc = {
-      id: uid('d'), company: f.company, name: f.title.trim(), kind: f.kind, file: it.file, to: 'all', by: who, added: new Date().toISOString(),
+      id: uid('ds'), company: f.company, name: f.title.trim(), kind: f.kind, file: it.file, to: [], by: who, added: new Date().toISOString(),
       paper: { number: f.number.trim() || undefined, date: f.date || undefined, party: f.party.trim() || undefined, amount: amount > 0 ? amount : undefined },
     }
     set(s => ({ ...s, docs: [doc, ...s.docs], scans: s.scans.filter(x => x.id !== id) }))

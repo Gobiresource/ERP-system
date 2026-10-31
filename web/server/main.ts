@@ -12,28 +12,34 @@ const port = Number(process.env.PORT) || 8787
 const LIMIT = 13_000_000
 
 createServer(async (req, res) => {
-  const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
-  const send = async (out: Response) => {
-    res.writeHead(out.status, Object.fromEntries(out.headers))
-    res.end(Buffer.from(await out.arrayBuffer()))
-  }
-  if (url.pathname === '/api/attendance' || url.pathname.startsWith('/api/attendance/')) {
-    await send(await handleAttendance(new Request(url, { method: req.method }), process.env))
-    return
-  }
-  if (url.pathname !== '/api/scan') {
-    res.writeHead(404).end()
-    return
-  }
-  const chunks: Buffer[] = []
-  let size = 0
-  for await (const chunk of req as AsyncIterable<Buffer>) {
-    size += chunk.length
-    if (size > LIMIT) {
-      res.writeHead(413).end()
+  // A request that cannot be read (a host or method a URL or Request will not take) is answered, never left to stop the server
+  try {
+    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+    const send = async (out: Response) => {
+      res.writeHead(out.status, Object.fromEntries(out.headers))
+      res.end(Buffer.from(await out.arrayBuffer()))
+    }
+    if (url.pathname === '/api/attendance' || url.pathname.startsWith('/api/attendance/')) {
+      await send(await handleAttendance(new Request(url, { method: req.method }), process.env))
       return
     }
-    chunks.push(chunk)
+    if (url.pathname !== '/api/scan') {
+      res.writeHead(404).end()
+      return
+    }
+    const chunks: Buffer[] = []
+    let size = 0
+    for await (const chunk of req as AsyncIterable<Buffer>) {
+      size += chunk.length
+      if (size > LIMIT) {
+        res.writeHead(413).end()
+        return
+      }
+      chunks.push(chunk)
+    }
+    await send(await handleScan(new Request(url, { method: req.method, body: req.method === 'POST' ? Buffer.concat(chunks) : undefined }), process.env))
+  } catch {
+    if (!res.headersSent) res.writeHead(400)
+    res.end()
   }
-  await send(await handleScan(new Request(url, { method: req.method, body: req.method === 'POST' ? Buffer.concat(chunks) : undefined }), process.env))
 }).listen(port, () => console.log(`ERP server: http://localhost:${port}/api`))

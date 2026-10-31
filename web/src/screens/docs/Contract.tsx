@@ -156,7 +156,8 @@ function Editor({ c, who }: { c: Contract; who: Id }) {
 
   return (
     <>
-      <ol className="paper__clauses is-edit">
+      {/* Leaving the text saves it at once: a step pressed next (the button takes focus first) moves on with it */}
+      <ol className="paper__clauses is-edit" onBlur={() => { if (timer.current) save() }}>
         {clauses.map((cl, i) => (
           <li key={cl.id} data-clause={cl.id}>
             <div className="paper__h">
@@ -237,10 +238,10 @@ function Status({ c, who }: { c: Contract; who: Id }) {
       )}
       <ol className={`ctsteps${c.stage === 'canceled' ? ' is-off' : ''}`}>
         {FLOW.map((st, i) => (
-          <li key={st} className={mark(i)}>
+          <li key={st} className={mark(i)} aria-current={mark(i) === 'is-now' ? 'step' : undefined}>
             <span className="ctsteps__dot" aria-hidden="true">{mark(i) === 'is-past' && <Check className="ico" />}</span>
             <span className="ctsteps__text">
-              <b>{STAGE[st].label}</b>
+              <b>{STAGE[st].label}{mark(i) === 'is-past' && <span className="sr-only">, хийгдсэн</span>}</b>
               {st === 'draft' && <small>{name(s.people, c.owner)}, хариуцсан ажилтан</small>}
               {st === 'review' && REVIEW.map(r => (
                 <small key={r} className={c.agreed.includes(r) ? 'is-ok' : undefined}>
@@ -355,7 +356,7 @@ function Versions({ c, view, setView }: { c: Contract; view: Id | null; setView:
 function what(e: ContractEvent, people: { id: Id; given: string; family: string }[]) {
   switch (e.kind) {
     case 'start': return 'ноорог эхлүүлсэн'
-    case 'send': return e.to === 'review' ? 'хянуулахаар илгээсэн' : `${STAGE[e.to!].label.toLowerCase()} руу илгээсэн`
+    case 'send': return e.to === 'review' ? 'хянуулахаар илгээсэн' : e.to === 'director' ? 'захиралд илгээсэн' : 'бичиг хэрэгт илгээсэн'
     case 'approve': return e.role === 'finance' ? 'зөвшөөрсөн (санхүү)' : e.role === 'legal' ? 'зөвшөөрсөн (хууль)' : e.role === 'clerk' ? 'захиралд хүргүүлсэн' : 'баталсан'
     case 'return': return e.to === 'clerk' ? 'бичиг хэрэгт буцаасан' : 'хариуцсан ажилтанд буцаасан'
     case 'register': return `${e.text} дугаар олгож бүртгэсэн`

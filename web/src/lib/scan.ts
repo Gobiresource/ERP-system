@@ -195,9 +195,12 @@ export async function mergeBack(it: ScanItem, ready: boolean) {
     const id = `f${cid()}`
     await putFile(id, joined)
     const name = `${prev.from.name.replace(/\.pdf$/i, '')} (${pages[0]}–${pages[pages.length - 1]}).pdf`
+    // A name made from its pages goes with them; one the office typed stays
+    const now = getState().scans.find(x => x.id === prev.id)
+    const to = now && now.to.title === now.file.name.replace(/\.pdf$/i, '') ? { to: { ...now.to, title: name.replace(/\.pdf$/, '') } } : {}
     actions.setScan(prev.id, {
       file: { id, name, type: 'application/pdf', size: joined.size, pages: pages.length }, from: { ...prev.from, pages },
-      state: ready ? 'waiting' : 'manual', reading: ready ? undefined : prev.reading, error: undefined,
+      state: ready ? 'waiting' : 'manual', reading: ready ? undefined : prev.reading, error: undefined, ...to,
     })
     actions.dropScan(it.id)
   } finally {
@@ -224,7 +227,11 @@ export function pump() {
     if (it.state !== 'waiting' || busy.has(it.id)) continue
     busy.add(it.id)
     const job = it.mapped || (it.file.pages ?? 1) < 2 ? read(it) : map(it)
-    job.catch(e => actions.setScan(it.id, { state: 'failed', error: e instanceof Error && e.name !== 'TimeoutError' ? e.message : 'AI хугацаандаа хариу өгсөнгүй.' }))
+    // Our words and the server's are plain Errors; the browser's own (a dropped connection, a picture it cannot draw) are English
+    job.catch(e => actions.setScan(it.id, {
+      state: 'failed',
+      error: e instanceof Error && e.name === 'Error' ? e.message : e instanceof Error && e.name === 'TimeoutError' ? 'AI хугацаандаа хариу өгсөнгүй.' : 'Дахин уншуулна уу. Уншигдахгүй бол мэдээллийг гараар бөглөнө үү.',
+    }))
       .finally(() => {
         busy.delete(it.id)
         pump()

@@ -126,7 +126,8 @@ export function ContractRegister({ id }: { id: Id }) {
   const c = useContract(id)
   const who = useActor()
   const company = s.companies.find(x => x.id === c?.company)
-  const [f, setF] = useState({ number: company ? nextNumber(s.contracts, company) : '', date: today() })
+  const papers = s.docs.filter(d => d.kind === 'contract').map(d => ({ company: d.company, number: d.paper?.number }))
+  const [f, setF] = useState({ number: company ? nextNumber([...s.contracts, ...papers], company) : '', date: today() })
   const [scan, setScan] = useState<BoardFile | null>(null)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
@@ -217,8 +218,12 @@ export function ContractAsk({ id }: { id: Id }) {
 export function ProcessRoles() {
   const s = useApp()
   const company = s.companies.find(c => c.id === s.company)
-  const [f, setF] = useState<Record<ProcessRole, Id>>(rolesOf(s, s.company))
   const people = sorted(s.people.filter(p => p.companies.includes(s.company)))
+  // A new ХХК borrows the first one's people, who may not work in it: each role starts at someone listed, as shown
+  const [f, setF] = useState(() => {
+    const r = rolesOf(s, s.company)
+    return Object.fromEntries(ROLES.map(k => [k, people.some(p => p.id === r[k]) ? r[k] : people[0]?.id])) as Record<ProcessRole, Id>
+  })
   const submit = () => {
     actions.setRoles(s.company, f)
     toast('Процессын үүрэг хадгалагдлаа.')

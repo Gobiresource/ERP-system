@@ -75,6 +75,8 @@ export default function Contracts() {
           <ul>{list.map(c => <Row key={c.id} c={c} what={tab === 'todo' ? todo(c, roles, who) : null} />)}</ul>
         ) : tab === 'todo' ? (
           <Empty icon={<Inbox className="ico" />} title="Таны хийх гэрээ алга" text="Танаас хүлээж буй гэрээ энд харагдана." />
+        ) : tab === 'closed' ? (
+          <Empty icon={<FilePen className="ico" />} title="Дууссан гэрээ алга" text="Дууссан болон цуцлагдсан гэрээ энд харагдана." />
         ) : (
           <Empty icon={<FilePen className="ico" />} title="Гэрээ алга" text="Гэрээ үүсгэвэл энд харагдана." />
         )}

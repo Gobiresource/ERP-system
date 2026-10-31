@@ -112,6 +112,7 @@ export async function handleScan(req: Request, env: ScanEnv): Promise<Response> 
   } catch {
     return json({ error: 'Хүсэлт буруу байна.' }, 400)
   }
+  if (!body || typeof body !== 'object') return json({ error: 'Хүсэлт буруу байна.' }, 400)
   const split = body.task === 'split'
   const pages = Array.isArray(body.pages) ? body.pages.slice(0, split ? MAX_SPLIT : MAX_PAGES) : []
   if (!pages.length || pages.some(p => typeof p !== 'string' || p.length > (split ? MAX_SMALL : MAX_PAGE) || !/^data:image\/(jpeg|png|webp);base64,/.test(p))) {
@@ -122,7 +123,9 @@ export async function handleScan(req: Request, env: ScanEnv): Promise<Response> 
     if (split) return json(await splitStack(env.OPENROUTER_API_KEY, models, pages, Math.max(1, Math.floor(Number(body.first) || 1)), body.context === true))
     return json(await read(env.OPENROUTER_API_KEY, models, pages, companies, String(body.name ?? '').slice(0, 200)))
   } catch (e) {
-    return json({ error: e instanceof Error ? e.message : 'AI хариу өгсөнгүй.' }, 502)
+    // Our words and OpenRouter's refusals are plain Errors; a runtime's own (a timeout, the network, an answer that is not JSON) are English
+    const said = e instanceof Error && e.name === 'Error' ? e.message : e instanceof Error && e.name === 'TimeoutError' ? 'AI хугацаандаа хариу өгсөнгүй.' : 'AI хариу өгсөнгүй.'
+    return json({ error: said }, 502)
   }
 }
 

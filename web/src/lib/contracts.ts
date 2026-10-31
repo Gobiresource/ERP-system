@@ -63,8 +63,8 @@ export function todo(c: Contract, roles: Record<ProcessRole, Id>, p: Id): string
 
 export const isClosed = (c: Contract) => c.stage === 'done' || c.stage === 'canceled'
 
-/** The next free number in a company this year: ГР-2026/015 */
-export function nextNumber(contracts: Contract[], company: Company) {
+/** The next free number in a company this year, after those of its contracts and of the paper ones filed: ГР-2026/015 */
+export function nextNumber(contracts: { company: Id; number?: string }[], company: Company) {
   const year = new Date().getFullYear()
   const head = `${company.code}-${year}/`
   const last = Math.max(0, ...contracts.filter(c => c.company === company.id && c.number?.startsWith(head)).map(c => Number(c.number!.slice(head.length)) || 0))

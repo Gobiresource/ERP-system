@@ -84,7 +84,8 @@ export function DocAdd({ company, id }: { company?: string; id?: string }) {
     if (saving) e['da-file'] = 'Файл хадгалагдаж дуусахыг хүлээнэ үү.'
     else if (!file && !was) e['da-file'] = 'Файлаа сонгоно уу.'
     if (!f.name.trim()) e['da-name'] = 'Бичиг баримтын нэрийг бичнэ үү.'
-    if (!f.all && !f.people.length) e['da-to'] = 'Хэнд харагдахыг сонгоно уу.'
+    // A filed scan is the office's until people are chosen; changing its details keeps it so
+    if (!f.all && !f.people.length && !(was && was.to !== 'all' && !was.to.length)) e['da-to'] = 'Хэнд харагдахыг сонгоно уу.'
     setErrors(e)
     if (Object.keys(e).length) return false
     const doc = { name: f.name.trim(), kind: f.kind, to: f.all ? ('all' as const) : f.people }

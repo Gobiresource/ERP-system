@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { CircleAlert, Clock3, FileText, FolderInput, FolderOpen, LoaderCircle, Merge, Pencil, RotateCcw, Scissors, Sparkles, Upload, X } from 'lucide-react'
 import '../../styles/screens/scans.css'
-import type { Doc, ScanFields, ScanItem, State } from '../../lib/types'
+import type { ScanFields, ScanItem, State } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
@@ -21,8 +21,11 @@ import { Seg } from '../../ui/Seg'
 import { Empty } from '../../ui/bits'
 import { DocsNav } from '../Docs'
 
-/** A filed document of the same ХХК with the same number: the paper may be in a folder already */
-const twinOf = (s: State, f: ScanFields): Doc | undefined => (f.number.trim() ? s.docs.find(d => d.company === f.company && d.paper?.number === f.number.trim()) : undefined)
+/** A filed document, or a contract numbered in Гэрээ, of the same ХХК and number, by its name: the paper may be in a folder already */
+const twinOf = (s: State, f: ScanFields): string | undefined => {
+  const n = f.number.trim()
+  return n ? s.docs.find(d => d.company === f.company && d.paper?.number === n)?.name ?? s.contracts.find(c => c.company === f.company && c.number === n)?.title : undefined
+}
 /** Read with confidence, nothing to check, into a ХХК whose office the person keeps: these can go into their folders together */
 const sure = (s: State, it: ScanItem) => it.state === 'read' && it.reading?.confidence === 'high' && !!it.to.title.trim() && !twinOf(s, it.to) && docView(s).edit(it.to.company)
 /** AI's turn: in line, being cut or being read */
@@ -191,7 +194,8 @@ function ScanCard({ it, ai, sure: done }: { it: ScanItem; ai: boolean; sure: boo
   const co = s.companies.find(c => c.id === f.company)?.name
   const set = (patch: Partial<ScanFields>) => {
     actions.setScan(it.id, { to: { ...f, ...patch } })
-    if (('title' in patch && errors.title) || ('amount' in patch && errors.amount)) setErrors({})
+    if ('title' in patch && errors.title) setErrors(e => ({ ...e, title: undefined }))
+    if ('amount' in patch && errors.amount) setErrors(e => ({ ...e, amount: undefined }))
   }
   const file = () => {
     const e = {
@@ -208,7 +212,11 @@ function ScanCard({ it, ai, sure: done }: { it: ScanItem; ai: boolean; sure: boo
     if (r) toast(`«${r.doc.name}» ${co}-ийн ${DOC_KIND[f.kind]} хавтсанд орлоо.`, { undo: r.undo })
     else toast(`Танд ${co}-ийн хавтсанд бичиг баримт нэмэх эрх алга.`, { kind: 'warn' })
   }
-  const remove = () => toast(`${it.file.name} хасагдлаа.`, { undo: actions.dropScan(it.id) })
+  const remove = () => {
+    const undo = actions.dropScan(it.id)
+    // Taken out while AI had it, what AI read meanwhile was let go: back in line (pump waits for a reading still going)
+    toast(`${it.file.name} хасагдлаа.`, { undo: () => { undo(); if (busy) { actions.setScan(it.id, { state: 'waiting' }); pump() } } })
+  }
   const again = () => {
     actions.setScan(it.id, { state: 'waiting' })
     pump()
@@ -326,7 +334,7 @@ function ScanCard({ it, ai, sure: done }: { it: ScanItem; ai: boolean; sure: boo
             {errors.amount && <span className="field__error" id={id('amount-error')}>{errors.amount}</span>}
           </div>
         </fieldset>
-        {twin && <p className="scard__warn"><CircleAlert className="ico" />Энэ дугаартай баримт хавтсанд бүртгэлтэй байна: «{twin.name}». Давхардлыг шалгана уу.</p>}
+        {twin && <p className="scard__warn"><CircleAlert className="ico" />Энэ дугаартай баримт хавтсанд бүртгэлтэй байна: «{twin}». Давхардлыг шалгана уу.</p>}
         <div className="scard__acts">
           <button type="button" className="btn btn--accent" disabled={busy} title={busy ? 'AI уншиж дуусахыг хүлээнэ үү' : undefined} onClick={file}><FolderInput className="ico" />Хавтаслах</button>
           {it.state === 'manual' && ai && <button type="button" className="btn btn--glass" onClick={again}><Sparkles className="ico" />AI-аар уншуулах</button>}
