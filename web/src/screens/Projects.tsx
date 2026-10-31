@@ -95,7 +95,7 @@ function ProjectList({ sc }: { sc: Scoped }) {
     <div ref={ref}>
       <PageHead
         title="Төсөл"
-        sub={`${active.length + sc.projects.filter(p => p.status === 'planning').length} төсөл хэрэгжиж байна, ${done.length} нь дууссан.`}
+        sub={`${active.length} төсөл хэрэгжиж байна, ${done.length} дууссан.`}
         stats={[
           { label: 'Хэрэгжиж буй', value: active.length },
           { label: 'Дууссан', value: done.length },
@@ -215,7 +215,8 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
             { label: 'Явц', value: prog.pct, unit: '%' },
             { label: 'Дуусаагүй ажил', value: prog.open },
             { label: 'Дууссан', value: prog.done },
-            left >= 0 ? { label: 'Үлдсэн хоног', value: left } : { label: 'Хэтэрсэн хоног', value: -left, alert: p.status !== 'done' },
+            p.status === 'done' ? { label: 'Дуусах өдөр', value: dateDots(parse(p.due)) }
+              : left >= 0 ? { label: 'Үлдсэн хоног', value: left } : { label: 'Хэтэрсэн хоног', value: -left, alert: true },
           ]}
           actions={
             <>
@@ -313,12 +314,16 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
                 <p className="card__sub">Төсөл эхэлснээс хойших дууссан ба нийт ажил</p>
               </div>
             </div>
-            <div className="burn__legend" aria-hidden="true">
-              <span><i />Дууссан</span>
-              <span><i className="is-dashed" />Нийт</span>
-            </div>
-            <LineChart label="Явцын график" unit="ажил" labels={burn.labels} height={240}
-              series={[{ name: 'Дууссан', values: burn.dones, tone: 'accent', area: true }, { name: 'Нийт', values: burn.totals, tone: 'muted', dashed: true }]} />
+            {burn.labels.length === 0 ? <p className="tp-none">Явцын мэдээлэл хараахан байхгүй.</p> : (
+              <>
+                <div className="burn__legend" aria-hidden="true">
+                  <span><i />Дууссан</span>
+                  <span><i className="is-dashed" />Нийт</span>
+                </div>
+                <LineChart label="Явцын график" unit="ажил" labels={burn.labels} height={240}
+                  series={[{ name: 'Дууссан', values: burn.dones, tone: 'accent', area: true }, { name: 'Нийт', values: burn.totals, tone: 'muted', dashed: true }]} />
+              </>
+            )}
           </section>
 
           <section className="card glass pd-tasks" aria-labelledby="pt-t" data-enter>

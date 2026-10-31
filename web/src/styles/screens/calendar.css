@@ -20,7 +20,7 @@
 .cal-day:hover { background: var(--fill); }
 .cal-day.is-out { background: none; }
 .cal-day.is-out:hover { background: var(--fill-hover); }
-.cal-day[aria-selected="true"] { box-shadow: inset 0 0 0 2px var(--accent-ink), 0 0 0 4px color-mix(in srgb, var(--accent-ink) 16%, transparent); }
+.cal-day[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent-ink), 0 0 0 4px color-mix(in srgb, var(--accent-ink) 16%, transparent); }
 .cal-day:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px var(--accent-ink), 0 0 0 5px color-mix(in srgb, var(--accent-ink) 30%, transparent); }
 .cal-day__top { display: flex; align-items: center; gap: 4px; min-height: 26px; }
 .cal-day__n { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 4px; border-radius: 999px; font: 650 14px/1 var(--font); font-variant-numeric: tabular-nums; }
@@ -90,7 +90,7 @@
 .cal-wk__day b { display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 4px; border-radius: 999px; font: 700 16px/1 var(--font); }
 .cal-wk__day.is-today small { color: var(--accent-ink); }
 .cal-wk__day.is-today b { background: var(--accent); color: #fff; }
-.cal-wk__body { position: relative; height: calc(var(--hh) * 11); }
+.cal-wk__body { position: relative; }
 .cal-wk__hours { position: relative; z-index: 3; pointer-events: none; }
 .cal-wk__hours span { position: absolute; right: 10px; font: 600 12px/1 var(--font); white-space: nowrap; color: var(--text-2); transform: translateY(-50%); }
 .cal-wk__hours span:first-child { transform: none; }

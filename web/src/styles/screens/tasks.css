@@ -36,7 +36,7 @@
 
 /* Board */
 .tk-board {
-  display: grid; grid-template-columns: repeat(4, minmax(258px, 1fr)); align-items: stretch; gap: var(--gap);
+  display: grid; grid-template-columns: repeat(4, minmax(208px, 1fr)); align-items: stretch; gap: var(--gap);
   margin: -14px calc(-1 * var(--gutter)) -44px; padding: 14px var(--gutter) 44px; overflow-x: auto;
   scroll-padding-inline: var(--gutter); scrollbar-width: none;
 }

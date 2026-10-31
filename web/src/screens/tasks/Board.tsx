@@ -12,10 +12,10 @@ import { TaskCard, moveTask } from './TaskCard'
 
 const LIMIT = 8
 const EMPTY: Record<TaskStatus, string> = {
-  todo: 'Ажлаа энд чирж оруулна уу',
-  doing: 'Ажлаа энд чирж оруулна уу',
-  review: 'Хянуулах ажлаа энд чирж оруулна уу',
-  done: 'Дууссан ажлаа энд чирж оруулна уу',
+  todo: 'Ажлаа энд чирж тавина уу',
+  doing: 'Ажлаа энд чирж тавина уу',
+  review: 'Хянуулах ажлаа энд чирж тавина уу',
+  done: 'Дууссан ажлаа энд чирж тавина уу',
 }
 
 interface Drag {
@@ -177,6 +177,8 @@ export function Board({ tasks }: { tasks: Task[] }) {
         if (commit) {
           const before = byCol[d.col].filter(x => x.id !== t.id)[d.index]?.id
           if (d.col !== t.status || d.index !== byCol[t.status].indexOf(t)) moveTask(t, d.col, before)
+          // Dropped below the cards shown: show the whole column so the card stays in view
+          if (d.index >= LIMIT) setExpanded(x => ({ ...x, [d.col]: true }))
           setDropped({ id: t.id, toDone: d.col === 'done' && t.status !== 'done' })
         }
         setDrag(null)

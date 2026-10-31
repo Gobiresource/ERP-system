@@ -5,7 +5,7 @@ import type { CalEvent, Hue } from '../lib/types'
 import { scoped, useApp, type Scoped } from '../lib/store'
 import { open } from '../lib/ui'
 import { enter, usePageEnter } from '../lib/motion'
-import { addDays, duration, hm, monthDay, parse, today, weekStart, weekday, weekdayShort, ymd, ymdhm } from '../lib/format'
+import { addDays, duration, hm, monthDay, monthTitle, parse, today, weekStart, weekday, weekdayShort, ymd, ymdhm } from '../lib/format'
 import { eventEnd, thisWeek } from '../lib/derive'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
@@ -19,7 +19,8 @@ const HOURS = { from: 8, to: 19 }
 
 const monthLabel = (from: Date, to: Date) =>
   from.getMonth() === to.getMonth() ? `${from.getFullYear()} оны ${from.getMonth() + 1}-р сар`
-    : `${to.getFullYear()} оны ${from.getMonth() + 1}–${to.getMonth() + 1}-р сар`
+    : from.getFullYear() !== to.getFullYear() ? `${monthTitle(from)}\u00a0– ${monthTitle(to)}`
+      : `${to.getFullYear()} оны ${from.getMonth() + 1}–${to.getMonth() + 1}-р сар`
 
 export default function Calendar() {
   const s = useApp()
@@ -119,6 +120,9 @@ export default function Calendar() {
 function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date; month: number; sc: Scoped; selected: string; onSelect: (d: string) => void; onPage: (n: number) => void }) {
   const grid = useRef<HTMLDivElement>(null)
   const days = useMemo(() => Array.from({ length: 42 }, (_, i) => addDays(from, i)), [from])
+  const first = days.find(d => d.getMonth() === month)!
+  // The picked day takes Tab; when it is not in this grid, the 1st of the month does
+  const tab = days.some(d => ymd(d) === selected) ? selected : ymd(first)
   const t = today()
   const byDay = useMemo(() => {
     const m = new Map<string, CalEvent[]>()
@@ -134,15 +138,17 @@ function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date
     return m
   }, [sc.projects])
 
-  // Arrow keys move between days, Page Up/Down change the month
+  // Arrow keys move between days (into the month before or after), Page Up/Down change the month; focus stays in the grid
   const onKey = (e: KeyboardEvent) => {
     const moves: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
-    if (e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); onPage(e.key === 'PageUp' ? -1 : 1); return }
+    const focus = (sel: string) => requestAnimationFrame(() => grid.current?.querySelector<HTMLElement>(sel)?.focus())
+    if (e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); onPage(e.key === 'PageUp' ? -1 : 1); focus('[tabindex="0"]'); return }
     if (!(e.key in moves)) return
     e.preventDefault()
-    const next = ymd(addDays(parse(selected), moves[e.key]))
-    onSelect(next)
-    requestAnimationFrame(() => grid.current?.querySelector<HTMLElement>(`[data-day="${next}"]`)?.focus())
+    const d = addDays(parse(tab), moves[e.key])
+    if (d.getMonth() !== month) onPage(d < first ? -1 : 1)
+    onSelect(ymd(d))
+    focus(`[data-day="${ymd(d)}"]`)
   }
 
   return (
@@ -163,7 +169,7 @@ function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date
             aria-pressed={k === selected}
             aria-current={k === t ? 'date' : undefined}
             aria-label={`${monthDay(d)}, ${weekday(d)}. ${evs.length ? `${evs.length} тов` : 'Товгүй'}${fl.length ? `, ${fl.length} үе шат` : ''}`}
-            tabIndex={k === selected ? 0 : -1}
+            tabIndex={k === tab ? 0 : -1}
             onClick={() => onSelect(k)}
             onDoubleClick={() => open({ kind: 'newEvent', defaults: { start: `${k}T10:00` } })}
           >
@@ -279,13 +285,18 @@ function WeekGrid({ from, sc }: { from: Date; sc: Scoped }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i))
   const t = today()
   const now = new Date()
-  const span = (HOURS.to - HOURS.from) * 60
-  const top = (min: number) => `${((min - HOURS.from * 60) / span) * 100}%`
+  const startMin = (e: CalEvent) => parse(e.start).getHours() * 60 + parse(e.start).getMinutes()
+  // 08:00–19:00, widened to fit every event of the week
+  const week = sc.events.filter(e => e.start >= ymd(from) && e.start < ymd(addDays(from, 7)))
+  const h0 = Math.min(HOURS.from, ...week.map(e => Math.floor(startMin(e) / 60)))
+  const h1 = Math.min(24, Math.max(HOURS.to, ...week.map(e => Math.ceil((startMin(e) + Math.max(e.minutes, 20)) / 60))))
+  const span = (h1 - h0) * 60
+  const top = (min: number) => `${((min - h0 * 60) / span) * 100}%`
 
   const addAt = (e: MouseEvent<HTMLDivElement>, day: Date) => {
     if (e.target !== e.currentTarget) return
     const r = e.currentTarget.getBoundingClientRect()
-    const min = HOURS.from * 60 + Math.floor((((e.clientY - r.top) / r.height) * span) / 30) * 30
+    const min = h0 * 60 + Math.floor((((e.clientY - r.top) / r.height) * span) / 30) * 30
     const d = new Date(day)
     d.setHours(Math.floor(min / 60), min % 60, 0, 0)
     open({ kind: 'newEvent', defaults: { start: ymdhm(d) } })
@@ -301,10 +312,10 @@ function WeekGrid({ from, sc }: { from: Date; sc: Scoped }) {
           </div>
         ))}
       </div>
-      <div className="cal-wk__body">
+      <div className="cal-wk__body" style={{ height: `calc(var(--hh) * ${h1 - h0})` }}>
         <div className="cal-wk__hours" aria-hidden="true">
-          {Array.from({ length: HOURS.to - HOURS.from }, (_, i) => (
-            <span key={i} style={{ top: `${(i / (HOURS.to - HOURS.from)) * 100}%` }}>{String(HOURS.from + i).padStart(2, '0')}:00</span>
+          {Array.from({ length: h1 - h0 }, (_, i) => (
+            <span key={i} style={{ top: `${(i / (h1 - h0)) * 100}%` }}>{String(h0 + i).padStart(2, '0')}:00</span>
           ))}
         </div>
         {days.map(d => {
@@ -313,7 +324,7 @@ function WeekGrid({ from, sc }: { from: Date; sc: Scoped }) {
           // Side-by-side lanes for events that overlap
           const lanes: number[] = []
           const placed = evs.map(e => {
-            const s0 = parse(e.start).getHours() * 60 + parse(e.start).getMinutes()
+            const s0 = startMin(e)
             let lane = lanes.findIndex(end => end <= s0)
             if (lane < 0) lane = lanes.length
             lanes[lane] = s0 + Math.max(e.minutes, 20)
@@ -325,18 +336,19 @@ function WeekGrid({ from, sc }: { from: Date; sc: Scoped }) {
             <div key={k} className={`cal-wk__col${k === t ? ' is-today' : ''}${d.getDay() === 0 || d.getDay() === 6 ? ' is-weekend' : ''}`}
               onClick={e => addAt(e, d)} aria-label={`${monthDay(d)}, ${weekday(d)}`} role="group">
               {placed.map(({ e, s0, lane }) => {
-                const short = e.minutes < 40
+                // Two lines need an hour of height
+                const short = e.minutes < 60
                 const mins = Math.max(e.minutes, 20)
                 return (
                   <button key={e.id} type="button" className={`cal-blk hue--${eventHue(e, sc)}${short ? ' is-short' : ''}${eventEnd(e) < now ? ' is-past' : ''}`}
-                    style={{ top: top(Math.max(s0, HOURS.from * 60)), height: `${(mins / span) * 100}%`, left: `calc(${lane * width}% + 2px)`, width: `calc(${width}% - 4px)` }}
+                    style={{ top: top(s0), height: `${(mins / span) * 100}%`, left: `calc(${lane * width}% + 2px)`, width: `calc(${width}% - 4px)` }}
                     onClick={() => open({ kind: 'event', id: e.id })}>
                     <b>{e.title}</b>
                     {!short && <small>{hm(parse(e.start))}{e.where ? `, ${e.where}` : ''}</small>}
                   </button>
                 )
               })}
-              {k === t && nowMin >= HOURS.from * 60 && nowMin <= HOURS.to * 60 && <span className="cal-now" style={{ top: top(nowMin) }} aria-hidden="true" />}
+              {k === t && nowMin >= h0 * 60 && nowMin <= h1 * 60 && <span className="cal-now" style={{ top: top(nowMin) }} aria-hidden="true" />}
             </div>
           )
         })}

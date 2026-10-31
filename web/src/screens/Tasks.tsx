@@ -52,7 +52,6 @@ export default function Tasks() {
     late: open_.filter(t => daysFromToday(t.due) < 0).length,
     done: sc.tasks.filter(t => t.doneAt && t.doneAt.slice(0, 10) >= from).length,
   }
-  const projectCount = new Set(open_.map(t => t.project).filter(Boolean)).size
   const filtered = project !== 'all' || mine || prio !== 'all' || q.trim() !== ''
   const current = sc.project(project === 'all' || project === 'none' ? undefined : project)
   const me = sc.me
@@ -61,7 +60,7 @@ export default function Tasks() {
     <div ref={ref} className="tk">
       <PageHead
         title="Ажил"
-        sub={`${projectCount} төсөлд ${stats.open} дуусаагүй ажил байна.`}
+        sub={`${stats.open} дуусаагүй ажил байна.`}
         stats={[
           { label: 'Дуусаагүй', value: stats.open },
           { label: 'Энэ долоо хоногт дуусах', value: stats.week },

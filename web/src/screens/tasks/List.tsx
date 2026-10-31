@@ -54,7 +54,12 @@ export function List({ tasks, total }: { tasks: Task[]; total: number }) {
                       <input type="checkbox" className="check" checked={t.status === 'done'} aria-label={`${t.title}: дууссан`}
                         onChange={e => {
                           if (e.target.checked) checkPop(e.target)
+                          // The row moves to another group: keep focus here, on the next row or the group's button
+                          const row = e.target.closest('.tk-row')
+                          const next = (row?.nextElementSibling ?? row?.previousElementSibling)?.querySelector<HTMLElement>('.check')
+                            ?? row?.parentElement?.previousElementSibling?.querySelector<HTMLElement>('.tk-group__btn')
                           moveTask(t, e.target.checked ? 'done' : 'todo')
+                          requestAnimationFrame(() => next?.focus())
                         }} />
                       <button type="button" className="tk-row__title" onClick={() => open({ kind: 'task', id: t.id })}>{t.title}</button>
                       <div className="tk-row__meta">

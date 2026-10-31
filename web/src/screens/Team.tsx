@@ -27,7 +27,7 @@ export default function Team() {
   const teams = useMemo(() => [...new Set(people.map(p => p.team))].sort(collator.compare), [people])
   const shown = team === 'all' ? people : people.filter(p => p.team === team)
   const loads = people.map(p => workload(p, sc.tasks))
-  const online = people.filter(p => p.presence !== 'away').length
+  const online = people.filter(p => p.presence === 'online').length
   const inFocus = people.filter(p => p.presence === 'focus').length
   const avg = Math.round(loads.reduce((n, l) => n + l.pct, 0) / Math.max(1, loads.length))
 

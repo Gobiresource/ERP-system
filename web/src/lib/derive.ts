@@ -95,6 +95,9 @@ export function burnSeries(p: Project, tasks: Task[], points = 12) {
   const start = parse(p.start)
   const end = new Date(Math.min(Date.now(), parse(p.due).getTime()))
   const span = Math.max(1, end.getTime() - start.getTime())
+  // At most one point a day, so no date repeats; none before the first whole day (a project not started, or started today)
+  points = Math.min(points, Math.floor(span / 864e5) + 1)
+  if (points < 2) return { labels: [], totals: [], dones: [] }
   let seed = 0
   for (const c of p.id) seed = (seed * 31 + c.charCodeAt(0)) % 9973
   const jitter = (i: number) => ((Math.sin(seed + i * 1.7) + 1) / 2) * 0.12

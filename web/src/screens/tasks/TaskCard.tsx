@@ -32,6 +32,12 @@ export function moveTask(t: Task, status: TaskStatus, before?: string) {
   toast(status === 'done' ? `${t.title} дууслаа.` : `${STATUS[status]} төлөвт шилжлээ.`, { undo })
 }
 
+/** The card menu's move: to the top of the column, where it is in view, with focus back on the card's menu button */
+function moveCard(t: Task, status: TaskStatus) {
+  moveTask(t, status, getState().tasks.find(x => x.company === t.company && x.status === status)?.id)
+  requestAnimationFrame(() => document.querySelector<HTMLElement>(`.tk-card[data-id="${t.id}"] .tk-card__more`)?.focus())
+}
+
 /**
  * A task on the board. The menu is the keyboard way to move a card to another column.
  * Memoised with its project and everyone (the store's people, which a drag does not change) passed in, so a drag only
@@ -66,7 +72,7 @@ export const TaskCard = memo(function TaskCard({ task: t, project: p, people, re
               <hr />
               <p className="menu__label" aria-hidden="true">Шилжүүлэх</p>
               {STATUSES.map(st => (
-                <MenuItem key={st} checked={t.status === st} onSelect={() => { pop.close(); if (st !== t.status) moveTask(t, st) }}>{STATUS[st]}</MenuItem>
+                <MenuItem key={st} checked={t.status === st} onSelect={() => { pop.close(); if (st !== t.status) moveCard(t, st) }}>{STATUS[st]}</MenuItem>
               ))}
             </Menu>
           </>

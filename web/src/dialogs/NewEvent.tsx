@@ -58,7 +58,7 @@ export function NewEvent({ defaults = {} }: { defaults?: Partial<CalEvent> }) {
       <Field id="ne-project" label="Төсөл">
         <select id="ne-project" value={f.project} onChange={set('project')}>
           <option value="">Төсөлгүй</option>
-          {sc.projects.filter(p => p.status !== 'done').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {sc.projects.filter(p => p.status !== 'done' || p.id === f.project).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </Field>
       <Field id="ne-where" label="Байршил" optional>

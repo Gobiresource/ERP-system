@@ -6,7 +6,7 @@ import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
 import { go } from '../lib/router'
 import { eventEnd } from '../lib/derive'
-import { dateDots, dueLabel, duration, hm, parse, short } from '../lib/format'
+import { dueLabel, duration, hm, parse, short } from '../lib/format'
 import { Sheet, useCloseSheet } from '../ui/Sheet'
 import { Avatar, KIND, KIND_HUE, KIND_ICON, PRESENCE, eventHue } from '../ui/bits'
 
@@ -51,7 +51,7 @@ function Body({ id }: { id: string }) {
         </div>
         <div>
           <dt>Үргэлжлэх хугацаа</dt>
-          <dd><span className="tnum">{duration(e.minutes)}, {dateDots(start)}</span></dd>
+          <dd><span className="tnum">{duration(e.minutes)}</span></dd>
         </div>
         <div>
           <dt>Байршил</dt>
