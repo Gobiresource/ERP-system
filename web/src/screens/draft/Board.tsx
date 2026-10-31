@@ -22,7 +22,8 @@ const clampZ = (z: number) => Math.min(ZMAX, Math.max(ZMIN, z))
 const MIN: Record<CardKind, [number, number]> = { note: [120, 80], todo: [160, 80], title: [120, 40], image: [120, 60], link: [180, 64], file: [180, 64] }
 const EDITABLE: CardKind[] = ['note', 'todo', 'title', 'link', 'image']
 const isPdf = (c?: DraftCard) => c?.kind === 'file' && (c.file?.type === 'application/pdf' || /\.pdf$/i.test(c.file?.name ?? ''))
-const typing = (el: Element | null) => !!el?.closest('input, textarea, select, [contenteditable="true"]')
+// A ticked box is not typing (Ctrl+Z still steps back), unless its card is open: that tick is not saved yet
+const typing = (el: Element | null) => !!el?.closest('input:not([type="checkbox"]), .is-edit input, textarea, select, [contenteditable="true"]')
 
 // Undo history, per board, for this visit
 const history = new Map<string, { past: DraftCard[][]; future: DraftCard[][] }>()
@@ -157,10 +158,10 @@ function Desk({ d }: { d: Draft }) {
     const wy = (cy - o.top - v.y) / v.z
     setView({ x: cx - o.left - wx * nz, y: cy - o.top - wy * nz, z: nz })
   }, [setView])
-  /** The part of the screen the board can use: from the board's corner to the tools at the bottom */
+  /** The part of the screen the board can use: from the board's corner to the tools at the bottom, and the chosen card's bar above them */
   const area = () => {
     const o = rect()
-    const bottom = (dock.current?.getBoundingClientRect().top ?? innerHeight) - 16
+    const bottom = (dock.current?.getBoundingClientRect().top ?? innerHeight) - 16 - 70
     return { left: o.left, top: o.top, w: Math.max(120, innerWidth - 24 - o.left), h: Math.max(120, bottom - o.top) }
   }
   const zoomBy = (k: number) => {
@@ -205,6 +206,15 @@ function Desk({ d }: { d: Draft }) {
   })
 
   const focusCard = (id: string) => requestAnimationFrame(() => world.current?.querySelector<HTMLElement>(`[data-card="${id}"]`)?.focus({ preventScroll: true }))
+  /** Looks around until a card the keyboard reached is in view, clear of the tools (the browser cannot scroll the desk to it) */
+  const reveal = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect()
+    const a = area()
+    const by = (lo: number, hi: number, from: number, to: number) => (from < lo ? lo - from : to > hi ? Math.max(lo - from, hi - to) : 0)
+    const dx = by(a.left + 24, a.left + a.w - 24, r.left, r.right)
+    const dy = by(a.top + 24, a.top + a.h - 24, r.top, r.bottom)
+    if (dx || dy) setView({ ...view.current, x: view.current.x + dx, y: view.current.y + dy })
+  }
 
   /** A free place for a new card: the middle of the screen, or the nearest spot around it where it covers nothing */
   const spot = (w: number, h: number) => {
@@ -230,7 +240,8 @@ function Desk({ d }: { d: Draft }) {
   const add = (kind: CardKind, more: Partial<DraftCard> = {}, at?: { x: number; y: number }) => {
     const w = more.w ?? SIZE[kind][0]
     const h = more.h ?? SIZE[kind][1]
-    const p = at ? { x: Math.round(at.x - w / 2), y: Math.round(at.y - h / 2) } : spot(w, h)
+    // A new link opens as its form, about 160 px tall
+    const p = at ? { x: Math.round(at.x - w / 2), y: Math.round(at.y - h / 2) } : spot(w, kind === 'link' && !more.url ? 160 : h)
     const c = newCard(kind, p.x, p.y, { ...(kind === 'note' ? { hue: 'yellow' } : kind === 'todo' ? { items: [] } : {}), ...more })
     commit(d.id, cs => [...cs, c])
     added.current = c.id
@@ -276,7 +287,7 @@ function Desk({ d }: { d: Draft }) {
         h.past.pop()
         setSel(null)
         stage.current?.focus()
-        return
+        return true
       }
       actions.updateDraft(d.id, { cards: cardsOf(d.id).map(x => (x.id === c.id ? next : x)) })
     } else if (read && JSON.stringify(next) !== JSON.stringify(c)) commit(d.id, cs => cs.map(x => (x.id === c.id ? next : x)))
@@ -343,7 +354,8 @@ function Desk({ d }: { d: Draft }) {
     const base = { sx: e.clientX, sy: e.clientY, moved: false, v0: view.current }
     if (t.closest('[data-resize]') && cardEl) {
       const c = cards.find(x => x.id === cardEl.dataset.card)
-      if (c) g.current = { ...base, kind: 'resize', id: c.id, el: cardEl, c0: c }
+      // From the height the card shows: its text can make it taller than the height it keeps
+      if (c) g.current = { ...base, kind: 'resize', id: c.id, el: cardEl, c0: c.kind === 'image' ? c : { ...c, h: Math.max(c.h, cardEl.offsetHeight) } }
     } else if (cardEl) {
       const c = cards.find(x => x.id === cardEl.dataset.card)
       if (!c || editing === c.id || t.closest('input, textarea, button, a, select')) { g.current = null; return }
@@ -442,6 +454,8 @@ function Desk({ d }: { d: Draft }) {
       setSel(null)
       if (double) add('note', {}, toWorld(e.clientX, e.clientY))
     } else if (cur.kind === 'card') {
+      // A finger keeps the focus in the open card (see onPointerDown), so its blur never saves it: save it here
+      if (editing && editing !== cur.id) finish(false)
       setSel(cur.id!)
       if (double) openCard(cur.c0!)
     }
@@ -573,6 +587,14 @@ function Desk({ d }: { d: Draft }) {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
         onClickCapture={e => { if (swallowClick.current) { swallowClick.current = false; e.preventDefault(); e.stopPropagation() } }}
+        onFocus={e => { const el = e.target as HTMLElement; if (el.dataset.card && el.matches(':focus-visible')) reveal(el) }}
+        onScroll={e => {
+          // The browser scrolls the desk to what gets the focus; that becomes looking around, so the view stays right
+          const b = e.currentTarget
+          if (!b.scrollLeft && !b.scrollTop) return
+          setView({ ...view.current, x: view.current.x - b.scrollLeft, y: view.current.y - b.scrollTop })
+          b.scrollLeft = b.scrollTop = 0
+        }}
         onDoubleClick={e => {
           // Fingers are handled in onPointerUp; some phones also send a double click
           if (lastType.current !== 'mouse') return
@@ -605,7 +627,7 @@ function Desk({ d }: { d: Draft }) {
         {!cards.length && (
           <div className="board__hint">
             <StickyNote className="ico" />
-            <p className="board__hint-title">Хоосон самбар</p>
+            <p className="board__hint-title">Самбарт зүйл алга</p>
             <p>Доорх товчоор тэмдэглэл, жагсаалт, зураг нэмнэ үү. Хоосон газар хоёр товшиж ч нэмж болно.</p>
           </div>
         )}
@@ -639,7 +661,9 @@ function Desk({ d }: { d: Draft }) {
       </div>
 
       <div className="bview glass" role="toolbar" aria-label="Харагдац" data-enter>
-        <button type="button" className="ibtn ibtn--sm" aria-label="Буцаах" title="Буцаах (Ctrl Z)" disabled={!h.past.length} onClick={() => { travel(d.id, true); setEditing(null) }}><Undo2 className="ico" /></button>
+        {/* The open card keeps the focus: an empty card just added is what Undo takes back, not the step before it */}
+        <button type="button" className="ibtn ibtn--sm" aria-label="Буцаах" title="Буцаах (Ctrl Z)" disabled={!h.past.length} onMouseDown={e => e.preventDefault()}
+          onClick={() => { if (editing && finish(false)) return; travel(d.id, true); setEditing(null) }}><Undo2 className="ico" /></button>
         <button type="button" className="ibtn ibtn--sm bview__more" aria-label="Дахин хийх" title="Дахин хийх (Ctrl Shift Z)" disabled={!h.future.length} onClick={() => travel(d.id, false)}><Redo2 className="ico" /></button>
         <span className="bview__sep bview__more" aria-hidden="true" />
         <button type="button" className="ibtn ibtn--sm bview__more" aria-label="Жижигрүүлэх" onClick={() => zoomBy(1 / 1.25)}><Minus className="ico" /></button>
@@ -852,7 +876,8 @@ function LinkEdit({ c, edit, warn, onDone }: { c: DraftCard; edit: RefObject<Edi
   edit.current = () => {
     const typed = url.current!.value.trim()
     const ok = safeUrl(typed)
-    if (typed && !ok) warn('Холбоосын хаяг буруу тул өмнөх хаяг хэвээр үлдлээ.')
+    // A new link has no address to keep: it is not added
+    if (typed && !ok) warn(c.url ? 'Холбоосын хаяг буруу тул өмнөх хаяг хэвээр үлдлээ.' : 'Холбоосын хаяг буруу тул холбоос нэмэгдсэнгүй.')
     return { url: typed ? ok ?? c.url : undefined, text: text.current!.value.trim() || undefined }
   }
   const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {

@@ -40,7 +40,8 @@ function Body({ id }: { id: string }) {
 
   const p = sc.project(t.project)
   const who = t.assignees.map(x => sc.person(x)).filter(x => x !== undefined)
-  const people = [...sc.people].sort((a, b) => collator.compare(a.given, b.given))
+  // The task's own ХХК: it may not be the one I am working in now
+  const people = s.people.filter(x => x.companies.includes(t.company)).sort((a, b) => collator.compare(a.given, b.given))
   const toggleWho = (x: string) => actions.updateTask(t.id, { assignees: t.assignees.includes(x) ? t.assignees.filter(y => y !== x) : [...t.assignees, x] })
   const late = t.status !== 'done' && daysFromToday(t.due) < 0
   const subsDone = t.subtasks.filter(x => x.done).length

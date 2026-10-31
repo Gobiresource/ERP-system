@@ -29,7 +29,8 @@ const items = (...texts: (string | [string, boolean])[]): Subtask[] =>
 /** Only web addresses: "erp.mn" becomes https://erp.mn, anything that is not http(s) is refused */
 export function safeUrl(input: string) {
   const t = input.trim()
-  if (!t) return null
+  // A space is a typo: Chrome would keep "erp mn" as the dead address erp%20mn
+  if (!t || /\s/.test(t)) return null
   try {
     const u = new URL(/^[a-z][a-z0-9+.-]*:/i.test(t) ? t : `https://${t}`)
     return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null

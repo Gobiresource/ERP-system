@@ -2,11 +2,12 @@
 // name people (@), point to a task, a meeting or a document in Бичиг хэрэг, and carry files and pictures
 // (docs/decisions.md, 2026-10-29). On a phone the list and a chat are two views. The demo has no server: other people's messages are made up.
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { AtSign, CalendarDays, Check, CheckCheck, ChevronLeft, Download, FileText, Image as ImageIcon, Maximize2, MessagesSquare, MoreHorizontal, Paperclip, Plus, Search, Send, Settings, Smile, SquareCheck, SquarePen, Trash2, User, X } from 'lucide-react'
 import '../styles/screens/chat.css'
 import type { BoardFile, Chat, ChatRef, Id, Message, State } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
-import { open, toast } from '../lib/ui'
+import { open, toast, type Dialog } from '../lib/ui'
 import { chatName, myChats, readers, unread } from '../lib/chat'
 import { DOC_KIND } from '../lib/docs'
 import { docView } from '../lib/access'
@@ -307,18 +308,27 @@ function Words({ m }: { m: Message }) {
   })}</>
 }
 
-/** A task, a meeting or a document a message points to; opens it */
+/** A task, a meeting or a document a message points to; opens it. Only the people of its ХХК may open it. */
 function RefCard({ r }: { r: ChatRef }) {
   const s = useApp()
+  const mine = scoped(s).me.companies
+  // A task or a meeting of my other ХХК opens in that ХХК, so its people and project are that ХХК's
+  const there = (company: Id, dialog: Dialog) => () => {
+    if (company !== s.company) {
+      actions.switchCompany(company)
+      toast(`Компани солигдлоо: ${s.companies.find(c => c.id === company)?.name}.`, { kind: 'info' })
+    }
+    open(dialog)
+  }
   let card: { icon: ReactNode; title: string; sub: string; go: () => void } | null = null
   if (r.kind === 'task') {
-    const t = s.tasks.find(x => x.id === r.id)
-    if (t) card = { icon: <span className="cref__ico"><SquareCheck className="ico" /></span>, title: t.title, sub: `Ажил, ${STATUS[t.status].toLowerCase()}, ${dueLabel(t.due)}`, go: () => open({ kind: 'task', id: t.id }) }
+    const t = s.tasks.find(x => x.id === r.id && mine.includes(x.company))
+    if (t) card = { icon: <span className="cref__ico"><SquareCheck className="ico" /></span>, title: t.title, sub: `Ажил, ${STATUS[t.status].toLowerCase()}, ${dueLabel(t.due)}`, go: there(t.company, { kind: 'task', id: t.id }) }
   } else if (r.kind === 'event') {
-    const e = s.events.find(x => x.id === r.id)
-    if (e) card = { icon: <span className="cref__ico"><CalendarDays className="ico" /></span>, title: e.title, sub: `${KIND[e.kind]}, ${dueLabel(e.start.slice(0, 10))} ${hm(parse(e.start))}`, go: () => open({ kind: 'event', id: e.id }) }
+    const e = s.events.find(x => x.id === r.id && mine.includes(x.company))
+    if (e) card = { icon: <span className="cref__ico"><CalendarDays className="ico" /></span>, title: e.title, sub: `${KIND[e.kind]}, ${dueLabel(e.start.slice(0, 10))} ${hm(parse(e.start))}`, go: there(e.company, { kind: 'event', id: e.id }) }
   } else if (r.kind === 'doc') {
-    const d = s.docs.find(x => x.id === r.id)
+    const d = s.docs.find(x => x.id === r.id && mine.includes(x.company))
     if (d && docView(s).doc(d)) card = { icon: <DocTile kind={d.kind} />, title: d.name, sub: `Бичиг баримт, ${DOC_KIND[d.kind].toLowerCase()}`, go: () => open({ kind: 'doc', id: d.id }) }
   }
   if (!card) return <p className="cref is-gone">{r.label}: устгагдсан эсвэл харах эрх байхгүй</p>
@@ -337,7 +347,11 @@ function FileView({ f }: { f: BoardFile }) {
   if (pic) {
     return (
       <button type="button" className="cpic" onClick={() => open({ kind: 'file', file: f })} aria-label={`${f.name}: томоор харах`}>
-        {url ? <img src={url} alt="" /> : <span className="cpic__wait" />}
+        {url ? <img src={url} alt="" onLoad={e => {
+          // The picture grew from its placeholder: a reader at the end stays at the end
+          const img = e.currentTarget, log = img.closest('.cmsgs')
+          if (log && log.scrollHeight - log.scrollTop - log.clientHeight - img.offsetHeight < 140) log.scrollTop = log.scrollHeight
+        }} /> : <span className="cpic__wait" />}
       </button>
     )
   }
@@ -463,8 +477,11 @@ function Composer({ chat }: { chat: Chat }) {
 
   const choose = (r: ChatRef) => {
     if (panel?.kind === 'people') {
-      const end = panel.at + 1 + panel.q.length
-      setText(`${text.slice(0, panel.at)}@${r.label} ${text.slice(end)}`)
+      // One space after the name, and the cursor after it, also in the middle of the text. Placed at once, so the
+      // next key typed lands there too.
+      const before = `${text.slice(0, panel.at)}@${r.label} `
+      flushSync(() => setText(before + text.slice(panel.at + 1 + panel.q.length).replace(/^ /, '')))
+      box.current?.setSelectionRange(before.length, before.length)
     }
     setRefs(rs => (rs.some(x => x.kind === r.kind && x.id === r.id) ? rs : [...rs, r]))
     close()

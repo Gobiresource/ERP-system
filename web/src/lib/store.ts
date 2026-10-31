@@ -113,7 +113,9 @@ export function scoped(s: State): Scoped {
 }
 
 const uid = (p: string) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
-const patchTask = (id: Id, fn: (t: Task) => Task) => set(s => ({ ...s, tasks: s.tasks.map(t => (t.id === id ? fn(t) : t)) }))
+/** Works in the ХХК: only its people change its tasks and meetings, wherever they are opened from (a chat card) */
+const worksIn = (company: Id) => !!state.people.find(p => p.id === state.me)?.companies.includes(company)
+const patchTask = (id: Id, fn: (t: Task) => Task) => set(s => ({ ...s, tasks: s.tasks.map(t => (t.id === id && worksIn(t.company) ? fn(t) : t)) }))
 const patchContract = (id: Id, fn: (c: Contract, s: State) => Contract) => set(s => ({ ...s, contracts: s.contracts.map(c => (c.id === id ? fn(c, s) : c)) }))
 const editAccount = (who: Id, patch: Partial<Account>) =>
   set(s => ({ ...s, people: s.people.map(p => (p.id === who && p.account ? { ...p, account: { ...p.account, ...patch } } : p)) }))
@@ -154,6 +156,7 @@ export const actions = {
     patchTask(id, t => ({ ...t, status, doneAt: status === 'done' ? (t.doneAt ?? new Date().toISOString()) : undefined })),
   /** Moves a task to another column, before the task `before` (or to the end) */
   moveTask(id: Id, status: TaskStatus, before?: Id) {
+    if (!worksIn(state.tasks.find(x => x.id === id)?.company ?? '')) return
     set(s => {
       const t = s.tasks.find(x => x.id === id)!
       const moved = { ...t, status, doneAt: status === 'done' ? (t.doneAt ?? new Date().toISOString()) : undefined }
@@ -167,6 +170,7 @@ export const actions = {
   removeTask(id: Id) {
     const i = state.tasks.findIndex(t => t.id === id)
     const t = state.tasks[i]
+    if (!t || !worksIn(t.company)) return () => {}
     set(s => ({ ...s, tasks: s.tasks.filter(x => x.id !== id) }))
     return () => set(s => ({ ...s, tasks: [...s.tasks.slice(0, i), t, ...s.tasks.slice(i)] }))
   },
@@ -184,6 +188,7 @@ export const actions = {
   },
   removeEvent(id: Id) {
     const e = state.events.find(x => x.id === id)!
+    if (!e || !worksIn(e.company)) return () => {}
     set(s => ({ ...s, events: s.events.filter(x => x.id !== id) }))
     return () => set(s => ({ ...s, events: [...s.events, e] }))
   },
