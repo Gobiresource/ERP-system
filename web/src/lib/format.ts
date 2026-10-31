@@ -18,6 +18,8 @@ export const parse = (s: string) => {
 }
 
 export const today = () => ymd(new Date())
+/** Local date (YYYY-MM-DD) of a time saved with toISOString(), which is in UTC: never slice that one */
+export const dayOf = (iso: string) => ymd(new Date(iso))
 export const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n, d.getHours(), d.getMinutes())
 export const addDaysYmd = (s: string, n: number) => ymd(addDays(parse(s), n))
 /** Whole days from today to the date (negative = past) */
@@ -60,8 +62,9 @@ export function ago(iso: string) {
   if (min < 1) return 'Дөнгөж сая'
   if (min < 60) return `${min} минутын өмнө`
   const h = Math.round(min / 60)
-  if (h < 24) return `${h} цагийн өмнө`
-  const d = Math.round(h / 24)
+  // Calendar days: Saturday 21:00 is 2 days before Monday 08:00
+  const d = -daysFromToday(dayOf(iso))
+  if (h < 24 || d < 1) return `${h} цагийн өмнө`
   return d === 1 ? 'Өчигдөр' : `${d} өдрийн өмнө`
 }
 

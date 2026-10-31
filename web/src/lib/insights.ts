@@ -1,7 +1,7 @@
 // Numbers for the Insights screen. Recent days come from the real tasks; older days are demo history,
 // generated the same way every time, so the charts have something to show before real data exists.
 import type { State, Task } from './types'
-import { addDays, monthDayDots, parse, ymd } from './format'
+import { addDays, dayOf, monthDayDots, parse, ymd } from './format'
 import { scoped } from './store'
 import { saveBlob } from './files'
 
@@ -128,7 +128,7 @@ export function byProject(s: State, range: Range) {
   const wsum = weights.reduce((a, b) => a + b, 0)
   const rows = projects.map((p, i) => ({
     project: p,
-    count: sc.tasks.filter(t => t.project === p.id && t.doneAt && t.doneAt.slice(0, 10) >= (from > realFrom ? from : realFrom)).length + Math.round((demo * weights[i]) / wsum),
+    count: sc.tasks.filter(t => t.project === p.id && t.doneAt && dayOf(t.doneAt) >= (from > realFrom ? from : realFrom)).length + Math.round((demo * weights[i]) / wsum),
   }))
   return rows.filter(r => r.count > 0).sort((a, b) => b.count - a.count)
 }
@@ -144,7 +144,14 @@ export function slowest(tasks: Task[], n = 3) {
 
 /** CSV for Excel (UTF-8 with BOM so Cyrillic opens correctly) */
 export function toCsv(rows: (string | number)[][]) {
-  const esc = (v: string | number) => (typeof v === 'number' ? String(v) : /[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
+  // Text stays text in Excel: it runs a cell that starts with = + - @ as a formula (OWASP: lead it with '), and turns
+  // 12/12 or 10.10 into a date or a number (="…" shows it as written)
+  const text = (v: string) => (/^[=+\-@\t\r]/.test(v) ? `'${v}` : /^\d[\d .,/:%-]*$/.test(v) ? `="${v}"` : v)
+  const esc = (v: string | number) => {
+    if (typeof v === 'number') return String(v)
+    const t = text(v)
+    return /[",\n;]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
+  }
   return '﻿' + rows.map(r => r.map(esc).join(',')).join('\r\n')
 }
 

@@ -3,7 +3,7 @@ import { AtSign, Bell, CalendarClock, Check, ChevronRight, Contrast, Database, D
 import '../styles/screens/settings.css'
 import type { Accent, Settings as Prefs, Wall } from '../lib/types'
 import { actions, getState, scoped, useApp } from '../lib/store'
-import { clock, initials, short, today } from '../lib/format'
+import { clock, dayOf, initials, short, today } from '../lib/format'
 import { focus, focusLeft, toast, useUi } from '../lib/ui'
 import { applyAppearance } from '../lib/theme'
 import { gsap, reduced, useLens, usePageEnter } from '../lib/motion'
@@ -379,7 +379,7 @@ function Data() {
     const rows: (string | number)[][] = [['Нэр', 'Төсөл', 'Хариуцагч', 'Төлөв', 'Ач холбогдол', 'Дуусах өдөр', 'Төлөвлөсөн цаг', 'Үүсгэсэн', 'Дууссан']]
     for (const t of sc.tasks) {
       const who = t.assignees.map(id => sc.person(id)).filter(x => x !== undefined).map(short).join(', ')
-      rows.push([t.title, sc.project(t.project)?.name ?? '', who, STATUS[t.status], PRIO[t.prio], t.due, t.estimate, t.createdAt.slice(0, 10), t.doneAt?.slice(0, 10) ?? ''])
+      rows.push([t.title, sc.project(t.project)?.name ?? '', who, STATUS[t.status], PRIO[t.prio], t.due, t.estimate, dayOf(t.createdAt), t.doneAt ? dayOf(t.doneAt) : ''])
     }
     downloadCsv(`ajluud-${today()}.csv`, rows)
   }

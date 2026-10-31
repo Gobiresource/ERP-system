@@ -184,7 +184,8 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
 .mform__title { font: 650 18px/1.25 var(--font); letter-spacing: -.01em; }
 .mform__sub { margin-top: 2px; font-size: 13.5px; color: var(--text-2); }
 .mform__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.mform__errors { margin-bottom: 16px; padding: 12px 14px; border-radius: 14px; background: rgb(217 45 58 / .1); font-size: 14px; outline: none; }
+/* An opaque tint: over a wave wallpaper or a busy page behind a window, see-through red text fell below 4.5:1 */
+.mform__errors { margin-bottom: 16px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--danger) 10%, var(--glass-solid)); font-size: 14px; outline: none; }
 .mform__errors:focus-visible { box-shadow: 0 0 0 2.5px var(--danger); }
 .mform__errors b { display: block; margin-bottom: 4px; color: var(--bad-ink); }
 .mform__errors ul { display: grid; gap: 2px; padding-left: 18px; list-style: disc; }

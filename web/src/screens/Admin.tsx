@@ -12,7 +12,7 @@ import { go } from '../lib/router'
 import { usePageEnter } from '../lib/motion'
 import { DOC_SCOPE, NO_ACCESS, PRESETS, SCOPE, accessOf, managesAccount, presetOf, teamOf } from '../lib/access'
 import { dots } from '../lib/hr'
-import { collator, short } from '../lib/format'
+import { collator, dayOf, short } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { Avatar, Empty } from '../ui/bits'
@@ -21,7 +21,7 @@ export default function Admin({ id }: { id?: string }) {
   return id ? <User id={id} /> : <Users />
 }
 
-const when = (iso?: string) => (iso ? dots(iso.slice(0, 10)) : 'Нэвтэрч байгаагүй')
+const when = (iso?: string) => (iso ? dots(dayOf(iso)) : 'Нэвтэрч байгаагүй')
 const rightsOf = (p: Person, company: string) => p.account?.access[company] ?? NO_ACCESS
 const rightsName = (a: Access, sysadmin?: boolean) => (sysadmin ? 'Системийн админ' : presetOf(a)?.name ?? 'Тусгай эрх')
 

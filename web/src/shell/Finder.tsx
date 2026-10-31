@@ -9,7 +9,7 @@ import { dueLabel, hm, parse, short } from '../lib/format'
 import { enter } from '../lib/motion'
 import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
 import { navFor } from './nav'
-import { EMP_STATUS } from '../lib/hr'
+import { EMP_STATUS, fullName } from '../lib/hr'
 import { docView, hrView } from '../lib/access'
 import { DOC_KIND } from '../lib/docs'
 import { STAGE } from '../lib/contracts'
@@ -82,7 +82,7 @@ function FinderDialog() {
         lead: <span className="lead"><CalendarDays className="ico" /></span>, run: () => open({ kind: 'event', id: x.id }),
       }
     }))
-    add(sc.people.filter(x => has(x.given, x.family, x.role, x.team)).map(x => ({
+    add(sc.people.filter(x => has(x.given, x.family, short(x), fullName(x), x.role, x.team)).map(x => ({
       id: x.id, group: 'Хүмүүс', title: short(x), sub: `${x.role}, ${x.team}`, lead: <Avatar person={x} size="md" />, run: () => open({ kind: 'person', id: x.id }),
     })))
     // Ноорог: my boards, also by what their cards say
@@ -106,7 +106,7 @@ function FinderDialog() {
       id: c.id, group: 'Гэрээ', title: c.title, sub: `${c.party}, ${STAGE[c.stage].pill.toLowerCase()}`, lead: <span className="lead"><FilePen className="ico" /></span>, run: () => go('docs', `contract-${c.id}`),
     })))
     // HR records, also by code, registration number and phone
-    add(hr.employees.filter(x => has(x.given, x.family, x.code, x.regNo, x.phone)).map(x => ({
+    add(hr.employees.filter(x => has(x.given, x.family, short(x), fullName(x), x.code, x.regNo, x.phone)).map(x => ({
       id: x.id, group: 'Ажилтан', title: short(x), sub: `${x.code}, ${hr.position(x.position)?.name ?? ''}, ${EMP_STATUS[x.status].toLowerCase()}`,
       lead: <EmpAvatar e={x} size="md" />, run: () => go('hr', x.id),
     })))
@@ -115,7 +115,8 @@ function FinderDialog() {
 
   const current = Math.min(active, Math.max(0, hits.length - 1))
   const close = () => setFinder(false)
-  const choose = (h: Hit) => { close(); h.run() }
+  // The native close gives focus back to what had it before the search, so a window the hit opens returns there
+  const choose = (h: Hit) => { ref.current?.close(); h.run() }
 
   // Keep the chosen row in view
   useLayoutEffect(() => {

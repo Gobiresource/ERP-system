@@ -48,7 +48,11 @@ export function Sheet({ kind = 'modal', label, onClose, children, wide, closeBut
       className={kind === 'full' ? 'viewer' : `${kind}${wide ? ' modal--wide' : ''} glass glass--thick`}
       aria-label={label}
       onCancel={e => { e.preventDefault(); requestClose() }}
-      onClick={e => { if (e.target === ref.current) requestClose() }}
+      onClick={e => {
+        // The backdrop only: a drawer is taller than its content, and a click under the content lands on the dialog too
+        const r = e.currentTarget.getBoundingClientRect()
+        if (e.target === e.currentTarget && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) requestClose()
+      }}
     >
       <div className="sheet__inner">
         <span className="grabber" aria-hidden="true" />

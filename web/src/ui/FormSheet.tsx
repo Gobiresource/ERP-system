@@ -1,6 +1,6 @@
 // A small form in a window, laid out like Pane: close on the left, title in the middle, the main button on the right.
 // Errors follow our rules: empty required fields are reported on submit, in a list at the top that links to each field.
-import { useLayoutEffect, useRef, type FormEvent, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { Sheet, useCloseSheet } from './Sheet'
 
@@ -28,14 +28,16 @@ function FormBody({ title, sub, submit, onSubmit, errors, children }: { title: s
   const close = useCloseSheet()
   const summary = useRef<HTMLDivElement>(null)
   const count = Object.keys(errors).length
+  const [shown, setShown] = useState(0) // bumps on a failed submit; fixing a field must not move focus
 
   useLayoutEffect(() => {
-    if (count) summary.current?.focus()
-  }, [errors, count])
+    if (shown) summary.current?.focus()
+  }, [shown])
 
   const send = (e: FormEvent) => {
     e.preventDefault()
     if (onSubmit()) close()
+    else setShown(n => n + 1)
   }
 
   return (

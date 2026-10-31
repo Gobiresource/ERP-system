@@ -1,11 +1,13 @@
 // ХХК солих. Always shows the current company: side menu on computers, toolbar on tablets and phones.
+import { useState } from 'react'
 import { ChevronsUpDown } from 'lucide-react'
 import type { Company } from '../lib/types'
 import { actions, useApp } from '../lib/store'
 import { go, parse } from '../lib/router'
-import { toast } from '../lib/ui'
+import { setActAs, toast } from '../lib/ui'
 import { companyMark } from '../lib/format'
 import { Menu, MenuItem, usePopover } from '../ui/Popover'
+import { FormSheet } from '../ui/FormSheet'
 
 export function CompanyMark({ company }: { company: Company }) {
   return <span className={`brand__mark hue--${company.hue}`} aria-hidden="true">{companyMark(company.name)}</span>
@@ -17,14 +19,25 @@ export function CompanySwitcher({ variant }: { variant: 'brand' | 'pill' }) {
   const current = s.companies.find(c => c.id === s.company)!
   const mine = s.companies.filter(c => s.people.find(p => p.id === s.me)?.companies.includes(c.id))
 
+  const [ask, setAsk] = useState<Company | null>(null)
+
   const choose = (c: Company) => {
     pop.close()
     if (c.id === s.company) return
+    // The employee form keeps what was typed only until Хадгалах, so ask first
+    const r = parse(location.hash)
+    if (r.page === 'hr' && (r.id === 'new' || r.id?.endsWith('-edit'))) setAsk(c)
+    else switchTo(c)
+  }
+
+  const switchTo = (c: Company) => {
+    setActAs(null) // the demo's act-as person belongs to the company left
     actions.switchCompany(c.id)
-    // A project or employee page belongs to one company, so go back to its list
+    // A project, employee or attendance page belongs to one company, so go back to its list
     const r = parse(location.hash)
     if (r.page === 'projects' && r.id) go('projects')
-    else if (r.page === 'hr' && r.id && r.id !== 'employees' && r.id !== 'structure') go('hr', 'employees')
+    else if (r.page === 'hr' && r.id?.startsWith('attendance-')) go('hr', 'attendance')
+    else if (r.page === 'hr' && r.id && !['employees', 'structure', 'attendance'].includes(r.id)) go('hr', 'employees')
     toast(`Компани солигдлоо: ${c.name}.`, { kind: 'info' })
   }
 
@@ -58,6 +71,11 @@ export function CompanySwitcher({ variant }: { variant: 'brand' | 'pill' }) {
           </MenuItem>
         ))}
       </Menu>
+      {ask && (
+        <FormSheet title="Компани солих уу?" sub="Ажилтны мэдээллийн хадгалаагүй өөрчлөлт арилна." submit="Солих" errors={{}} onClose={() => setAsk(null)} onSubmit={() => { switchTo(ask); return true }}>
+          {null}
+        </FormSheet>
+      )}
     </>
   )
 }

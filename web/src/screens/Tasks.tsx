@@ -5,7 +5,7 @@ import type { Priority } from '../lib/types'
 import { scoped, useApp } from '../lib/store'
 import { open } from '../lib/ui'
 import { usePageEnter } from '../lib/motion'
-import { daysFromToday, thisWeekRange } from '../lib/format'
+import { dayOf, daysFromToday, thisWeekRange } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { Avatar, Empty, PRIO } from '../ui/bits'
@@ -50,7 +50,7 @@ export default function Tasks() {
     open: open_.length,
     week: open_.filter(t => t.due >= from && t.due <= to).length,
     late: open_.filter(t => daysFromToday(t.due) < 0).length,
-    done: sc.tasks.filter(t => t.doneAt && t.doneAt.slice(0, 10) >= from).length,
+    done: sc.tasks.filter(t => t.doneAt && dayOf(t.doneAt) >= from).length,
   }
   const filtered = project !== 'all' || mine || prio !== 'all' || q.trim() !== ''
   const current = sc.project(project === 'all' || project === 'none' ? undefined : project)

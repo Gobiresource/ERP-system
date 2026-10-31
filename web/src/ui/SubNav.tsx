@@ -1,11 +1,15 @@
 // Tabs between the pages of one section, above each page title (Хүний нөөц, Ноорог)
-import { useRef, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { useLens } from '../lib/motion'
 
 export function SubNav({ label, base, tabs, at }: { label: string; base: string; tabs: readonly (readonly [string, ReactNode])[]; at: string }) {
   const track = useRef<HTMLDivElement>(null)
   const lens = useRef<HTMLSpanElement>(null)
   useLens(track, lens, '[aria-current="page"]', at)
+  // On a phone the row scrolls sideways: bring the current tab into view
+  useLayoutEffect(() => {
+    track.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [at])
   return (
     <nav className="subnav" aria-label={label} data-enter>
       <div className="seg" ref={track}>

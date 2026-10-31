@@ -108,11 +108,15 @@ export function signOut() {
 
 let noteId = 0
 let noteTimer = 0
-/** Shows a short message in the island. With undo, it stays a little longer. */
+/** Shows a short message in the island. With undo, it stays 10 s (our rule), and as long as the pointer or focus is on it. */
 export function toast(text: string, opts: { kind?: Note['kind']; undo?: () => void } = {}) {
   clearTimeout(noteTimer)
   set({ note: { id: ++noteId, kind: opts.kind ?? 'ok', text, undo: opts.undo } })
-  noteTimer = window.setTimeout(() => set({ note: null }), opts.undo ? 5000 : 3200)
+  const hide = () => {
+    if (document.querySelector('.island:hover, .island:focus-within')) noteTimer = window.setTimeout(hide, 1000)
+    else set({ note: null })
+  }
+  noteTimer = window.setTimeout(hide, opts.undo ? 10000 : 3200)
 }
 export const clearNote = () => {
   clearTimeout(noteTimer)

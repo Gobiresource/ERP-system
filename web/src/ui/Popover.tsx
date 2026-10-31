@@ -19,6 +19,8 @@ export function usePopover<T extends HTMLElement = HTMLButtonElement>(): PopStat
   const close = useCallback(() => {
     closedAt.current = Date.now()
     setOpen(false)
+    // Before the item is unmounted, so a window it opens gives focus back to the button when it closes
+    if (document.activeElement?.closest('.pop')) anchor.current?.focus()
   }, [])
   return { anchor, open, toggle, close }
 }
@@ -59,6 +61,7 @@ export function Popover({ state, children, label, placement = 'bottom-end', clas
       return
     }
     el.showPopover()
+    el.style.maxHeight = ''
     const r = a.getBoundingClientRect()
     const w = el.offsetWidth
     const h = el.offsetHeight
@@ -69,8 +72,11 @@ export function Popover({ state, children, label, placement = 'bottom-end', clas
     if (placement.startsWith('top') && top < 12) top = r.bottom + 8
     let left = placement.endsWith('end') ? r.right - w : r.left
     left = Math.min(Math.max(12, left), vw - w - 12)
-    el.style.top = `${Math.max(12, top)}px`
+    const y = Math.max(12, top)
+    el.style.top = `${y}px`
     el.style.left = `${left}px`
+    // Room neither below the button nor above it (a phone): the panel scrolls inside itself instead of leaving the screen
+    if (y + h > vh - 12) el.style.maxHeight = `${vh - y - 12}px`
     el.style.transformOrigin = `${placement.endsWith('end') ? 'right' : 'left'} ${top > r.top ? 'top' : 'bottom'}`
     enter([el], { opacity: 0, transform: `translateY(${top > r.top ? -6 : 6}px) scale(.96)` }, { duration: 0.32, ease: 'back.out(1.8)' })
     el.querySelector<HTMLElement>('[role^="menuitem"], button, a, input')?.focus()
