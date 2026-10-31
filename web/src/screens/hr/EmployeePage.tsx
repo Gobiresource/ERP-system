@@ -207,10 +207,12 @@ function PersonalFile({ e, types, edit }: { e: Employee; types: DocType[]; edit:
   }
   const chosen = (file?: File) => {
     if (!file || !pending) return
+    if (input.current) input.current.value = ''
+    // The picker can still be switched to any file
+    if (file.size > 20 * 2 ** 20 || !/\.(pdf|jpe?g|png)$/i.test(file.name)) return toast('20 MB хүртэлх PDF, JPG эсвэл PNG файл сонгоно уу.', { kind: 'warn' })
     const old = e.files.find(x => x.type === pending.id)
     actions.setFile(e.id, { type: pending.id, file: file.name, added: today(), expires: pending.expires ? (old?.expires && daysFromToday(old.expires) > ALERT_DAYS ? old.expires : ymd(addDays(new Date(), 365))) : undefined })
     toast('Файл нэмэгдлээ.')
-    if (input.current) input.current.value = ''
   }
 
   return (

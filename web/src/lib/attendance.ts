@@ -36,7 +36,10 @@ export function linkOf(s: Pick<State, 'timely' | 'companies'>, company: Id, comp
 }
 
 async function ask<T>(path: string): Promise<T> {
-  const r = await fetch(API + path, { signal: AbortSignal.timeout(90_000) })
+  // No answer at all: our server out of reach, or Timely too slow for it
+  const r = await fetch(API + path, { signal: AbortSignal.timeout(90_000) }).catch((e: Error) => {
+    throw new Error(e.name === 'TimeoutError' ? 'Timely хариу өгсөнгүй. Түр хүлээгээд дахин оролдоно уу.' : 'Сервертэй холбогдож чадсангүй. Интернэтээ шалгаад дахин оролдоно уу.')
+  })
   const j = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error(j.error ?? 'Timely хариу өгсөнгүй.')
   return j
@@ -89,7 +92,10 @@ export function dayStateOf(date: string, d: TimelyDay | undefined, leave: Timely
 }
 
 const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
-const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`
+const clock = (m: number) => {
+  const t = Math.round(m) // rounded first, so 08:59.6 is 09:00 and never 08:60
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
+}
 
 /** Clock-in to clock-out, "8 ц 13 мин" */
 export function spanOf(d: TimelyDay) {
@@ -128,8 +134,8 @@ function sampleOf(seed: string, month: string, today: string, me: boolean) {
   const r = rng(`${seed}:${month}`)
   const dates = datesOf(month).filter(d => d <= today)
   const workdays = dates.filter(d => parse(d).getDay() % 6 !== 0)
-  // Some take a few days of leave in the month
-  const taken = r() < 0.25 && workdays.length > 8 ? [workdays.slice(3 + Math.floor(r() * 4), 6 + Math.floor(r() * 4))] : []
+  // Some take a few days of leave in the month; the end is always past the start, so never an empty range
+  const taken = r() < 0.25 && workdays.length > 8 ? [workdays.slice(3 + Math.floor(r() * 4), 7 + Math.floor(r() * 4))] : []
   const days: TimelyDay[] = []
   for (const date of dates) {
     const off = parse(date).getDay() % 6 === 0
@@ -146,11 +152,13 @@ function sampleOf(seed: string, month: string, today: string, me: boolean) {
 function sampleEmployee(t: Omit<TimelyEmployee, 'supposedDays' | 'supposedHours' | 'workedDays' | 'workedHours' | 'leave'>, seed: string, month: string, today: string, me = false): TimelyEmployee {
   const { days, taken } = sampleOf(seed, month, today, me)
   const leaveDays = taken.reduce((n, x) => n + x.days, 0)
-  const workdays = datesOf(month).filter(d => d <= today && parse(d).getDay() % 6 !== 0).length - leaveDays
+  // Days to work are the ones over: a day counts as worked only with its clock-out, which today does not have yet
+  const workdays = datesOf(month).filter(d => d < today && parse(d).getDay() % 6 !== 0 && !taken.some(x => x.from <= d && d <= x.to)).length
   const worked = days.filter(d => d.in && d.out)
   const r = rng(seed)
   const earned = 15 + Math.floor(r() * 10)
-  const used = Math.min(earned, leaveDays + Math.floor(r() * 6))
+  // Used is the leave listed, so the card never says none was taken beside days used
+  const used = Math.min(earned, leaveDays)
   return {
     ...t,
     leave: { year: Number(month.slice(0, 4)), earned, used, left: earned - used, taken },

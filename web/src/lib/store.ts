@@ -8,7 +8,7 @@ import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
 import { bandOf, dueOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
 import { accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
-import { companyMark } from './format'
+import { companyMark, today } from './format'
 
 const KEY = 'erp:v1'
 
@@ -270,16 +270,33 @@ export const actions = {
     set(s => ({ ...s, employees: [...s.employees, emp] }))
     return emp
   },
-  /** Saves an employee. For an ERP user, the name and e-mail also change on their account and their other HR records. */
+  /**
+   * Saves an employee. For an ERP user, the name and e-mail also change on their account and their other HR records.
+   * Ажлын түүх, which the HR overview counts from, keeps up: the hire line moves with the hire date, and a new status
+   * writes its line, dated the day it is saved.
+   */
   updateEmployee: (id: Id, patch: Partial<Employee>) =>
     mayEditHr() &&
     set(s => {
       const user = s.employees.find(e => e.id === id)?.user
       const same = user ? { given: patch.given, family: patch.family, email: patch.email } : {}
       const keep = Object.fromEntries(Object.entries(same).filter(([, v]) => v !== undefined))
+      const history = (e: Employee): Employee['moves'] => {
+        const { hired, status } = patch
+        const day = today()
+        let moves = hired && hired !== e.hired ? e.moves.map(m => (m.kind === 'hired' ? { ...m, date: hired } : m)).sort((a, b) => b.date.localeCompare(a.date)) : e.moves
+        if (!status || status === e.status) return moves
+        // Left, on leave and on childcare leave have a line of the same name; coming back from them is 'back'
+        const away = (st: string) => (['left', 'leave', 'childcare'] as const).find(k => k === st)
+        // Changed again the same day: the earlier change was a slip, so its line goes
+        const slip = moves[0]?.date === day && moves[0].kind === away(e.status)
+        if (slip) moves = moves.slice(1)
+        const kind = away(status) ?? (slip ? undefined : e.status === 'probation' ? 'confirmed' : away(e.status) && 'back')
+        return kind ? [{ id: uid('m'), date: day, kind }, ...moves] : moves
+      }
       return {
         ...s,
-        employees: s.employees.map(e => (e.id === id ? { ...e, ...patch } : user && e.user === user ? { ...e, ...keep } : e)),
+        employees: s.employees.map(e => (e.id === id ? { ...e, ...patch, moves: history(e) } : user && e.user === user ? { ...e, ...keep } : e)),
         people: user ? s.people.map(p => (p.id === user ? { ...p, ...keep } : p)) : s.people,
       }
     }),

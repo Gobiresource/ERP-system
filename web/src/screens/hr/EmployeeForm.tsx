@@ -13,6 +13,7 @@ import { bossOf } from '../../lib/reports'
 import { collator, short, today, ymd } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Field, fieldAria, type Errors } from '../../ui/FormSheet'
+import EmployeePage from './EmployeePage'
 
 interface Form {
   clan: string; family: string; given: string; regNo: string; phone: string; email: string; address: string; education: string; profession: string
@@ -23,8 +24,8 @@ interface Form {
 type Key = keyof Form
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-/** 8 digits after dropping spaces, dashes and +976 */
-const phoneDigits = (v: string) => v.replace(/[\s-]/g, '').replace(/^\+?976/, '')
+/** 8 digits after dropping spaces, dashes and +976; 976 only as a country code, as 9761 2345 is a number itself */
+const phoneDigits = (v: string) => v.replace(/[\s-]/g, '').replace(/^\+?976(?=\d{8}$)/, '')
 const REQUIRED: Partial<Record<Key, string>> = {
   family: 'Эцэг/эхийн нэрийг бичнэ үү.', given: 'Нэрийг бичнэ үү.', regNo: 'Регистрийн дугаарыг бичнэ үү.', phone: 'Утасны дугаарыг бичнэ үү.',
   code: 'Ажилтны кодыг бичнэ үү.', dept: 'Хэлтсийг сонгоно уу.', position: 'Албан тушаалыг сонгоно уу.', hired: 'Ажилд орсон огноог сонгоно уу.',
@@ -61,18 +62,14 @@ export default function EmployeeForm({ id }: { id?: string }) {
     if (shown) summary.current?.focus()
   }, [shown])
 
-  if (id && !editing) {
-    return (
-      <div ref={ref}>
-        <PageHead title="Ажилтан олдсонгүй" />
-        <a className="btn btn--glass" href="#hr-employees">Бүх ажилтан</a>
-      </div>
-    )
-  }
+  // Not found, or outside the person's right: the employee page says which
+  if (id && !editing) return <EmployeePage id={id} />
 
   /** The problem with one field, or '' */
   const check = (k: Key, v: Form, empty: boolean): string => {
     const val = v[k].trim()
+    // The contact is kept only with a name, so a relation or phone without one would be lost
+    if (!val && k === 'cName' && (v.cRelation.trim() || v.cPhone.trim())) return empty ? 'Холбоо барих хүний нэрийг бичнэ үү.' : ''
     if (!val) return empty && REQUIRED[k] && (k !== 'cEnd' || v.kind !== 'open') ? REQUIRED[k]! : ''
     switch (k) {
       case 'regNo': {
@@ -104,12 +101,16 @@ export default function EmployeeForm({ id }: { id?: string }) {
     const next = { ...f, [k]: ev.target.value }
     if (k === 'dept') {
       const free = hr.positions.find(p => p.dept === next.dept && (hr.filled.get(p.id) ?? 0) < p.quota) ?? hr.positions.find(p => p.dept === next.dept)
-      next.position = free?.id ?? ''
+      // Back in their own department, the employee keeps their own position, which counts as filled by them
+      const own = hr.positions.find(p => p.id === editing?.position && p.dept === next.dept)
+      next.position = (own ?? free)?.id ?? ''
     }
     setF(next)
     if (errors[`ef-${k}`]) setError(k, check(k, next, true))
-    // An open-ended contract has no end date to fix
-    if (k === 'kind' && errors['ef-cEnd']) setError('cEnd', check('cEnd', next, true))
+    // A field checked against this one is checked again: an open-ended contract has no end date to fix, the end follows
+    // the start, the probation the hire date, and the contact's name its relation and phone
+    const other = ({ kind: 'cEnd', cStart: 'cEnd', hired: 'probationEnd', cRelation: 'cName', cPhone: 'cName' } as Partial<Record<Key, Key>>)[k]
+    if (other && errors[`ef-${other}`]) setError(other, check(other, next, true))
   }
   const blur = (k: Key) => () => setError(k, check(k, f, false))
   const err = (k: Key) => errors[`ef-${k}`]
@@ -216,7 +217,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
         <fieldset className="card glass eform__sec" data-enter>
           <legend className="card__title">Яаралтай үед холбоо барих хүн <span className="muted">(заавал биш)</span></legend>
           <div className="eform__grid eform__grid--3">
-            <Field id="ef-cName" label="Нэр">
+            <Field id="ef-cName" label="Нэр" error={err('cName')}>
               <input {...aria('cName')} value={f.cName} onChange={set('cName')} />
             </Field>
             <Field id="ef-cRelation" label="Хамаарал">

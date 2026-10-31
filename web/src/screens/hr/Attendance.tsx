@@ -34,6 +34,9 @@ function useAttendance() {
   const [busy, setBusy] = useState(false)
   const link = timely ? linkOf(s, s.company, timely.companies) : undefined
   const key = link ? `${link.id}:${month}` : demo ? `demo:${s.company}:${month}` : `none:${s.company}`
+  /** The month shown now: a late answer for one picked before is only kept */
+  const want = useRef(key)
+  want.current = key
 
   const check = useCallback(() => {
     setTimely(null)
@@ -44,18 +47,21 @@ function useAttendance() {
   const id = link?.id
   const load = useCallback((fresh: boolean) => {
     if (id === undefined) return
+    const k = `${id}:${month}`
     setBusy(true)
     loadMonth(id, month, fresh)
       .then(m => {
-        kept.set(`${id}:${month}`, m)
+        kept.set(k, m)
+        if (want.current !== k) return
         setData(m)
         setError(null)
-      }, (e: Error) => setError(e.message))
-      .finally(() => setBusy(false))
+      }, (e: Error) => want.current === k && setError(e.message))
+      .finally(() => want.current === k && setBusy(false))
   }, [id, month])
 
   useEffect(() => {
     setError(null)
+    setBusy(false)
     if (id === undefined) {
       setData(demo ? sampleMonth(s, month) : null)
       return
@@ -157,8 +163,9 @@ function TimelyBar({ a }: { a: Att }) {
   const { s, timely, link } = a
   if (!timely) return <p className="sbar" role="status"><LoaderCircle className="ico spin" />Timely-тэй холболтыг шалгаж байна…</p>
   const picked = s.timely[s.company]
+  const admin = hrView(s).access.admin
   // Found by name: nothing to pick unless Timely has several companies; only an admin picks
-  const pick = hrView(s).access.admin && timely.companies.length > 0 && (picked !== undefined || !link || timely.companies.length > 1) && (
+  const pick = admin && timely.companies.length > 0 && (picked !== undefined || !link || timely.companies.length > 1) && (
     <label className="att-pick">
       <span>Timely-ийн байгууллага</span>
       <select value={picked ?? ''} onChange={e => actions.linkTimely(s.company, e.target.value ? Number(e.target.value) : null)}>
@@ -189,7 +196,7 @@ function TimelyBar({ a }: { a: Att }) {
         {!timely.ready
           ? <><b>Timely холбогдоогүй байна.</b> Серверт Timely-ийн түлхүүр тохируулсны дараа ирц энд харагдана.</>
           : timely.companies.length
-            ? <><b>Timely-ээс энэ ХХК олдсонгүй.</b> Timely-ийн байгууллагыг сонгоно уу.</>
+            ? <><b>Timely-ээс энэ ХХК олдсонгүй.</b> {admin ? 'Timely-ийн байгууллагыг сонгоно уу.' : 'Удирдлагын эрхтэй хүн Timely-ийн байгууллагыг сонгоно.'}</>
             : <b>Timely-д холбогдож чадсангүй.</b>}
         {errors}
         {a.demo && <span className="att-demo"><b>Жишээ горим:</b> ирц болон ажилтны мэдээлэл зохиомол.</span>}

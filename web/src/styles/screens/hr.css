@@ -186,10 +186,13 @@
   justify-self: start;
 }
 .eform .mform__errors { margin: 0; }
+/* What takes focus scrolls clear of the toolbar above and the Хадгалах bar below */
+.eform :is(input, select, .mform__errors) { scroll-margin: 90px 0 90px; }
 @media (width <= 760px) {
   .eform__grid, .eform__grid--3 { grid-template-columns: minmax(0, 1fr); }
   .eform__bar { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); justify-self: stretch; }
   .eform__bar .btn { flex: 1; }
+  .eform :is(input, select, .mform__errors) { scroll-margin: calc(72px + env(safe-area-inset-top, 0px)) 0 calc(176px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* Structure */
