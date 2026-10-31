@@ -17,6 +17,7 @@ import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 import { Avatar } from '../ui/bits'
 import { PeoplePick } from '../ui/PeoplePick'
 import { DocTile, ReqPill } from '../screens/Docs'
+import { docView } from '../lib/access'
 import { EditPdf, Tool, Viewer, isPdfName } from './Viewer'
 
 const MB25 = 25 * 1024 * 1024
@@ -24,7 +25,8 @@ const MB25 = 25 * 1024 * 1024
 /** A document over the whole screen, with what can be done with it */
 export function DocSheet({ id }: { id: string }) {
   const s = useApp()
-  const d = s.docs.find(x => x.id === id)
+  const view = docView(s)
+  const d = s.docs.find(x => x.id === id && view.doc(x))
   if (!d) {
     return (
       <Sheet label="Бичиг баримт" onClose={close}>
@@ -40,7 +42,7 @@ export function DocSheet({ id }: { id: string }) {
       <>
         {/* A demo document has no file until it is drawn, as a PDF */}
         {(!d.file || isPdfName(d.file)) && <EditPdf from={`doc-${d.id}`} />}
-        <Tool icon={SquarePen} label="Мэдээлэл засах" onClick={() => open({ kind: 'docEdit', id: d.id })} />
+        {view.edit(d.company) && <Tool icon={SquarePen} label="Мэдээлэл засах" onClick={() => open({ kind: 'docEdit', id: d.id })} />}
         <Tool icon={Download} label="Татах" onClick={() => downloadDoc(d)} />
       </>
     } />
@@ -226,10 +228,13 @@ export function RequestSheet({ id, office }: { id: string; office?: boolean }) {
 /** Which kind of document a request ends up as */
 const kindOf = (what: string): DocKind => (/тодорхойлолт/i.test(what) ? 'certificate' : /гэрээ/i.test(what) ? 'contract' : /тушаал/i.test(what) ? 'order' : 'letter')
 
-function RequestBody({ id, office }: { id: string; office?: boolean }) {
+function RequestBody({ id, office: asked }: { id: string; office?: boolean }) {
   const s = useApp()
   const sc = scoped(s)
-  const r = s.requests.find(x => x.id === id)
+  const view = docView(s)
+  // One's own, or any for the office
+  const r = s.requests.find(x => x.id === id && (x.by === s.me || view.edit(x.company)))
+  const office = asked && !!r && view.edit(r.company)
   const [act, setAct] = useState<'ready' | 'decline' | null>(null)
   const [text, setText] = useState('Бичиг хэргийн өрөө')
   const [error, setError] = useState('')
@@ -253,6 +258,7 @@ function RequestBody({ id, office }: { id: string; office?: boolean }) {
       const file = { id: `f${cid()}`, name, type: blob.type || 'application/pdf', size: blob.size }
       await putFile(file.id, blob)
       const d = actions.addDoc({ name: r.what, kind: kindOf(r.what), company: r.company, file, to: [r.by] })
+      if (!d) return setError('Танд энэ үйлдлийг хийх эрх алга.')
       actions.stepRequest(r.id, 'done', { doc: d.id })
       toast('Бичиг баримт илгээгдлээ.')
     } catch {

@@ -1,6 +1,7 @@
 // Удирдлага: the ХХК's users, how they sign in, and their rights here (the HR plan, module 1). A ready-made set fills the
-// rights in; each can be changed after. Хүний нөөц and Ирц reach everyone, or only the people under the person by Шууд
-// удирдлага: what a branch director sees (lib/access.ts, docs/decisions.md, 2026-10-31). Only admins open this page.
+// rights in; each can be changed after. Хүний нөөц, Ирц and Бичиг хэрэг reach everyone, or only the people under the
+// person by Шууд удирдлага: what a branch director sees (lib/access.ts, docs/decisions.md, 2026-10-31). Only admins open
+// this page.
 import { useRef, useState } from 'react'
 import { ChevronLeft, KeyRound, Power, ShieldCheck, UserPlus, UsersRound } from 'lucide-react'
 import '../styles/screens/admin.css'
@@ -9,7 +10,7 @@ import { actions, scoped, useApp } from '../lib/store'
 import { open, toast } from '../lib/ui'
 import { go } from '../lib/router'
 import { usePageEnter } from '../lib/motion'
-import { NO_ACCESS, PRESETS, SCOPE, accessOf, presetOf, teamOf } from '../lib/access'
+import { DOC_SCOPE, NO_ACCESS, PRESETS, SCOPE, accessOf, presetOf, teamOf } from '../lib/access'
 import { dots } from '../lib/hr'
 import { collator, short } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
@@ -59,6 +60,7 @@ function Users() {
                 <th scope="col">Эрх</th>
                 <th scope="col" className="hide-md">Хүний нөөц</th>
                 <th scope="col" className="hide-md">Ирц</th>
+                <th scope="col" className="hide-md">Бичиг хэрэг</th>
                 <th scope="col" className="hide-sm">Сүүлд нэвтэрсэн</th>
               </tr>
             </thead>
@@ -81,6 +83,7 @@ function Users() {
                     </td>
                     <td className="hide-md">{SCOPE[a.hr]}</td>
                     <td className="hide-md">{SCOPE[a.attendance]}</td>
+                    <td className="hide-md">{DOC_SCOPE[a.docs]}{a.docsEdit && ', хөтөлнө'}</td>
                     <td className="hide-sm tnum">{when(p.account?.lastLogin)}</td>
                   </tr>
                 )
@@ -93,7 +96,9 @@ function Users() {
   )
 }
 
-const SCOPES: { value: Scope; label: string }[] = (['none', 'team', 'all'] as const).map(value => ({ value, label: SCOPE[value] }))
+const scopes = (names: Record<Scope, string>) => (['none', 'team', 'all'] as const).map(value => ({ value, label: names[value] }))
+const SCOPES = scopes(SCOPE)
+const DOC_SCOPES = scopes(DOC_SCOPE)
 
 function User({ id }: { id: string }) {
   const s = useApp()
@@ -133,7 +138,7 @@ function User({ id }: { id: string }) {
     toast(acc.active ? `${short(p)} нэвтрэх боломжгүй боллоо.` : `${short(p)} дахин нэвтэрнэ.`, { undo: () => actions.setAccount(id, { active: acc.active }) })
   }
   const preset = presetOf(mine)
-  const team = mine.hr === 'team' || mine.attendance === 'team' ? [...teamOf(s, id, s.company)].map(x => s.employees.find(e => e.id === x)!).filter(e => e.user !== id) : null
+  const team = mine.hr === 'team' || mine.attendance === 'team' || mine.docs === 'team' ? [...teamOf(s, id, s.company)].map(x => s.employees.find(e => e.id === x)!).filter(e => e.user !== id) : null
   const hasRecord = s.employees.some(e => e.company === s.company && e.user === id)
 
   return (
@@ -180,6 +185,14 @@ function User({ id }: { id: string }) {
               <span><b>Ирц</b><small>Timely-ийн ирц, ээлжийн амралт</small></span>
               <Seg label="Ирц" small value={mine.attendance} onChange={attendance => set({ attendance })} options={SCOPES} />
             </div>
+            <div className="adm-row">
+              <span><b>Бичиг хэрэг</b><small>Бичиг баримт, гэрээ</small></span>
+              <Seg label="Бичиг хэрэг" small value={mine.docs} onChange={docs => set({ docs, docsEdit: docs === 'all' ? mine.docsEdit : false })} options={DOC_SCOPES} />
+            </div>
+            <label className={`adm-row adm-check${mine.docs !== 'all' ? ' is-off' : ''}`}>
+              <span><b>Бичиг хэрэг хөтлөх</b><small>Бичиг баримт нэмэх, засах, ирсэн хүсэлтэд хариулах, скан оруулах</small></span>
+              <input type="checkbox" checked={mine.docsEdit} disabled={mine.docs !== 'all'} onChange={e => set({ docsEdit: e.target.checked })} />
+            </label>
             <label className="adm-row adm-check">
               <span><b>Удирдлага</b><small>Хэрэглэгч нэмэх, эрх өгөх</small></span>
               <input type="checkbox" checked={mine.admin} disabled={me} title={me ? 'Өөрийн удирдлагын эрхийг хасах боломжгүй' : undefined} onChange={e => set({ admin: e.target.checked })} />

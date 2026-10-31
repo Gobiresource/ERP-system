@@ -50,7 +50,6 @@
 .rmini__row small { font-size: 13px; color: var(--text-2); }
 
 .rtabs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 14px; }
-.rtabs__note { font-size: 13.5px; color: var(--text-2); }
 .rtabs__count { min-width: 20px; padding: 2px 6px; border-radius: 999px; background: var(--accent); color: #fff; font: 650 12px/1.25 var(--font); text-align: center; font-variant-numeric: tabular-nums; }
 .rlist { padding: 8px; }
 .rlist ul > li + li { border-top: 1px solid var(--sep); }

@@ -11,7 +11,7 @@ import { cid, newCard } from '../../lib/draft'
 import { getFile, putFile, saveBlob } from '../../lib/files'
 import { OpenError, buildPdf, drawPage, openPdf, type Page, type Sign, type Source } from '../../lib/pdf'
 import { open as openDialog, toast } from '../../lib/ui'
-import { seen } from '../../lib/docs'
+import { docView } from '../../lib/access'
 import { docBlob } from '../../lib/paper'
 import { PageHead } from '../../ui/PageHead'
 import { Sheet, useCloseSheet } from '../../ui/Sheet'
@@ -57,7 +57,8 @@ export default function Pdf({ from }: { from?: string }) {
   const [a, b] = from?.split('-') ?? []
   const board = s.drafts.find(d => d.id === a && d.company === s.company && d.owner === s.me)
   const card = board?.cards.find(c => c.id === b && c.file)
-  const doc = a === 'doc' ? s.docs.find(d => d.id === b && seen(d, s.me)) : undefined
+  const view = docView(s)
+  const doc = a === 'doc' ? s.docs.find(d => d.id === b && view.doc(d)) : undefined
   const sentIn = a === 'file' ? s.messages.find(m => m.files.some(f => f.id === b)) : undefined
   const sent = sentIn?.files.find(f => f.id === b)
   const mine = s.drafts.filter(d => d.company === s.company && d.owner === s.me).sort((a, b) => b.updated.localeCompare(a.updated))
@@ -299,7 +300,7 @@ export default function Pdf({ from }: { from?: string }) {
               <Download className="ico" />Хадгалах
             </button>
             <Menu state={savePop} label="Хадгалах">
-              {doc && <MenuItem icon={<FileText className="ico" />} onSelect={toDoc}>Бичиг баримтад хадгалах</MenuItem>}
+              {doc && view.edit(doc.company) && <MenuItem icon={<FileText className="ico" />} onSelect={toDoc}>Бичиг баримтад хадгалах</MenuItem>}
               <MenuItem icon={<Download className="ico" />} onSelect={() => download()}>Төхөөрөмж рүү татах</MenuItem>
               {(card && board ? [board] : mine.slice(0, 4)).map(d => (
                 <MenuItem key={d.id} icon={<StickyNote className="ico" />} onSelect={() => toBoard(d)}>{d.name} самбарт хадгалах</MenuItem>

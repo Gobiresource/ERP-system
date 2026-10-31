@@ -12,7 +12,8 @@ import { CONTRACT_KIND, FLOW, REVIEW, REVIEW_PART, STAGE, canEdit, deciders, dif
 import { cid } from '../../lib/draft'
 import { ago, dateDots, num, parse, short } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
-import { Avatar } from '../../ui/bits'
+import { Avatar, NoAccess } from '../../ui/bits'
+import { accessOf, docView } from '../../lib/access'
 import { DocsNav } from '../Docs'
 import { ActAs, StagePill, useActor } from './Contracts'
 
@@ -32,6 +33,14 @@ export default function ContractPage({ id }: { id: string }) {
       </div>
     )
   }
+  if (!docView(s).contract(c)) {
+    return (
+      <div ref={ref}>
+        <DocsNav at="contracts" />
+        <NoAccess text="Та зөвхөн өөрийн оролцсон гэрээг харах эрхтэй." />
+      </div>
+    )
+  }
   const roles = rolesOf(s, c.company)
   return (
     <div ref={ref} className="ctpage">
@@ -42,7 +51,7 @@ export default function ContractPage({ id }: { id: string }) {
         sub={`${CONTRACT_KIND[c.kind]}, ${c.party}${c.amount ? `, ${num(c.amount)} ₮` : ''}`}
         actions={<button type="button" className="btn btn--glass" onClick={() => open({ kind: 'contractPdf', id: c.id })}><FileText className="ico" />PDF-ээр харах</button>}
       />
-      <ActAs />
+      {accessOf(s, s.me, c.company).admin && <ActAs />}
       <div className="ctgrid" data-enter>
         <Paper c={c} editable={!view && canEdit(c, roles, who)} who={who} view={view} close={() => setView(null)} />
         <aside className="ctside">

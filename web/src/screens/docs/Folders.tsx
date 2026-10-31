@@ -7,7 +7,8 @@ import type { Company, Doc, Hue } from '../../lib/types'
 import { scoped, useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, isOpen, seen } from '../../lib/docs'
+import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, isOpen } from '../../lib/docs'
+import { accessOf, docView } from '../../lib/access'
 import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
 import { DocsNav, KIND_ICON } from '../Docs'
@@ -23,7 +24,7 @@ export default function Folders() {
   const me = scoped(s).me
   const companies = s.companies.filter(c => me.companies.includes(c.id))
   const current = s.companies.find(c => c.id === s.company)!
-  const mine = useMemo(() => s.docs.filter(d => seen(d, s.me)).sort((a, b) => b.added.localeCompare(a.added)), [s.docs, s.me])
+  const mine = useMemo(() => s.docs.filter(docView(s).doc).sort((a, b) => b.added.localeCompare(a.added)), [s])
   const here = mine.filter(d => d.company === s.company)
   const t = lower(q.trim())
   const found = here.filter(d => lower(d.name).includes(t))
@@ -62,15 +63,18 @@ export default function Folders() {
                 docs={mine.filter(d => d.company === c.id)}
                 asked={s.requests.filter(r => r.company === c.id && r.by === s.me && isOpen(r)).length}
                 current={c.id === s.company}
+                edit={accessOf(s, s.me, c.id).admin}
               />
             ))}
-            <li>
-              <button type="button" className="folder-add" onClick={() => open({ kind: 'company' })}>
-                <span className="folder-add__plus" aria-hidden="true"><FolderPlus className="ico" /></span>
-                <b>Компани нэмэх</b>
-                <small>Хавтас нь автоматаар үүснэ</small>
-              </button>
-            </li>
+            {me.account?.sysadmin && (
+              <li>
+                <button type="button" className="folder-add" onClick={() => open({ kind: 'company' })}>
+                  <span className="folder-add__plus" aria-hidden="true"><FolderPlus className="ico" /></span>
+                  <b>Компани нэмэх</b>
+                  <small>Хавтас нь автоматаар үүснэ</small>
+                </button>
+              </li>
+            )}
           </ul>
           <Categories c={current} docs={here} />
         </>
@@ -84,7 +88,7 @@ export default function Folders() {
  * A company's folder: the picture, its name and counts in white on the glass, a red mark for new documents, "Одоогийн" on
  * the company I am working in, and a gear to change its name and colour
  */
-function CompanyFolder({ c, docs, asked, current }: { c: Company; docs: Doc[]; asked: number; current: boolean }) {
+function CompanyFolder({ c, docs, asked, current, edit }: { c: Company; docs: Doc[]; asked: number; current: boolean; edit: boolean }) {
   const fresh = docs.filter(isNew).length
   const parts = [docs.length ? `${docs.length} бичиг баримт` : 'Хоосон', asked ? `${asked} хүсэлт явцад` : ''].filter(Boolean)
   return (
@@ -101,9 +105,11 @@ function CompanyFolder({ c, docs, asked, current }: { c: Company; docs: Doc[]; a
       <a className="folder__open" href={`#docs-folder-${c.id}`}>
         <span className="sr-only">{[c.name, ...parts, fresh ? `${fresh} нь шинэ` : '', current ? 'одоогийн компани' : ''].filter(Boolean).join(', ')}</span>
       </a>
-      <button type="button" className="folder__edit" aria-label={`${c.name}: хавтас засах`} title="Хавтас засах" onClick={() => open({ kind: 'company', id: c.id })}>
-        <Settings className="ico" />
-      </button>
+      {edit && (
+        <button type="button" className="folder__edit" aria-label={`${c.name}: хавтас засах`} title="Хавтас засах" onClick={() => open({ kind: 'company', id: c.id })}>
+          <Settings className="ico" />
+        </button>
+      )}
     </li>
   )
 }

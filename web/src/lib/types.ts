@@ -48,6 +48,13 @@ export interface Access {
   hrEdit: boolean
   /** Ирц */
   attendance: Scope
+  /**
+   * Бичиг хэрэг: which documents and contracts besides those shared with the person or that they take part in; 'none'
+   * still sees those
+   */
+  docs: Scope
+  /** Keeps the office: adds and changes documents, answers requests, files scans */
+  docsEdit: boolean
 }
 
 export interface Account {

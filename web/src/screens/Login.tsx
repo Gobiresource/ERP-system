@@ -12,8 +12,8 @@ import { Wallpaper } from '../shell/Wallpaper'
 import { Avatar } from '../ui/bits'
 
 const CYRILLIC = /[Ѐ-ӿ]/
-/** One of each kind of rights, to see what each one sees */
-const EXAMPLES = ['u1', 'u12', 'u10', 'u14']
+/** One of each kind of rights, to see what each one sees: Захирал, Хүний нөөц, Бичиг хэрэг, Салбарын захирал, Ажилтан */
+const EXAMPLES = ['u1', 'u12', 'u16', 'u10', 'u14']
 
 export default function Login() {
   const s = useApp()

@@ -11,6 +11,7 @@ import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
 import { addFiles, addSamples, aiState, droppedFiles, focusScan, groupsOf, isPdf, mergeBack, partBefore, pump, resume, splitItem, type AiState } from '../../lib/scan'
 import { DOC_KIND, DOC_KINDS } from '../../lib/docs'
+import { docView } from '../../lib/access'
 import { CONTRACT_KIND } from '../../lib/contracts'
 import { useFileUrl } from '../../lib/files'
 import { fileSize } from '../../lib/draft'
@@ -22,8 +23,8 @@ import { DocsNav } from '../Docs'
 
 /** A filed document of the same ХХК with the same number: the paper may be in a folder already */
 const twinOf = (s: State, f: ScanFields): Doc | undefined => (f.number.trim() ? s.docs.find(d => d.company === f.company && d.paper?.number === f.number.trim()) : undefined)
-/** Read with confidence, nothing to check: these can go into their folders together */
-const sure = (s: State, it: ScanItem) => it.state === 'read' && it.reading?.confidence === 'high' && !!it.to.title.trim() && !twinOf(s, it.to)
+/** Read with confidence, nothing to check, into a ХХК whose office the person keeps: these can go into their folders together */
+const sure = (s: State, it: ScanItem) => it.state === 'read' && it.reading?.confidence === 'high' && !!it.to.title.trim() && !twinOf(s, it.to) && docView(s).edit(it.to.company)
 /** AI's turn: in line, being cut or being read */
 const working = (it: ScanItem) => it.state === 'waiting' || it.state === 'splitting' || it.state === 'reading'
 /** "4–6" */
@@ -205,6 +206,7 @@ function ScanCard({ it, ai, sure: done }: { it: ScanItem; ai: boolean; sure: boo
     }
     const r = actions.fileScan(it.id, s.me)
     if (r) toast(`«${r.doc.name}» ${co}-ийн ${DOC_KIND[f.kind]} хавтсанд орлоо.`, { undo: r.undo })
+    else toast(`Танд ${co}-ийн хавтсанд бичиг баримт нэмэх эрх алга.`, { kind: 'warn' })
   }
   const remove = () => toast(`${it.file.name} хасагдлаа.`, { undo: actions.dropScan(it.id) })
   const again = () => {
@@ -292,7 +294,7 @@ function ScanCard({ it, ai, sure: done }: { it: ScanItem; ai: boolean; sure: boo
           <div className="field">
             <label className="field__label" htmlFor={id('company')}>ХХК</label>
             <select id={id('company')} value={f.company} onChange={e => set({ company: e.target.value })}>
-              {s.companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {s.companies.filter(c => c.id === f.company || docView(s).edit(c.id)).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div className="field">

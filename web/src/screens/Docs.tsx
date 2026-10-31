@@ -13,11 +13,14 @@ import ContractPage from './docs/Contract'
 import Pdf from './docs/Pdf'
 import Scans from './docs/Scans'
 import { useApp } from '../lib/store'
+import { docView } from '../lib/access'
+import { NoAccess } from '../ui/bits'
 
 export default function Docs({ id }: { id?: string }) {
+  const s = useApp()
   if (id === 'requests') return <Requests />
   if (id === 'contracts') return <Contracts />
-  if (id === 'scan') return <Scans />
+  if (id === 'scan') return docView(s).edit(s.company) ? <Scans /> : <NoAccess />
   if (id?.startsWith('contract-')) return <ContractPage key={id} id={id.slice(9)} />
   // #docs-pdf, or #docs-pdf-<board>-<card> to edit a PDF that sits on a board
   if (id === 'pdf' || id?.startsWith('pdf-')) return <Pdf from={id.slice(4) || undefined} />
@@ -27,11 +30,13 @@ export default function Docs({ id }: { id?: string }) {
 
 const TABS = [['', 'Бичиг баримт'], ['contracts', 'Гэрээ'], ['requests', 'Хүсэлт'], ['scan', 'Скан оруулах'], ['pdf', 'PDF засах']] as const
 
-/** The section's tabs; Гэрээ counts the contracts waiting for the person, Скан оруулах the papers not filed yet */
+/** The section's tabs; Гэрээ counts the contracts waiting for the person, Скан оруулах (the office's) the papers not filed yet */
 export function DocsNav({ at }: { at: (typeof TABS)[number][0] }) {
+  const s = useApp()
   const n = useContractTodo()
-  const scans = useApp().scans.length
-  const tabs = TABS.map(([key, text]) => [key,
+  const scans = s.scans.length
+  const keeps = docView(s).edit(s.company)
+  const tabs = TABS.filter(([key]) => key !== 'scan' || keeps).map(([key, text]) => [key,
     key === 'contracts' && n ? <>{text}<span className="seg__count">{n}<span className="sr-only"> хийх</span></span></>
       : key === 'scan' && scans ? <>{text}<span className="seg__count">{scans}<span className="sr-only"> хавтаслах</span></span></> : text] as const)
   return <SubNav label="Бичиг хэрэг" base="docs" tabs={tabs} at={at} />

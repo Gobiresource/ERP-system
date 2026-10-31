@@ -8,7 +8,8 @@ import type { BoardFile, Chat, ChatRef, Id, Message, State } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { open, toast } from '../lib/ui'
 import { chatName, myChats, readers, unread } from '../lib/chat'
-import { DOC_KIND, seen } from '../lib/docs'
+import { DOC_KIND } from '../lib/docs'
+import { docView } from '../lib/access'
 import { collator, dueLabel, hm, parse, short, today, ymd } from '../lib/format'
 import { getFile, putFile, saveBlob, useFileUrl } from '../lib/files'
 import { cid, fileSize } from '../lib/draft'
@@ -318,7 +319,7 @@ function RefCard({ r }: { r: ChatRef }) {
     if (e) card = { icon: <span className="cref__ico"><CalendarDays className="ico" /></span>, title: e.title, sub: `${KIND[e.kind]}, ${dueLabel(e.start.slice(0, 10))} ${hm(parse(e.start))}`, go: () => open({ kind: 'event', id: e.id }) }
   } else if (r.kind === 'doc') {
     const d = s.docs.find(x => x.id === r.id)
-    if (d && seen(d, s.me)) card = { icon: <DocTile kind={d.kind} />, title: d.name, sub: `Бичиг баримт, ${DOC_KIND[d.kind].toLowerCase()}`, go: () => open({ kind: 'doc', id: d.id }) }
+    if (d && docView(s).doc(d)) card = { icon: <DocTile kind={d.kind} />, title: d.name, sub: `Бичиг баримт, ${DOC_KIND[d.kind].toLowerCase()}`, go: () => open({ kind: 'doc', id: d.id }) }
   }
   if (!card) return <p className="cref is-gone">{r.label}: устгагдсан эсвэл харах эрх байхгүй</p>
   return (
@@ -391,7 +392,7 @@ function Composer({ chat }: { chat: Chat }) {
       return sc.events.filter(e => e.start.slice(0, 10) >= today() && has(e.title)).sort((a, b) => a.start.localeCompare(b.start))
         .map(e => ({ key: `e${e.id}`, icon: icon(<CalendarDays className="ico" />), label: e.title, sub: `${KIND[e.kind]}, ${dueLabel(e.start.slice(0, 10))} ${hm(parse(e.start))}`, ref: { kind: 'event', id: e.id, label: e.title } }))
     }
-    return s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name))
+    return s.docs.filter(d => d.company === s.company && docView(s).doc(d) && has(d.name))
       .map(d => ({ key: `d${d.id}`, icon: <DocTile kind={d.kind} />, label: d.name, sub: DOC_KIND[d.kind], ref: { kind: 'doc', id: d.id, label: d.name } }))
   }, [panel, s, sc, chat.members])
   const current = Math.min(active, Math.max(0, rows.length - 1))

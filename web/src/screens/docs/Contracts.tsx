@@ -1,24 +1,33 @@
-// Гэрээ: the contracts of the current ХХК. "Миний хийх" holds those waiting for the person, in the words of what they have
-// to do; the others are by whether they are still going. Anyone may start one, and whoever does writes it.
+// Гэрээ: the contracts of the current ХХК the person may see (lib/access.ts: those they take part in, their people's, or
+// all). "Миний хийх" holds those waiting for the person, in the words of what they have to do; the others are by whether
+// they are still going. Anyone may start one, and whoever does writes it.
 import { useRef, useState } from 'react'
 import { FilePen, FilePlus2, Inbox, Users } from 'lucide-react'
 import '../../styles/screens/contracts.css'
-import type { Contract, Id } from '../../lib/types'
+import type { Contract, Id, Scope } from '../../lib/types'
 import { useApp } from '../../lib/store'
 import { open, setActAs, useUi } from '../../lib/ui'
 import { go } from '../../lib/router'
 import { usePageEnter } from '../../lib/motion'
 import { FLOW, REVIEW, REVIEW_PART, ROLE, ROLES, STAGE, isClosed, rolesOf, todo } from '../../lib/contracts'
 import { ago, num, short } from '../../lib/format'
+import { accessOf, docView } from '../../lib/access'
 import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
 import { Avatar, Empty } from '../../ui/bits'
 import { DocsNav } from '../Docs'
 
-/** The person the contract pages act as: me, or whoever the demo switched to */
+/** The person the contract pages act as: me, or whoever the demo switched to (an admin's way to try each step) */
 export function useActor() {
   const s = useApp()
-  return useUi().actAs ?? s.me
+  const as = useUi().actAs
+  return as && accessOf(s, s.me, s.company).admin ? as : s.me
+}
+
+const SUB: Record<Scope, string> = {
+  all: 'Гэрээний ноорог бэлтгэж, санхүү, хуулиар зэрэг хянуулаад захирлаар батлуулна.',
+  team: 'Таны оролцсон болон хариуцсан ажилтны гэрээ харагдана.',
+  none: 'Таны оролцсон гэрээ харагдана.',
 }
 
 /** How many contracts wait for the person in the current ХХК (the menu and the tab show it) */
@@ -37,7 +46,9 @@ export default function Contracts() {
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
   const roles = rolesOf(s, s.company)
-  const all = s.contracts.filter(c => c.company === s.company).sort((a, b) => b.updated.localeCompare(a.updated))
+  const view = docView(s)
+  const rights = accessOf(s, s.me, s.company)
+  const all = s.contracts.filter(c => c.company === s.company && view.contract(c)).sort((a, b) => b.updated.localeCompare(a.updated))
   const mine = all.filter(c => todo(c, roles, who))
   const [tab, setTab] = useState<Tab>(mine.length ? 'todo' : 'open')
   const list = tab === 'todo' ? mine : tab === 'open' ? all.filter(c => !isClosed(c)) : all.filter(isClosed)
@@ -47,17 +58,17 @@ export default function Contracts() {
       <DocsNav at="contracts" />
       <PageHead
         title="Гэрээ"
-        sub="Гэрээний ноорог бэлтгэж, санхүү, хуулиар зэрэг хянуулаад захирлаар батлуулна."
+        sub={SUB[rights.docs]}
         actions={<button type="button" className="btn btn--accent" onClick={() => open({ kind: 'newContract' })}><FilePlus2 className="ico" />Гэрээ үүсгэх</button>}
       />
-      <ActAs />
+      {rights.admin && <ActAs />}
       <div className="rtabs" data-enter>
         <Seg label="Гэрээ" value={tab} onChange={setTab} options={[
           { value: 'todo', label: <>Миний хийх{mine.length > 0 && <><span className="rtabs__count" aria-hidden="true">{mine.length}</span><span className="sr-only">({mine.length})</span></>}</> },
           { value: 'open', label: 'Явагдаж буй' },
           { value: 'closed', label: 'Дууссан' },
         ]} />
-        <button type="button" className="btn btn--glass btn--sm" onClick={() => open({ kind: 'processRoles' })}><Users className="ico" />Үүрэг тохируулах</button>
+        {rights.admin && <button type="button" className="btn btn--glass btn--sm" onClick={() => open({ kind: 'processRoles' })}><Users className="ico" />Үүрэг тохируулах</button>}
       </div>
       <section className="card glass ctlist" aria-label={tab === 'todo' ? 'Миний хийх' : tab === 'open' ? 'Явагдаж буй' : 'Дууссан'} data-enter>
         {list.length ? (

@@ -7,7 +7,7 @@ import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
 import { bandOf, dueOf, findReport, kpiOf, managerOf, nextMonth, seedReports, total } from './reports'
-import { accessOf, demoAccounts, hashOf, loginKey, newSalt } from './access'
+import { accessOf, demoAccounts, hashOf, loginKey, newSalt, withDocRights } from './access'
 import { companyMark } from './format'
 
 const KEY = 'erp:v1'
@@ -53,6 +53,8 @@ function load(): State | null {
     if (!s.timely) s = { ...s, timely: {} }
     // Saved before anyone signed in: the example accounts
     if (!s.people.some((p: Person) => p.account)) s = { ...s, people: demoAccounts(s) }
+    // Saved before Бичиг хэрэг had rights of its own
+    if (s.people.some((p: Person) => p.account && Object.values(p.account.access).some(a => !('docs' in a)))) s = { ...s, people: withDocRights(s) }
     return s
   } catch {
     return null
@@ -120,18 +122,27 @@ const mayEditHr = () => accessOf(state, state.me, state.company).hrEdit
 /** Whoever sets the system up, or an admin of a ХХК the person belongs to */
 const manages = (who: Id) =>
   !!state.people.find(p => p.id === state.me)?.account?.sysadmin || !!state.people.find(p => p.id === who)?.companies.some(c => accessOf(state, state.me, c).admin)
+/** Keeps the office of the ХХК: its documents, requests and scans */
+const keepsDocs = (company: Id) => accessOf(state, state.me, company).docsEdit
+/** Whoever sets the system up */
+const sysadmin = () => !!state.people.find(p => p.id === state.me)?.account?.sysadmin
 /** No one else signs in with this login */
 const loginFree = (login: string, who?: Id) => !!loginKey(login) && !state.people.some(p => p.id !== who && p.account?.login === loginKey(login))
 
 export const actions = {
   switchCompany: (company: Id) => set(s => ({ ...s, company })),
-  /** A new ХХК, with its folder in Бичиг хэрэг. I work in it from the start, so it is in my company menu. */
+  /**
+   * A new ХХК, with its folder in Бичиг хэрэг. I work in it from the start, so it is in my company menu. Only whoever sets
+   * the system up adds one.
+   */
   addCompany(c: Pick<Company, 'name' | 'hue'>) {
+    if (!sysadmin()) return null
     const company: Company = { ...c, id: uid('c'), code: companyMark(c.name) }
     set(s => ({ ...s, companies: [...s.companies, company], people: s.people.map(p => (p.id === s.me ? { ...p, companies: [...p.companies, company.id] } : p)) }))
     return company
   },
-  updateCompany: (id: Id, patch: Pick<Company, 'name' | 'hue'>) => set(s => ({ ...s, companies: s.companies.map(c => (c.id === id ? { ...c, ...patch } : c)) })),
+  /** Its name and folder colour, by an admin of the ХХК */
+  updateCompany: (id: Id, patch: Pick<Company, 'name' | 'hue'>) => accessOf(state, state.me, id).admin && set(s => ({ ...s, companies: s.companies.map(c => (c.id === id ? { ...c, ...patch } : c)) })),
 
   addTask(t: Omit<Task, 'id' | 'company' | 'subtasks' | 'comments' | 'createdAt'>) {
     const task: Task = { ...t, id: uid('t'), company: state.company, subtasks: [], comments: [], createdAt: new Date().toISOString() }
@@ -465,8 +476,8 @@ export const actions = {
   /** Only one's own note or opinion comes off; the steps of the process stay */
   dropContractNote: (id: Id, who: Id, event: Id) =>
     patchContract(id, c => ({ ...c, events: c.events.filter(e => !(e.id === event && e.by === who && (e.kind === 'note' || e.kind === 'opinion'))) })),
-  /** A company's people for the process (an admin's job in the real system) */
-  setRoles: (company: Id, roles: Record<ProcessRole, Id>) => set(s => ({ ...s, roles: { ...s.roles, [company]: roles } })),
+  /** A company's people for the process, set by its admin */
+  setRoles: (company: Id, roles: Record<ProcessRole, Id>) => accessOf(state, state.me, company).admin && set(s => ({ ...s, roles: { ...s.roles, [company]: roles } })),
 
   // Сарын тайлан
   /** Saves what a person writes in their report while it is theirs to write (a draft, or one sent back); the first save makes it */
@@ -517,9 +528,9 @@ export const actions = {
   },
   setKpi: (company: Id, rules: KpiRules) => set(s => ({ ...s, kpi: { ...s.kpi, [company]: rules } })),
 
-  // Скан оруулах
+  // Скан оруулах: the office's, like the rest of Бичиг хэрэг's keeping
   /** New scans go last: AI reads them in the order they came, like the paper stack */
-  addScans: (items: ScanItem[]) => set(s => ({ ...s, scans: [...s.scans, ...items] })),
+  addScans: (items: ScanItem[]) => keepsDocs(state.company) && set(s => ({ ...s, scans: [...s.scans, ...items] })),
   /** A stack's place in the inbox goes to the papers cut from it */
   replaceScan: (id: Id, items: ScanItem[]) => set(s => ({ ...s, scans: s.scans.flatMap(x => (x.id === id ? items : [x])) })),
   setScan: (id: Id, patch: Partial<ScanItem>) => set(s => ({ ...s, scans: s.scans.map(x => (x.id === id ? { ...x, ...patch } : x)) })),
@@ -535,6 +546,7 @@ export const actions = {
   addAiCost: (usd: number) => set(s => ({ ...s, aiSpent: s.aiSpent + usd })),
   /** Takes a scan out of the inbox; returns undo */
   dropScan(id: Id) {
+    if (!keepsDocs(state.company)) return () => {}
     const i = state.scans.findIndex(x => x.id === id)
     const it = state.scans[i]
     set(s => ({ ...s, scans: s.scans.filter(x => x.id !== id) }))
@@ -544,7 +556,7 @@ export const actions = {
   fileScan(id: Id, who: Id) {
     const i = state.scans.findIndex(x => x.id === id)
     const it = state.scans[i]
-    if (!it) return null
+    if (!it || !keepsDocs(it.to.company)) return null
     const f = it.to
     const amount = Number(f.amount.replace(/[\s,]/g, ''))
     const doc: Doc = {
@@ -556,13 +568,14 @@ export const actions = {
   },
 
   // Бичиг хэрэг
-  /** Into a company's folder: the current one unless another is given */
-  addDoc({ company, ...d }: Pick<Doc, 'name' | 'kind' | 'file' | 'to'> & { company?: Id }) {
-    const doc: Doc = { ...d, id: uid('dc'), company: company ?? state.company, by: state.me, added: new Date().toISOString() }
+  /** Into a company's folder, the current one unless another is given: by the office, or Гэрээ's clerk filing a contract */
+  addDoc({ company = state.company, ...d }: Pick<Doc, 'name' | 'kind' | 'file' | 'to'> & { company?: Id }) {
+    if (!keepsDocs(company) && rolesOf(state, company)?.clerk !== state.me) return null
+    const doc: Doc = { ...d, id: uid('dc'), company, by: state.me, added: new Date().toISOString() }
     set(s => ({ ...s, docs: [doc, ...s.docs] }))
     return doc
   },
-  updateDoc: (id: Id, patch: Partial<Doc>) => set(s => ({ ...s, docs: s.docs.map(d => (d.id === id ? { ...d, ...patch } : d)) })),
+  updateDoc: (id: Id, patch: Partial<Doc>) => keepsDocs(state.docs.find(d => d.id === id)?.company ?? '') && set(s => ({ ...s, docs: s.docs.map(d => (d.id === id ? { ...d, ...patch } : d)) })),
   addRequest(r: Pick<DocRequest, 'what' | 'purpose' | 'where' | 'paper' | 'copies' | 'need' | 'note'>) {
     const at = new Date().toISOString()
     const req: DocRequest = { ...r, id: uid('rq'), company: state.company, by: state.me, status: 'sent', steps: [{ status: 'sent', at, by: state.me }] }
@@ -571,7 +584,7 @@ export const actions = {
   },
   /** Moves a request to its next step; `doc` is the file sent back */
   stepRequest: (id: Id, status: ReqStatus, more: { note?: string; doc?: Id } = {}) =>
-    set(s => ({
+    keepsDocs(state.requests.find(r => r.id === id)?.company ?? '') && set(s => ({
       ...s,
       requests: s.requests.map(r => (r.id === id
         ? { ...r, status, doc: more.doc ?? r.doc, steps: [...r.steps, { status, at: new Date().toISOString(), by: s.me, note: more.note }] }

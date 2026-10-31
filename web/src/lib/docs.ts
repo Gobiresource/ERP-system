@@ -1,6 +1,6 @@
 // Бичиг хэрэг: names of document kinds (a company folder's categories) and request steps, what can be asked for, folder colours,
 // and the demo documents and requests.
-import type { Doc, DocKind, DocRequest, Hue, Id, ReqStatus } from './types'
+import type { Doc, DocKind, DocRequest, Hue, ReqStatus } from './types'
 
 export const DOC_KIND: Record<DocKind, string> = {
   contract: 'Гэрээ', order: 'Тушаал', certificate: 'Тодорхойлолт', rule: 'Журам', decision: 'Шийдвэр', letter: 'Албан бичиг', form: 'Маягт',
@@ -19,9 +19,6 @@ export const isOpen = (r: DocRequest) => r.status !== 'done' && r.status !== 'de
 /** What employees most often ask the office for */
 export const WHAT = ['Ажлын газрын тодорхойлолт', 'Цалингийн тодорхойлолт', 'Ажилласан жилийн тодорхойлолт', 'Хөдөлмөрийн гэрээний хуулбар', 'Тушаалын хуулбар']
 export const PURPOSES = ['Банкны зээл авах', 'Виз мэдүүлэх', 'Нийгмийн даатгалд өгөх', 'Сургууль, цэцэрлэгт өгөх', 'Тэтгэмж авах']
-
-/** Whether this user may see the document */
-export const seen = (d: Doc, me: Id) => d.to === 'all' || d.to.includes(me)
 
 /** Colours a company's folder can have, in the order they are offered */
 export const FOLDER_HUES: Hue[] = ['blue', 'green', 'pink', 'teal', 'purple', 'orange', 'indigo', 'yellow']

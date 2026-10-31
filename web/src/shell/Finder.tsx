@@ -10,8 +10,8 @@ import { enter } from '../lib/motion'
 import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
 import { NAV } from './nav'
 import { EMP_STATUS } from '../lib/hr'
-import { hrView } from '../lib/access'
-import { DOC_KIND, seen } from '../lib/docs'
+import { docView, hrView } from '../lib/access'
+import { DOC_KIND } from '../lib/docs'
 import { STAGE } from '../lib/contracts'
 import { EmpAvatar } from '../screens/Hr'
 
@@ -98,11 +98,11 @@ function FinderDialog() {
     add(s.companies.filter(c => sc.me.companies.includes(c.id) && has(c.name)).map(c => ({
       id: `folder-${c.id}`, group: 'Хавтас', title: c.name, sub: 'Бичиг хэрэг', lead: <span className="lead"><FolderOpen className="ico" /></span>, run: () => go('docs', `folder-${c.id}`),
     })))
-    add(s.docs.filter(d => d.company === s.company && seen(d, s.me) && has(d.name, d.paper?.number ?? '', d.paper?.party ?? '')).map(d => ({
+    add(s.docs.filter(d => d.company === s.company && docView(s).doc(d) && has(d.name, d.paper?.number ?? '', d.paper?.party ?? '')).map(d => ({
       id: d.id, group: 'Бичиг баримт', title: d.name, sub: DOC_KIND[d.kind], lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),
     })))
     // Contracts, also by the other side and the number
-    add(s.contracts.filter(c => c.company === s.company && has(c.title, c.party, c.number ?? '')).map(c => ({
+    add(s.contracts.filter(c => c.company === s.company && docView(s).contract(c) && has(c.title, c.party, c.number ?? '')).map(c => ({
       id: c.id, group: 'Гэрээ', title: c.title, sub: `${c.party}, ${STAGE[c.stage].pill.toLowerCase()}`, lead: <span className="lead"><FilePen className="ico" /></span>, run: () => go('docs', `contract-${c.id}`),
     })))
     // HR records, also by code, registration number and phone

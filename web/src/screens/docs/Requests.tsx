@@ -1,4 +1,4 @@
-// Requests for documents: my own, and those that came to the office (HR and the office clerk handle them).
+// Requests for documents: my own, and for those who keep the office (Бичиг хэрэг хөтлөх), those that came to it.
 import { useRef, useState } from 'react'
 import { FileDown, Inbox, Printer, Send } from 'lucide-react'
 import type { DocRequest } from '../../lib/types'
@@ -6,6 +6,7 @@ import { scoped, useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
 import { isOpen } from '../../lib/docs'
+import { docView } from '../../lib/access'
 import { daysFromToday, dueLabel, short } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
@@ -19,7 +20,9 @@ export default function Requests() {
   const sc = scoped(s)
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
-  const [tab, setTab] = useState<Tab>('mine')
+  const keeps = docView(s).edit(s.company)
+  const [pick, setTab] = useState<Tab>('mine')
+  const tab = keeps ? pick : 'mine'
   const all = s.requests.filter(r => r.company === s.company)
   const newest = (a: DocRequest, b: DocRequest) => b.steps[0].at.localeCompare(a.steps[0].at)
   const mine = all.filter(r => r.by === s.me).sort(newest)
@@ -36,13 +39,14 @@ export default function Requests() {
         sub="Бичиг хэргээс бичиг баримт хүсэх, хүсэлтийнхээ явцыг харах."
         actions={<button type="button" className="btn btn--accent" onClick={() => open({ kind: 'docRequest' })}><Send className="ico" />Бичиг баримт хүсэх</button>}
       />
-      <div className="rtabs" data-enter>
-        <Seg label="Хүсэлт" value={tab} onChange={setTab} options={[
-          { value: 'mine', label: 'Миний хүсэлт' },
-          { value: 'office', label: <>Ирсэн хүсэлт{waiting > 0 && <><span className="rtabs__count" aria-hidden="true">{waiting}</span><span className="sr-only">({waiting} шинэ)</span></>}</> },
-        ]} />
-        {tab === 'office' && <p className="rtabs__note">Хүний нөөц, бичиг хэргийн ажилтанд харагдана.</p>}
-      </div>
+      {keeps && (
+        <div className="rtabs" data-enter>
+          <Seg label="Хүсэлт" value={tab} onChange={setTab} options={[
+            { value: 'mine', label: 'Миний хүсэлт' },
+            { value: 'office', label: <>Ирсэн хүсэлт{waiting > 0 && <><span className="rtabs__count" aria-hidden="true">{waiting}</span><span className="sr-only">({waiting} шинэ)</span></>}</> },
+          ]} />
+        </div>
+      )}
       <section className="card glass rlist" aria-label={tab === 'mine' ? 'Миний хүсэлт' : 'Ирсэн хүсэлт'} data-enter>
         {list.length ? (
           <ul>
