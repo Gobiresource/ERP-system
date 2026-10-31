@@ -241,7 +241,7 @@ function Status({ c, who }: { c: Contract; who: Id }) {
           <li key={st} className={mark(i)} aria-current={mark(i) === 'is-now' ? 'step' : undefined}>
             <span className="ctsteps__dot" aria-hidden="true">{mark(i) === 'is-past' && <Check className="ico" />}</span>
             <span className="ctsteps__text">
-              <b>{STAGE[st].label}{mark(i) === 'is-past' && <span className="sr-only">, хийгдсэн</span>}</b>
+              <b>{STAGE[st].label}{mark(i) === 'is-past' && <span className="sr-only">, дууссан</span>}</b>
               {st === 'draft' && <small>{name(s.people, c.owner)}, хариуцсан ажилтан</small>}
               {st === 'review' && REVIEW.map(r => (
                 <small key={r} className={c.agreed.includes(r) ? 'is-ok' : undefined}>

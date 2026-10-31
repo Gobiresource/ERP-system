@@ -377,7 +377,7 @@ function RightNow() {
       </div>
       {tab === 'team' ? (
         <div className="people">
-          {people.length === 0 && <p className="tp-none">Идэвхтэй хүн алга.</p>}
+          {people.length === 0 && <p className="tp-none">Идэвхтэй ажилтан алга.</p>}
           {people.map(p => (
             <button key={p.id} type="button" className="person" onClick={() => open({ kind: 'person', id: p.id })}>
               <Avatar person={p} size="md" presence />

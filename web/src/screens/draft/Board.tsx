@@ -627,7 +627,7 @@ function Desk({ d }: { d: Draft }) {
         {!cards.length && (
           <div className="board__hint">
             <StickyNote className="ico" />
-            <p className="board__hint-title">Самбарт зүйл алга</p>
+            <p className="board__hint-title">Тэмдэглэл алга</p>
             <p>Доорх товчоор тэмдэглэл, жагсаалт, зураг нэмнэ үү. Хоосон газар хоёр товшиж ч нэмж болно.</p>
           </div>
         )}
@@ -877,7 +877,7 @@ function LinkEdit({ c, edit, warn, onDone }: { c: DraftCard; edit: RefObject<Edi
     const typed = url.current!.value.trim()
     const ok = safeUrl(typed)
     // A new link has no address to keep: it is not added
-    if (typed && !ok) warn(c.url ? 'Холбоосын хаяг буруу тул өмнөх хаяг хэвээр үлдлээ.' : 'Холбоосын хаяг буруу тул холбоос нэмэгдсэнгүй.')
+    if (typed && !ok) warn(c.url ? 'Холбоосын хаяг буруу тул өмнөх хаяг хэвээр үлдлээ.' : 'Хаяг буруу тул холбоос нэмэгдсэнгүй.')
     return { url: typed ? ok ?? c.url : undefined, text: text.current!.value.trim() || undefined }
   }
   const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {

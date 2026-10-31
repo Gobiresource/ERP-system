@@ -153,7 +153,7 @@ function Drop({ ready }: { ready: boolean }) {
     <div className={`sdrop${over ? ' is-over' : ''}`} onDragOver={e => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={drop} data-enter>
       <Upload className="ico sdrop__ico" />
       <p className="sdrop__text">
-        <b className="sdrop__drag">Скан хийсэн файл эсвэл хавтсаа энд чирж оруулна уу</b>
+        <b className="sdrop__drag">Скан хийсэн файл эсвэл хавтсаа энд чирж тавина уу</b>
         <b className="sdrop__tap">Скан хийсэн файл эсвэл зургаа сонгоно уу</b>
         <small>PDF, JPG, PNG. Олон файлыг зэрэг, эсвэл олон баримтыг нэг файлд багцаар оруулж болно. AI баримт бүрийг ялгана.</small>
         {busy && <small className="sdrop__busy" role="status">{busy}</small>}
