@@ -3,7 +3,7 @@ import { ChevronRight, Download, Search } from 'lucide-react'
 import type { Doc } from '../../lib/types'
 import { useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
-import { DOC_KIND, isOpen } from '../../lib/docs'
+import { DOC_KIND, isOpen, sharedWith } from '../../lib/docs'
 import { downloadDoc } from '../../lib/paper'
 import { dateDots, dueLabel } from '../../lib/format'
 import { DocTile, ReqPill, Steps } from '../Docs'
@@ -54,6 +54,7 @@ export function RequestsCard() {
 }
 
 export function DocRow({ d, fresh }: { d: Doc; fresh?: boolean }) {
+  const who = sharedWith(d, useApp().people)
   return (
     <li className="drow">
       <button type="button" className="drow__open" onClick={() => open({ kind: 'doc', id: d.id })}>
@@ -61,6 +62,7 @@ export function DocRow({ d, fresh }: { d: Doc; fresh?: boolean }) {
         <span className="drow__text">
           <b>{d.name}</b>
           <small>{DOC_KIND[d.kind]}, {dateDots(new Date(d.added))}</small>
+          {who && <small>{who}</small>}
         </span>
         {fresh && isNew(d) && <span className="drow__new">Шинэ</span>}
       </button>

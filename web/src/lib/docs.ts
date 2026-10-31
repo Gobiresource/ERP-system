@@ -1,6 +1,7 @@
 // Бичиг хэрэг: names of document kinds (a company folder's categories) and request steps, what can be asked for, folder colours,
 // and the demo documents and requests.
-import type { Doc, DocKind, DocRequest, Hue, ReqStatus } from './types'
+import type { Doc, DocKind, DocRequest, Hue, Person, ReqStatus } from './types'
+import { short } from './format'
 
 export const DOC_KIND: Record<DocKind, string> = {
   contract: 'Гэрээ', order: 'Тушаал', certificate: 'Тодорхойлолт', rule: 'Журам', decision: 'Шийдвэр', letter: 'Албан бичиг', form: 'Маягт',
@@ -15,6 +16,11 @@ export const REQ_STATUS: Record<ReqStatus, string> = { sent: 'Илгээсэн',
 /** The steps a request goes through: on paper it waits to be collected, a file is sent straight away */
 export const stepsOf = (r: Pick<DocRequest, 'paper'>): ReqStatus[] => (r.paper ? ['sent', 'working', 'ready', 'done'] : ['sent', 'working', 'done'])
 export const isOpen = (r: DocRequest) => r.status !== 'done' && r.status !== 'declined'
+/** Whose a document is, as "Хэнд: Б.Болд, Ц.Номин"; empty when it is for everyone */
+export function sharedWith(d: Doc, people: Person[]) {
+  const names = d.to === 'all' ? '' : people.filter(p => d.to.includes(p.id)).map(short).join(', ')
+  return names && `Хэнд: ${names}`
+}
 
 /** What employees most often ask the office for */
 export const WHAT = ['Ажлын газрын тодорхойлолт', 'Цалингийн тодорхойлолт', 'Ажилласан жилийн тодорхойлолт', 'Хөдөлмөрийн гэрээний хуулбар', 'Тушаалын хуулбар']

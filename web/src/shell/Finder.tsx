@@ -11,7 +11,7 @@ import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
 import { navFor } from './nav'
 import { EMP_STATUS, fullName } from '../lib/hr'
 import { docView, hrView } from '../lib/access'
-import { DOC_KIND } from '../lib/docs'
+import { DOC_KIND, sharedWith } from '../lib/docs'
 import { STAGE } from '../lib/contracts'
 import { EmpAvatar } from '../screens/Hr'
 
@@ -99,7 +99,7 @@ function FinderDialog() {
       id: `folder-${c.id}`, group: 'Хавтас', title: c.name, sub: 'Бичиг хэрэг', lead: <span className="lead"><FolderOpen className="ico" /></span>, run: () => go('docs', `folder-${c.id}`),
     })))
     add(s.docs.filter(d => d.company === s.company && docView(s).doc(d) && has(d.name, d.paper?.number ?? '', d.paper?.party ?? '')).map(d => ({
-      id: d.id, group: 'Бичиг баримт', title: d.name, sub: DOC_KIND[d.kind], lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),
+      id: d.id, group: 'Бичиг баримт', title: d.name, sub: [DOC_KIND[d.kind], sharedWith(d, s.people)].filter(Boolean).join(' · '), lead: <span className="lead"><FileText className="ico" /></span>, run: () => open({ kind: 'doc', id: d.id }),
     })))
     // Contracts, also by the other side and the number
     add(s.contracts.filter(c => c.company === s.company && docView(s).contract(c) && has(c.title, c.party, c.number ?? '')).map(c => ({

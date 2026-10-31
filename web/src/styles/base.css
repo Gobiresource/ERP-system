@@ -111,7 +111,7 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .btn--ghost:hover { background: var(--accent-soft); }
 .btn--plain { background: var(--fill); }
 .btn--plain:hover { background: var(--fill-2); }
-.btn--danger { background: var(--danger); color: #fff; }
+.btn--danger { background: #d92d3a; color: #fff; } /* light --danger in both modes: on dark's brighter red white text is 3:1 */
 .btn--sm { height: 34px; padding: 0 14px; font-size: 14px; }
 .btn:disabled { opacity: .45; cursor: default; }
 
@@ -316,7 +316,7 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 }
 .field textarea { min-height: 92px; resize: vertical; }
 .field input:not([type=checkbox], [type=radio]):focus, .field select:focus, .field textarea:focus, .input:focus {
-  outline: none; background: var(--fill-2); box-shadow: 0 0 0 2.5px var(--accent-ink);
+  outline: none; background-color: var(--fill-2); box-shadow: 0 0 0 2.5px var(--accent-ink);
 }
 .field [aria-invalid="true"] { box-shadow: 0 0 0 2px var(--danger); }
 .field select {

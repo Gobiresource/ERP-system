@@ -7,7 +7,7 @@ import type { Doc, DocKind } from '../../lib/types'
 import { scoped, useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { DOC_KIND, DOC_KINDS } from '../../lib/docs'
+import { DOC_KIND, DOC_KINDS, sharedWith } from '../../lib/docs'
 import { accessOf, docView } from '../../lib/access'
 import { downloadDoc } from '../../lib/paper'
 import { dateDots } from '../../lib/format'
@@ -40,7 +40,9 @@ export default function FolderPage({ id }: { id: string }) {
   const keeps = view.edit(c.id)
   const admin = accessOf(s, s.me, c.id).admin
   const kinds = DOC_KINDS.map(k => [k, docs.filter(d => d.kind === k).length] as const).filter(([, n]) => n > 0)
-  const shown = kind ? docs.filter(d => d.kind === kind) : docs
+  // A category left without documents (its last one changed kind, or an old link) filters nothing
+  const active = kinds.some(([k]) => k === kind) ? kind : null
+  const shown = active ? docs.filter(d => d.kind === active) : docs
 
   return (
     <div ref={ref}>
@@ -66,7 +68,7 @@ export default function FolderPage({ id }: { id: string }) {
           {kinds.map(([k, n]) => {
             const Icon = KIND_ICON[k]
             return (
-              <button key={k} type="button" className="kchip" aria-pressed={kind === k} onClick={() => setKind(kind === k ? null : k)}>
+              <button key={k} type="button" className="kchip" aria-pressed={active === k} onClick={() => setKind(active === k ? null : k)}>
                 <Icon className="ico" />{DOC_KIND[k]}<span className="kchip__n tnum">{n}</span>
               </button>
             )
@@ -75,8 +77,8 @@ export default function FolderPage({ id }: { id: string }) {
       )}
 
       {shown.length ? (
-        <ul className="papers" aria-label={kind ? DOC_KIND[kind] : c.name} data-enter>
-          {shown.map(d => <Paper key={d.id} d={d} />)}
+        <ul className="papers" aria-label={active ? DOC_KIND[active] : c.name} data-enter>
+          {shown.map(d => <Paper key={d.id} d={d} who={sharedWith(d, s.people)} />)}
         </ul>
       ) : (
         <section className="card glass" data-enter>
@@ -87,14 +89,15 @@ export default function FolderPage({ id }: { id: string }) {
   )
 }
 
-/** A document as a sheet of paper: its kind, name and date, a few lines of "text" */
-function Paper({ d }: { d: Doc }) {
+/** A document as a sheet of paper: its kind, name and date, whose it is, a few lines of "text" */
+function Paper({ d, who }: { d: Doc; who: string }) {
   return (
     <li className="dpaper">
       <button type="button" className="dpaper__open" onClick={() => open({ kind: 'doc', id: d.id })}>
         <DocTile kind={d.kind} />
         <b>{d.name}</b>
         <small>{DOC_KIND[d.kind]}, {d.paper?.date ? dots(d.paper.date) : dateDots(new Date(d.added))}{d.paper?.number ? `, № ${d.paper.number}` : ''}</small>
+        {who && <small>{who}</small>}
         <span className="dpaper__lines" aria-hidden="true"><i /><i /><i /><i /></span>
         {isNew(d) && <span className="drow__new">Шинэ</span>}
       </button>

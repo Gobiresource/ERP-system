@@ -3,6 +3,7 @@
 import type { Contract, Doc, DocRequest, MonthReport } from './types'
 import { actions, getState } from './store'
 import { getFile, putFile, saveBlob } from './files'
+import { toast } from './ui'
 import { imagesToPdf } from './pdf'
 import { cid } from './draft'
 import { dateDots, monthTitle, parse, short } from './format'
@@ -14,19 +15,21 @@ const H = 1754
 const M = 130
 const FONT = '"Golos Text Variable", "Golos Text", sans-serif'
 
-/** Breaks a line of text into rows that fit the width */
+/** Breaks a line of text into rows that fit the width. A line break typed in it starts a new row; an empty line stays. */
 function wrap(x: CanvasRenderingContext2D, text: string, width: number) {
   const rows: string[] = []
-  let row = ''
-  for (const word of text.split(' ')) {
-    const next = row ? `${row} ${word}` : word
-    if (row && x.measureText(next).width > width) {
-      rows.push(row)
-      row = word
-    } else row = next
+  for (const para of text.split('\n')) {
+    let row = ''
+    for (const word of para.split(' ')) {
+      const next = row ? `${row} ${word}` : word
+      if (row && x.measureText(next).width > width) {
+        rows.push(row)
+        row = word
+      } else row = next
+    }
+    rows.push(row)
   }
-  if (row) rows.push(row)
-  return rows
+  return text ? rows : []
 }
 
 /** A line of text, or a clause heading in bold */
@@ -37,8 +40,9 @@ export type PaperLine = string | { head: string }
  * signature lines at the end. `number` goes on the right of the date line.
  */
 export async function paperPdf(p: { company: string; title: string; lines: PaperLine[]; date: string; number?: string; signer?: string; signers?: string[] }) {
-  await document.fonts.load(`700 34px ${FONT}`)
-  await document.fonts.load(`400 28px ${FONT}`)
+  // A letter from each of the font's files: without text only the Latin one loads, and Ө, Ү would be drawn in another font
+  await document.fonts.load(`700 34px ${FONT}`, 'Aa АаӨөҮү ₮')
+  await document.fonts.load(`400 28px ${FONT}`, 'Aa АаӨөҮү ₮')
   const pages: HTMLCanvasElement[] = []
   let x!: CanvasRenderingContext2D
   let y = 0
@@ -169,8 +173,9 @@ export function contractPdf(c: Contract) {
 }
 
 export async function downloadDoc(d: Doc) {
-  const blob = await docBlob(d)
+  const blob = await docBlob(d).catch(() => undefined)
   if (blob) saveBlob(d.file?.name ?? `${d.name}.pdf`, blob)
+  else toast('Файл олдсонгүй. Өөр төхөөрөмж эсвэл хөтөч дээр нэмсэн байж магадгүй.', { kind: 'warn' })
 }
 
 /** A sample of what the office sends back for a request, filled from the person's HR record */

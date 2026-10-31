@@ -112,11 +112,13 @@ export function docView(s: State): DocView {
       }
       return r
     }
+    // 'all' is everyone of the document's ХХК, not people of other ХХК
+    const mine = s.people.find(p => p.id === s.me)?.companies ?? []
     v = {
       doc: d => {
-        if (d.to === 'all' || d.to.includes(s.me)) return true
+        if (d.to === 'all' ? mine.includes(d.company) : d.to.includes(s.me)) return true
         const r = of(d.company)
-        return r.scope === 'all' || (r.scope === 'team' && d.to.some(id => r.team.has(id)))
+        return r.scope === 'all' || (r.scope === 'team' && d.to !== 'all' && d.to.some(id => r.team.has(id)))
       },
       contract: c => {
         const r = of(c.company)

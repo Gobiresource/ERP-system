@@ -6,7 +6,7 @@ import '../styles/screens/docs.css'
 import type { BoardFile, DocKind, DocRequest, Hue } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
-import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, isOpen, stepsOf } from '../lib/docs'
+import { DOC_KIND, DOC_KINDS, FOLDER_COLORS, FOLDER_HUES, PURPOSES, REQ_STATUS, WHAT, isOpen, sharedWith, stepsOf } from '../lib/docs'
 import { docBlob, downloadDoc, requestPdf } from '../lib/paper'
 import { putFile } from '../lib/files'
 import { cid } from '../lib/draft'
@@ -36,7 +36,7 @@ export function DocSheet({ id }: { id: string }) {
   }
   const by = s.people.find(p => p.id === d.by)
   const p = d.paper
-  const sub = [DOC_KIND[d.kind], p?.number && `№ ${p.number}`, p?.date && dots(p.date), p?.party, p?.amount && `${num(p.amount)} ₮`, `Нэмсэн: ${by ? `${short(by)}, ` : ''}${dateDots(new Date(d.added))}`, d.updated && `Зассан: ${dateDots(new Date(d.updated))}`].filter(Boolean).join(' · ')
+  const sub = [DOC_KIND[d.kind], sharedWith(d, s.people), p?.number && `№ ${p.number}`, p?.date && dots(p.date), p?.party, p?.amount && `${num(p.amount)} ₮`, `Нэмсэн: ${by ? `${short(by)}, ` : ''}${dateDots(new Date(d.added))}`, d.updated && `Зассан: ${dateDots(new Date(d.updated))}`].filter(Boolean).join(' · ')
   return (
     <Viewer name={d.name} sub={sub} load={() => docBlob(d)} tools={
       <>
@@ -252,10 +252,12 @@ function RequestBody({ id, office: asked }: { id: string; office?: boolean }) {
     setAct(null)
     if (done) toast(done)
   }
-  // The file goes to the person who asked: it shows among their documents
-  const send = async (blob: Blob, name: string) => {
+  // The file goes to the person who asked: it shows among their documents. Busy before the file is made, so a second
+  // click while the sample is drawn does not send it twice.
+  const send = async (make: () => Blob | Promise<Blob>, name: string) => {
     setBusy(true)
     try {
+      const blob = await make()
       const file = { id: `f${cid()}`, name, type: blob.type || 'application/pdf', size: blob.size }
       await putFile(file.id, blob)
       const d = actions.addDoc({ name: r.what, kind: kindOf(r.what), company: r.company, file, to: [r.by] })
@@ -273,7 +275,7 @@ function RequestBody({ id, office: asked }: { id: string; office?: boolean }) {
     e.target.value = ''
     if (!x) return
     if (x.size > MB25) return setError('25 MB хүртэлх файл сонгоно уу.')
-    send(x, x.name)
+    send(() => x, x.name)
   }
   const confirm = () => {
     if (!text.trim()) return setError(act === 'decline' ? 'Татгалзах шалтгаанаа бичнэ үү.' : 'Ирж авах газраа бичнэ үү.')
@@ -337,7 +339,7 @@ function RequestBody({ id, office: asked }: { id: string; office?: boolean }) {
               {r.status === 'working' && !r.paper && (
                 <>
                   <button type="button" className="btn btn--accent" disabled={busy} onClick={() => attach.current?.click()}><Paperclip className="ico" />Файл хавсаргаж илгээх</button>
-                  <button type="button" className="btn btn--glass" disabled={busy} onClick={async () => send(await requestPdf(r), `${r.what}.pdf`)}><Sparkles className="ico" />Жишээ файлаар илгээх</button>
+                  <button type="button" className="btn btn--glass" disabled={busy} onClick={() => send(() => requestPdf(r), `${r.what}.pdf`)}><Sparkles className="ico" />Жишээ файлаар илгээх</button>
                   <input ref={attach} type="file" hidden onChange={attachFile} />
                 </>
               )}

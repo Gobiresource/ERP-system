@@ -55,13 +55,15 @@ export default function Pdf({ from }: { from?: string }) {
   // Opened on a file: on a board (#docs-pdf-<board>-<card>), a document (#docs-pdf-doc-<id>) or one sent in Зурвас
   // (#docs-pdf-file-<id>)
   const [a, b] = from?.split('-') ?? []
-  const board = s.drafts.find(d => d.id === a && d.company === s.company && d.owner === s.me)
-  const card = board?.cards.find(c => c.id === b && c.file)
+  const mine = s.drafts.filter(d => d.company === s.company && d.owner === s.me).sort((a, b) => b.updated.localeCompare(a.updated))
   const view = docView(s)
   const doc = a === 'doc' ? s.docs.find(d => d.id === b && view.doc(d)) : undefined
   const sentIn = a === 'file' ? s.messages.find(m => m.files.some(f => f.id === b)) : undefined
-  const sent = sentIn?.files.find(f => f.id === b)
-  const mine = s.drafts.filter(d => d.company === s.company && d.owner === s.me).sort((a, b) => b.updated.localeCompare(a.updated))
+  // The viewer's file-<id> may also be on one of my boards, or be a scan not filed yet: that only for the office, as #docs-scan
+  const holder = a === 'file' && !sentIn ? mine.find(d => d.cards.some(c => c.file?.id === b)) : undefined
+  const board = holder ?? mine.find(d => d.id === a)
+  const card = board?.cards.find(c => (holder ? c.file?.id === b : c.id === b) && c.file)
+  const sent = sentIn?.files.find(f => f.id === b) ?? (a === 'file' && !holder && view.edit(s.company) ? s.scans.find(it => it.file.id === b)?.file : undefined)
   const onBoards = mine.flatMap(d => d.cards.filter(c => c.kind === 'file' && c.file && (c.file.type === 'application/pdf' || /\.pdf$/i.test(c.file.name))).map(c => ({ d, c })))
   const first = sources.current.get(pages[0]?.src ?? '')
   const fileName = `${base(card?.file?.name ?? sent?.name ?? doc?.name ?? first?.name ?? 'баримт')}.pdf`
@@ -86,8 +88,9 @@ export default function Pdf({ from }: { from?: string }) {
   const openFiles = (list: FileList | File[]) => {
     const files = [...list]
     const pdfs = files.filter(isPdfFile)
-    if (pdfs.length < files.length) setError('Зөвхөн PDF файл нээх боломжтой.')
     if (pdfs.length) open(pdfs.map(f => ({ blob: f, name: f.name })))
+    // After open(), which clears the last message as it starts
+    if (pdfs.length < files.length) setError('Зөвхөн PDF файл нээх боломжтой.')
   }
 
   // The file it was opened on
@@ -134,10 +137,13 @@ export default function Pdf({ from }: { from?: string }) {
   // Page actions
   const turn = (keys: Set<string>) => setPages(ps => ps.map(p => (keys.has(p.key) ? { ...p, turn: (p.turn + 90) % 360 } : p)))
   const remove = (keys: Set<string>) => {
-    const before = pages
+    // Undo puts back only these pages, at their places, keeping turns and moves made since
+    const gone = pages.flatMap((p, i) => (keys.has(p.key) ? [[i, p] as const] : []))
     setPages(ps => ps.filter(p => !keys.has(p.key)))
     setSel(new Set([...sel].filter(k => !keys.has(k))))
-    toast(keys.size === 1 ? 'Хуудас устгагдлаа.' : `${keys.size} хуудас устгагдлаа.`, { undo: () => setPages(before) })
+    toast(keys.size === 1 ? 'Хуудас устгагдлаа.' : `${keys.size} хуудас устгагдлаа.`, {
+      undo: () => setPages(ps => { const xs = ps.filter(p => !keys.has(p.key)); for (const [i, p] of gone) xs.splice(i, 0, p); return xs }),
+    })
   }
   /** Moves the chosen pages one place earlier or later, keeping them in their order */
   const shift = (dir: -1 | 1) => {
@@ -289,7 +295,7 @@ export default function Pdf({ from }: { from?: string }) {
       <DocsNav at="pdf" />
       <PageHead
         title="PDF засах"
-        sub={card && board ? `${card.file!.name}, ${board.name} самбараас` : doc ? `${doc.name}, Бичиг хэргээс` : sent ? `${sent.name}, Зурваснаас` : 'Файл нэгтгэх, хуудас эргүүлэх, зөөх, устгах, гарын үсэг зурах. Файл төхөөрөмжөөс гарахгүй.'}
+        sub={card && board ? `${card.file!.name}, ${board.name} самбараас` : doc ? `${doc.name}, Бичиг хэргээс` : sentIn ? `${sent!.name}, Зурваснаас` : 'Файл нэгтгэх, хуудас эргүүлэх, зөөх, устгах, гарын үсэг зурах. Файл төхөөрөмжөөс гарахгүй.'}
         actions={pages.length > 0 && (
           <>
             {card && board && <a className="btn btn--glass" href={`#draft-${board.id}`}><ArrowLeft className="ico" />Самбар руу буцах</a>}
