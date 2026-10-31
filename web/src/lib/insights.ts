@@ -110,7 +110,8 @@ export function insights(s: State, range: Range) {
     unitLabel: weekly ? 'Долоо хоног' : 'Өдөр',
     throughput: bucket(cur, d => d.done),
     throughputPrev: bucket(prev, d => d.done),
-    focus: bucket(cur, d => Math.round(d.focusMin / 6) / 10),
+    // Minutes add up first: sums of rounded hours carry float noise (28.600000000000005)
+    focus: bucket(cur, d => d.focusMin).map(m => Math.round(m / 6) / 10),
     days: cur,
   }
 }
@@ -120,7 +121,8 @@ export function byProject(s: State, range: Range) {
   const sc = scoped(s)
   const from = ymd(addDays(new Date(), -(range - 1)))
   const realFrom = ymd(addDays(new Date(), -(REAL_DAYS - 1)))
-  const demo = history(s, range).filter(d => d.day < realFrom).reduce((n, d) => n + d.done, 0)
+  // The same demo days as insights() draws: history() of another length gives other numbers
+  const demo = history(s, range * 2).slice(range).filter(d => d.day < realFrom).reduce((n, d) => n + d.done, 0)
   const projects = sc.projects
   const weights = projects.map(p => 0.5 + rand(p.id)())
   const wsum = weights.reduce((a, b) => a + b, 0)

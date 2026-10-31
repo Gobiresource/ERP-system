@@ -196,7 +196,7 @@ function Changes({ c, view, close }: { c: Contract; view: Id; close: () => void 
       <div className="paper__diff" role="status">
         <p>
           <b>{i + 1}-р хувилбар, {name(s.people, v.by)}</b>, {ago(v.at)}.{' '}
-          {!before ? 'Эхний ноорог.' : changed ? <>Өмнөхөөс <ins>нэмсэн</ins>, <del>хассан</del> нь тэмдэглэгдсэн.</> : 'Өмнөхөөс өөрчлөлт алга.'}
+          {!before ? 'Эхний ноорог.' : changed ? <>Өмнөхөөс <ins>нэмсэн</ins>, <del>хассан</del> нь тэмдэглэгдсэн.</> : 'Өмнөхөөс өөрчлөлт байхгүй.'}
         </p>
         <button type="button" className="btn btn--glass btn--sm" onClick={close}><X className="ico" />Одоогийн текст</button>
       </div>

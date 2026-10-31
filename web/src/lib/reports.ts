@@ -91,17 +91,27 @@ export function writers(s: Org, company: Id, month: string): Id[] {
     .map(e => e.user!)
 }
 
-/** The director, the top and whoever may see every HR record (Удирдлага) read every report of the ХХК */
+/**
+ * The director, whoever sets the system up and whoever may see every HR record (Удирдлага) read every report of the ХХК.
+ * Having no manager gives no right: HR may leave anyone out of the reports.
+ */
 export function seesAll(s: Org & Pick<State, 'people'>, company: Id, who: Id) {
   const a = s.people.find(p => p.id === who)?.account
-  return (!!empOf(s, company, who) && !managerOf(s, company, who)) || !!a?.sysadmin || a?.access[company]?.hr === 'all'
+  return who === rolesOf(s, company).director || !!a?.sysadmin || a?.access[company]?.hr === 'all'
 }
 
-/** Whose reports a person may read: their own and the ones they score, or everyone's */
-export function readable(s: Org & Pick<State, 'people'>, company: Id, who: Id, month: string): Id[] {
-  const all = writers(s, company, month)
-  return seesAll(s, company, who) ? all : all.filter(p => p === who || managerOf(s, company, p) === who)
+/**
+ * Whose reports of a month a person may read: their own, their people's and the ones sent to them, or everyone's. Whoever
+ * sent one that month stays, though they may be on leave or gone now.
+ */
+export function readable(s: Org & Pick<State, 'people' | 'reports'>, company: Id, who: Id, month: string): Id[] {
+  const sent = s.reports.filter(r => r.company === company && r.month === month && r.status !== 'draft')
+  const all = [...new Set([...writers(s, company, month), ...sent.map(r => r.person)])]
+  return seesAll(s, company, who) ? all : all.filter(p => p === who || managerOf(s, company, p) === who || sent.some(r => r.person === p && r.manager === who))
 }
+
+/** Who scores a report: the manager it was sent to, or while it waits, the person's manager now (HR may have changed it) */
+export const mayScore = (s: Org, r: MonthReport, who: Id) => r.manager === who || (r.status === 'sent' && managerOf(s, r.company, r.person) === who)
 
 export type RowState = ReportStatus | 'none' | 'overdue'
 /** Where a person's report for a month stands; not sent after the month ended is "overdue" */
@@ -123,7 +133,7 @@ export function reportTodo(s: Org & Pick<State, 'reports'>, company: Id, who: Id
     if (r?.status === 'returned') out.push({ person: who, month: m, what: 'Засаад илгээх' })
     else if ((!r || r.status === 'draft') && daysFromToday(dueOf(m)) < OPEN_DAYS) out.push({ person: who, month: m, what: m < cur ? 'Хугацаа хэтэрсэн' : 'Бөглөх' })
   }
-  for (const r of s.reports) if (r.company === company && r.manager === who && r.status === 'sent') out.push({ person: r.person, month: r.month, what: 'Үнэлэх' })
+  for (const r of s.reports) if (r.company === company && r.status === 'sent' && mayScore(s, r, who)) out.push({ person: r.person, month: r.month, what: 'Үнэлэх' })
   return out
 }
 

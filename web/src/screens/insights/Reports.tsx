@@ -13,6 +13,7 @@ import { usePageEnter } from '../../lib/motion'
 import { downloadCsv } from '../../lib/insights'
 import { STATE_PILL, dueName, empOf, findReport, isLate, kpiOf, managerOf, monthKey, monthName, ofMonth, prevMonth, readable, reportTodo, seesAll, stateOf, total, writers, type RowState } from '../../lib/reports'
 import { collator, dateDots, short, today } from '../../lib/format'
+import { accessOf } from '../../lib/access'
 import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
 import { Avatar, Empty } from '../../ui/bits'
@@ -45,12 +46,12 @@ export default function Reports() {
   const months = [cur, prevMonth(cur), prevMonth(cur, 2)]
   const [month, setMonth] = useState(cur)
   const all = seesAll(s, s.company, who)
-  const team = readable(s, s.company, who, month).filter(p => p !== who)
+  const team = readable(s, s.company, who, month)
   const todo = reportTodo(s, s.company, who, cur)
   const rules = kpiOf(s, s.company)
-  // A manager or the director looks at people in one month; anyone else at their own months
-  const byPeople = all || team.length > 0
-  const rows = byPeople ? sortPeople(s, team).map(p => ({ person: p, month })) : writers(s, s.company, cur).includes(who) ? months.map(m => ({ person: who, month: m })) : []
+  // A manager or the director looks at people in one month, themselves among them; anyone else at their own months
+  const byPeople = all || team.some(p => p !== who)
+  const rows = byPeople ? sortPeople(s, team).map(p => ({ person: p, month })) : months.filter(m => readable(s, s.company, who, m).includes(who)).map(m => ({ person: who, month: m }))
   const reps = rows.map(x => ({ ...x, r: findReport(s, s.company, x.person, x.month) }))
   const sent = reps.filter(x => x.r && x.r.status !== 'draft').length
   const scored = reps.filter(x => x.r?.status === 'scored')
@@ -58,14 +59,16 @@ export default function Reports() {
   const avg = scored.length ? Math.round(scored.reduce((n, x) => n + total(x.r!.scores!), 0) / scored.length) : 0
 
   const exportCsv = () => {
-    const head = ['Код', 'Ажилтан', 'Хэлтэс', 'Албан тушаал', 'Шууд удирдлага', 'Төлөв', 'Илгээсэн огноо', 'Хоцорч илгээсэн', ...rules.criteria.map(c => `${c.name} (${c.weight}%)`), 'Оноо', 'Үнэлгээ', 'Урамшуулал, %', 'Санал, зөвлөмж']
+    // A scored report keeps the criteria and weights it was scored on; the rules now are for the ones still to score
+    const crits = [...new Map([...rules.criteria, ...reps.flatMap(x => x.r?.scores ?? [])].map(c => [c.id, c])).values()]
+    const head = ['Код', 'Ажилтан', 'Хэлтэс', 'Албан тушаал', 'Шууд удирдлага', 'Төлөв', 'Илгээсэн огноо', 'Хоцорч илгээсэн', ...crits.map(c => `${c.name} (${c.weight}%)`), 'Оноо', 'Үнэлгээ', 'Урамшуулал, %', 'Санал, зөвлөмж']
     downloadCsv(`sariin-tailan-${month}-${today()}.csv`, [head, ...reps.map(({ person, r }) => {
       const e = empOf(s, s.company, person)
       const m = s.people.find(p => p.id === (r?.manager ?? managerOf(s, s.company, person)))
       return [
         e?.code ?? '', name(s, person), s.departments.find(d => d.id === e?.dept)?.name ?? '', s.positions.find(x => x.id === e?.position)?.name ?? '', m ? short(m) : '',
         STATE_PILL[stateOf(r, month)], r?.sent ? dateDots(new Date(r.sent)) : '', r && isLate(r) ? 'Тийм' : '',
-        ...rules.criteria.map(c => r?.scores?.find(x => x.id === c.id)?.points ?? ''),
+        ...crits.map(c => r?.scores?.find(x => x.id === c.id)?.points ?? ''),
         r?.scores ? total(r.scores) : '', r?.band?.name ?? '', r?.band?.bonus ?? '', r?.comment ?? '',
       ]
     })])
@@ -85,7 +88,7 @@ export default function Reports() {
         ] : undefined}
         actions={byPeople && rows.length > 0 && <button type="button" className="btn btn--glass" onClick={exportCsv}><Download className="ico" />Excel-ээр татах</button>}
       />
-      <ActAs ids={reportActors(s)} />
+      {accessOf(s, s.me, s.company).admin && <ActAs ids={reportActors(s)} />}
       {todo.length > 0 && (
         <section className="card glass ctlist rtodo" aria-labelledby="rtodo-h" data-enter>
           <h2 className="rtodo__h" id="rtodo-h">Миний хийх</h2>
@@ -119,7 +122,7 @@ export default function Reports() {
           {byPeople && <Seg label="Сар" small value={month} onChange={setMonth} options={months.map(m => ({ value: m, label: monthName(m) }))} />}
         </div>
         {rows.length === 0 ? (
-          <Empty icon={<ClipboardList className="ico" />} title="Тайлан алга" text="Танд илгээх болон үнэлэх тайлан алга." />
+          <Empty icon={<ClipboardList className="ico" />} title="Тайлан алга" text="Танд илгээх болон үнэлэх тайлан байхгүй." />
         ) : (
           <div className="etable-wrap">
             <table className="etable">

@@ -1,5 +1,5 @@
 // Charts drawn as SVG, in the Pane look. Every chart has a tooltip (pointer and arrow keys) and a table for screen readers.
-import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type Dispatch, type KeyboardEvent, type ReactNode, type SetStateAction } from 'react'
 import '../styles/charts.css'
 import type { Hue } from '../lib/types'
 import { enter, gsap, reduced } from '../lib/motion'
@@ -40,7 +40,16 @@ const niceMax = (v: number) => {
   if (v <= 4) return 4
   const step = Math.pow(10, Math.floor(Math.log10(v)))
   const n = Math.ceil(v / step)
-  return (n <= 2 ? 2 : n <= 4 ? 4 : n <= 5 ? 5 : 10) * step
+  // 6, not 5: the middle line (max / 2) stays a whole number
+  return (n <= 2 ? 2 : n <= 4 ? 4 : n <= 6 ? 6 : 10) * step
+}
+
+/** Left and right arrows move the tooltip along n points, from the last one; Escape hides it */
+const arrowKeys = (n: number, setHover: Dispatch<SetStateAction<number | null>>) => (e: KeyboardEvent) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    e.preventDefault()
+    setHover(h => Math.max(0, Math.min(n - 1, (h ?? n - 1) + (e.key === 'ArrowRight' ? 1 : -1))))
+  } else if (e.key === 'Escape') setHover(null)
 }
 
 export interface LineSeries {
@@ -91,12 +100,7 @@ export function LineChart({ series, labels, height = 220, unit, label, format = 
     const i = Math.round(((clientX - r.left - 8) / Math.max(1, w - 16)) * (n - 1))
     setHover(Math.max(0, Math.min(n - 1, i)))
   }
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      e.preventDefault()
-      setHover(h => Math.max(0, Math.min(n - 1, (h ?? n - 1) + (e.key === 'ArrowRight' ? 1 : -1))))
-    } else if (e.key === 'Escape') setHover(null)
-  }
+  const onKey = arrowKeys(n, setHover)
 
   const tipLeft = hover === null ? 0 : Math.min(Math.max(0, x(hover) - 80), Math.max(0, w - 170))
 
@@ -270,19 +274,21 @@ export function Columns({ values, labels, tone = 'purple', unit, label, height =
     if (box.current) enter(box.current.querySelectorAll('.hb__bar'), { transform: 'scaleY(0)' }, { duration: 1.1, ease: 'power3.out', stagger: 0.02 })
   }, [values.length])
   return (
-    <div className="hb" ref={box} style={{ height }} onPointerLeave={() => setHover(null)}>
+    <div className="hb" ref={box} style={{ height }} tabIndex={0} aria-label={`${label}. Сум товчоор утгыг харна.`}
+      onKeyDown={arrowKeys(values.length, setHover)} onBlur={() => setHover(null)} onPointerLeave={() => setHover(null)}>
       <div className="hb__grid" aria-hidden="true">
         {[max, max / 2, 0].map(v => <span key={v}><em>{v} {unit}</em></span>)}
       </div>
       <div className="hb__cols">
         {values.map((v, i) => (
-          <div key={i} className={`hb__col${i === values.length - 1 ? ' is-hi' : ''}${i === values.length - 1 || (i % tick === 0 && values.length - 1 - i >= Math.ceil(tick * 0.75)) ? ' is-tick' : ''}`}
+          <div key={i} className={`hb__col${i === values.length - 1 ? ' is-hi' : ''}${i === values.length - 1 || (i % tick === 0 && values.length - 1 - i >= Math.ceil(tick * 0.75)) ? ' is-tick' : ''}${hover === i ? ' is-on' : ''}`}
             onPointerEnter={() => setHover(i)}>
             <span className="hb__track">
               <i className="hb__bar" style={{ height: `${(v / max) * 100}%`, ['--bar' as string]: stroke(tone) }} />
             </span>
             <span className="hb__lab" aria-hidden="true">{labels[i]}</span>
-            {hover === i && <span className="chart__tip hb__tip" role="status"><b>{labels[i]}</b><span>{label}<strong>{v} {unit}</strong></span></span>}
+            {/* Shifted by the column's place, so the first column's tooltip starts at it and the last one's ends at it */}
+            {hover === i && <span className="chart__tip hb__tip" role="status" style={{ transform: `translateX(-${((i + 0.5) / values.length) * 100}%)` }}><b>{labels[i]}</b><span>{label}<strong>{v} {unit}</strong></span></span>}
           </div>
         ))}
       </div>

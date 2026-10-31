@@ -211,7 +211,7 @@ export function reportPdf(r: MonthReport) {
   ]
   if (r.scores && r.band) {
     lines.push({ head: 'Үнэлгээ' }, ...r.scores.map(c => `${c.name} (${c.weight}%): ${c.points} оноо`),
-      `Нийт ${total(r.scores)} оноо, ${r.band.name.toLowerCase()}. Урамшуулал ${r.band.bonus}%.`, ...(r.comment ? [`Сэтгэгдэл: ${r.comment}`] : []))
+      `Нийт ${total(r.scores)} оноо, ${r.band.name.toLowerCase()}. Урамшуулал ${r.band.bonus}%.`, ...(r.comment ? [`Санал, зөвлөмж: ${r.comment}`] : []))
   }
   return paperPdf({
     company: companyName(r.company),

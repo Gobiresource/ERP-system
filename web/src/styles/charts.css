@@ -1,6 +1,6 @@
 /* Charts (src/ui/charts.tsx) */
 .chart { position: relative; outline: none; }
-.chart:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 4px; border-radius: 14px; }
+.chart:focus-visible, .hb:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 4px; border-radius: 14px; }
 .chart__svg { display: block; overflow: visible; touch-action: pan-y; }
 .chart__grid line { stroke: var(--sep); stroke-dasharray: 3 5; }
 .chart__grid text, .chart__x text { fill: var(--text-2); font-size: 12px; font-weight: 500; }
@@ -66,8 +66,9 @@
 .hb__col { position: relative; display: flex; flex: 1; flex-direction: column; gap: 8px; min-width: 0; }
 .hb__track { display: flex; flex: 1; align-items: flex-end; }
 .hb__bar { display: block; width: 100%; max-width: 24px; min-height: 3px; margin: 0 auto; border-radius: 8px 8px 3px 3px; transform-origin: 50% 100%; background: color-mix(in srgb, var(--bar) 58%, transparent); }
-.hb__col.is-hi .hb__bar, .hb__col:hover .hb__bar { background: var(--bar); }
+.hb__col.is-hi .hb__bar, .hb__col:hover .hb__bar, .hb__col.is-on .hb__bar { background: var(--bar); }
 .hb__lab { display: flex; justify-content: center; height: 18px; overflow: visible; font-size: 12px; font-weight: 560; white-space: nowrap; color: var(--text-2); visibility: hidden; }
 .hb__col.is-tick .hb__lab { visibility: visible; }
 .hb__col:hover .hb__lab { color: var(--text); visibility: visible; }
-.hb__tip { top: auto; bottom: calc(100% - 20px); left: 50%; transform: translateX(-50%); }
+/* The shift that keeps it inside the chart is set per column (ui/charts.tsx) */
+.hb__tip { top: auto; bottom: calc(100% - 20px); left: 50%; }

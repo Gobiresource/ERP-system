@@ -6,7 +6,7 @@ import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
-import { bandOf, dueOf, findReport, kpiOf, managerOf, nextMonth, seedReports, total } from './reports'
+import { bandOf, dueOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
 import { accessOf, demoAccounts, hashOf, loginKey, newSalt, withDocRights } from './access'
 import { companyMark } from './format'
 
@@ -450,7 +450,7 @@ export const actions = {
   /** The office numbers the approved contract; the number must be new in its company. Returns what is wrong, or null. */
   registerContract(id: Id, who: Id, r: { number: string; date: string; scan?: BoardFile }) {
     const c = state.contracts.find(x => x.id === id)
-    if (!c || c.stage !== 'register' || rolesOf(state, c.company).clerk !== who) return 'Энэ алхмыг хийх эрх танд байхгүй.'
+    if (!c || c.stage !== 'register' || rolesOf(state, c.company).clerk !== who) return 'Танд энэ алхмыг хийх эрх алга.'
     const number = r.number.trim()
     if (state.contracts.some(x => x.company === c.company && x.id !== id && x.number === number)) return 'Энэ дугаарыг өөр гэрээнд олгосон байна. Өөр дугаар бичнэ үү.'
     const at = new Date().toISOString()
@@ -496,7 +496,8 @@ export const actions = {
     const manager = managerOf(state, company, person)
     if (who !== person || !r || !manager || (r.status !== 'draft' && r.status !== 'returned')) return false
     const at = new Date().toISOString()
-    set(s => ({ ...s, reports: s.reports.map(x => (x.id === r.id ? { ...x, status: 'sent', manager, sent: at, updated: at } : x)) }))
+    // Sent again after it came back, it keeps the day it was first sent: being late goes by that
+    set(s => ({ ...s, reports: s.reports.map(x => (x.id === r.id ? { ...x, status: 'sent', manager, sent: r.sent ?? at, updated: at } : x)) }))
     return true
   },
   /**
@@ -505,7 +506,7 @@ export const actions = {
    */
   scoreReport(id: Id, who: Id, points: Record<Id, number>, comment: string, tasks: boolean) {
     const r = state.reports.find(x => x.id === id)
-    if (!r || r.manager !== who || (r.status !== 'sent' && r.status !== 'scored')) return false
+    if (!r || !mayScore(state, r, who) || (r.status !== 'sent' && r.status !== 'scored')) return false
     const scores = (r.scores ?? kpiOf(state, r.company).criteria).map(c => ({ ...c, points: points[c.id] }))
     if (scores.some(c => !(c.points >= 1 && c.points <= 5))) return false
     const at = new Date().toISOString()
@@ -514,19 +515,20 @@ export const actions = {
       id: l.task!, company: r.company, title: l.text.trim(), status: 'todo', prio: 'medium', assignees: [r.person],
       due: dueOf(nextMonth(r.month)), estimate: 4, subtasks: [], comments: [], createdAt: at,
     }))
-    const scored: MonthReport = { ...r, plan, status: 'scored', scores, band: bandOf(kpiOf(state, r.company).bands, total(scores)), comment: comment || undefined, scored: at, updated: at }
+    const scored: MonthReport = { ...r, manager: who, plan, status: 'scored', scores, band: bandOf(kpiOf(state, r.company).bands, total(scores)), comment: comment || undefined, scored: at, updated: at }
     set(s => ({ ...s, tasks: [...made, ...s.tasks], reports: s.reports.map(x => (x.id === id ? scored : x)) }))
     return true
   },
   /** The manager sends a report back to its writer with the reason */
   returnReport(id: Id, who: Id, reason: string) {
     const r = state.reports.find(x => x.id === id)
-    if (!r || r.manager !== who || r.status !== 'sent' || !reason) return false
+    if (!r || !mayScore(state, r, who) || r.status !== 'sent' || !reason) return false
     const at = new Date().toISOString()
-    set(s => ({ ...s, reports: s.reports.map(x => (x.id === id ? { ...x, status: 'returned', reason, updated: at } : x)) }))
+    set(s => ({ ...s, reports: s.reports.map(x => (x.id === id ? { ...x, manager: who, status: 'returned', reason, updated: at } : x)) }))
     return true
   },
-  setKpi: (company: Id, rules: KpiRules) => set(s => ({ ...s, kpi: { ...s.kpi, [company]: rules } })),
+  /** Whoever reads every report of the ХХК sets its criteria and bonus grades */
+  setKpi: (company: Id, rules: KpiRules, who: Id) => seesAll(state, company, who) && set(s => ({ ...s, kpi: { ...s.kpi, [company]: rules } })),
 
   // Скан оруулах: the office's, like the rest of Бичиг хэрэг's keeping
   /** New scans go last: AI reads them in the order they came, like the paper stack */

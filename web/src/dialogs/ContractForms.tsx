@@ -83,7 +83,7 @@ export function ContractReason({ id, step }: { id: Id; step: 'return' | 'cancel'
       return false
     }
     if (!actions.contractStep(c.id, who, step, { text: text.trim() || undefined, to })) {
-      setErrors({ 'ctr-text': 'Энэ алхмыг хийх эрх танд байхгүй.' })
+      setErrors({ 'ctr-text': 'Танд энэ алхмыг хийх эрх алга.' })
       return false
     }
     toast(back ? 'Гэрээ буцаагдлаа.' : 'Гэрээ цуцлагдлаа.')

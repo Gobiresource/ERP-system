@@ -30,7 +30,7 @@ export function ReportReturn({ id }: { id: Id }) {
       return false
     }
     if (!actions.returnReport(r.id, who, text.trim())) {
-      setErrors({ 'rr-text': 'Танд энэ тайланг буцаах эрх байхгүй байна.' })
+      setErrors({ 'rr-text': 'Танд энэ тайланг буцаах эрх алга.' })
       return false
     }
     toast('Тайлан буцаагдлаа.')
@@ -63,6 +63,7 @@ export function KpiRules() {
   const s = useApp()
   const company = s.companies.find(c => c.id === s.company)
   const rules = kpiOf(s, s.company)
+  const who = useActor()
   const [crit, setCrit] = useState<(Omit<Criterion, 'weight'> & { weight: string })[]>(() => rules.criteria.map(c => ({ ...c, weight: String(c.weight) })))
   const [bands, setBands] = useState<{ min: string; name: string; bonus: string }[]>(() => [...rules.bands].sort((a, b) => b.min - a.min).map(b => ({ min: String(b.min), name: b.name, bonus: String(b.bonus) })))
   const [errors, setErrors] = useState<Errors>({})
@@ -93,7 +94,7 @@ export function KpiRules() {
     setErrors(e)
     if (Object.keys(e).length) return false
     const out: Band[] = bands.map(b => ({ min: Number(b.min), name: b.name.trim(), bonus: Number(b.bonus) })).sort((a, b) => b.min - a.min)
-    actions.setKpi(s.company, { criteria: crit.map(c => ({ id: c.id, name: c.name.trim(), hint: c.hint.trim(), weight: Number(c.weight) })), bands: out })
+    actions.setKpi(s.company, { criteria: crit.map(c => ({ id: c.id, name: c.name.trim(), hint: c.hint.trim(), weight: Number(c.weight) })), bands: out }, who)
     toast('Үнэлгээний журам хадгалагдлаа.')
     return true
   }

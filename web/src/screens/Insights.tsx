@@ -65,7 +65,8 @@ function Numbers() {
         sub={`Баг ${days} хэрхэн ажилласан бэ?`}
         stats={[
           { label: 'Дууссан ажил', value: cur.done, delta: { text: signed(doneDelta, '%'), good: doneDelta === 0 ? null : doneDelta > 0 } },
-          { label: 'Хугацаандаа', value: cur.onTime, unit: '%', delta: { text: signed(cur.onTime - prev.onTime, ' нэгж хувь'), good: cur.onTime === prev.onTime ? null : cur.onTime > prev.onTime } },
+          // With nothing finished there is no share to show, nor to compare with
+          { label: 'Хугацаандаа', value: cur.done ? cur.onTime : '—', unit: cur.done ? '%' : undefined, delta: cur.done && prev.done ? { text: signed(cur.onTime - prev.onTime, ' нэгж хувь'), good: cur.onTime === prev.onTime ? null : cur.onTime > prev.onTime } : undefined },
           { label: 'Төвлөрсөн цаг', value: cur.focusHours, delta: { text: signed(pct(cur.focusHours, prev.focusHours), '%'), good: cur.focusHours >= prev.focusHours } },
           { label: 'Нэг ажлын дундаж хугацаа', value: dec(cur.cycle), unit: 'хоног', delta: { text: signed(Number(dec(cur.cycle - prev.cycle)), ''), good: cur.cycle <= prev.cycle } },
         ]}
@@ -171,11 +172,11 @@ function Numbers() {
         <section className="card glass ins-time" aria-labelledby="ot-t" data-enter>
           <div className="card__head"><div><h2 className="card__title" id="ot-t">Хугацаандаа</h2><p className="card__sub">{days[0].toUpperCase() + days.slice(1)} дууссан ажил</p></div></div>
           <div className="ot">
-            <p className="ot__big"><span className="ot__pct tnum">{cur.onTime}</span><span className="ot__unit">%</span><span className="ot__lbl">нь товлосон хугацаандаа дууссан</span></p>
-            <div className="ot__bar" aria-hidden="true">
+            <p className="ot__big"><span className="ot__pct tnum">{cur.done ? cur.onTime : '—'}</span>{cur.done > 0 && <><span className="ot__unit">%</span><span className="ot__lbl">нь товлосон хугацаандаа дууссан</span></>}</p>
+            {cur.done > 0 && <div className="ot__bar" aria-hidden="true">
               <i className="ot__on" style={{ width: `calc(${cur.onTime}% - 4px)` }} />
               {cur.late > 0 && <i className="ot__late" style={{ width: `calc(${100 - cur.onTime}% - 4px)` }} />}
-            </div>
+            </div>}
             <p className="ot__keys">
               <span><i className="ot__dot ot__dot--on" aria-hidden="true" /><b className="tnum">{cur.done - cur.late}</b> хугацаандаа</span>
               <span><i className="ot__dot ot__dot--late" aria-hidden="true" /><b className="tnum">{cur.late}</b> хоцорсон</span>

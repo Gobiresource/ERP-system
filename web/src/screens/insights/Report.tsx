@@ -9,9 +9,11 @@ import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
 import { cid } from '../../lib/draft'
-import { POINTS, bandOf, blankReport, dueName, empOf, factsOf, findReport, fromSystem, isLate, kpiOf, managerOf, nextMonth, ofMonth, prevMonth, seesAll, stateOf, total, writers } from '../../lib/reports'
+import { POINTS, bandOf, blankReport, dueName, empOf, factsOf, findReport, fromSystem, isLate, kpiOf, managerOf, mayScore, nextMonth, ofMonth, prevMonth, seesAll, stateOf, total, writers } from '../../lib/reports'
 import { ago, monthTitle, parse, short } from '../../lib/format'
+import { accessOf } from '../../lib/access'
 import { PageHead } from '../../ui/PageHead'
+import { NoAccess } from '../../ui/bits'
 import { ActAs, useActor } from '../docs/Contracts'
 import { Grow } from '../docs/Contract'
 import { InsightsNav } from '../Insights'
@@ -31,14 +33,17 @@ export default function ReportPage({ id }: { id: string }) {
   const p = s.people.find(x => x.id === person)
   const r = findReport(s, s.company, person, month)
   const manager = r?.manager ?? managerOf(s, s.company, person)
-  const allowed = who === person || who === manager || seesAll(s, s.company, who)
-  if (!p || !/^\d{4}-\d\d$/.test(month) || !allowed) {
+  const allowed = who === person || who === manager || who === managerOf(s, s.company, person) || seesAll(s, s.company, who)
+  const admin = accessOf(s, s.me, s.company).admin
+  const valid = /^\d{4}-\d\d$/.test(month)
+  if (!p || !valid || !allowed) {
     return (
       <div ref={ref}>
         <InsightsNav at="reports" />
-        <PageHead title={p ? 'Энэ тайланг харах эрхгүй байна' : 'Тайлан олдсонгүй'} sub={p ? 'Зөвхөн өөрийн болон өөрийн үнэлэх тайланг харах боломжтой.' : undefined}
-          actions={<a className="btn btn--glass" href="#insights-reports">Бүх тайлан</a>} />
-        <ActAs ids={reportActors(s)} />
+        {p && valid
+          ? <NoAccess text="Зөвхөн өөрийн болон өөрийн үнэлэх тайланг харах боломжтой." />
+          : <PageHead title="Тайлан олдсонгүй" actions={<a className="btn btn--glass" href="#insights-reports">Бүх тайлан</a>} />}
+        {admin && <ActAs ids={reportActors(s)} />}
       </div>
     )
   }
@@ -51,7 +56,7 @@ export default function ReportPage({ id }: { id: string }) {
       <a className="dback" href="#insights-reports" data-enter><ChevronLeft className="ico" />Сарын тайлан</a>
       <PageHead title={`${ofMonth(month)} тайлан`} sub={`${short(p)}${position ? `, ${position}` : ''}`}
         actions={r && <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'reportPdf', id: r.id })}><FileText className="ico" />PDF-ээр харах</button>} />
-      <ActAs ids={reportActors(s)} />
+      {admin && <ActAs ids={reportActors(s)} />}
       <Body key={`${who}-${writing}`} person={person} month={month} r={r} who={who} writing={writing} position={position} />
     </div>
   )
@@ -263,7 +268,7 @@ function Status({ person, month, r, who, writing, send }: { person: Id; month: s
           <button type="button" className="btn btn--accent" onClick={send}><Send className="ico" />{r?.status === 'returned' ? 'Засаад илгээх' : 'Удирдлагад илгээх'}</button>
           <p className="ctact__hint">{shortName(s.people, manager)} үнэлнэ. Илгээсэн тайланг зөвхөн буцаагдсан үед засна.</p>
         </div>
-      ) : wait && !(st === 'sent' && r?.manager === who) && <div className="ctact"><p className="ctact__wait">{wait}</p></div>}
+      ) : wait && !(st === 'sent' && r && mayScore(s, r, who)) && <div className="ctact"><p className="ctact__wait">{wait}</p></div>}
     </section>
   )
 }
@@ -293,7 +298,7 @@ function Total({ score, bands, got }: { score: number | null; bands: Band[]; got
 function Score({ r, who }: { r: MonthReport; who: Id }) {
   const s = useApp()
   const rules = kpiOf(s, r.company)
-  const mine = r.manager === who
+  const mine = mayScore(s, r, who)
   const [edit, setEdit] = useState(mine && r.status === 'sent')
   const criteria: Criterion[] = r.scores ?? rules.criteria
   const [points, setPoints] = useState<Record<Id, number>>(() => Object.fromEntries((r.scores ?? []).map(c => [c.id, c.points])))
