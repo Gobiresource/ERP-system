@@ -1,7 +1,7 @@
 // The person's own menu: settings, shortcuts, light/dark, demo data, signing out.
 import { ChevronDown, Keyboard, LogOut, RotateCcw, Settings } from 'lucide-react'
 import { actions, getState, scoped, useApp } from '../lib/store'
-import { open, signOut, toast } from '../lib/ui'
+import { open, resetDemo, signOut } from '../lib/ui'
 import { go } from '../lib/router'
 import { applyAppearance } from '../lib/theme'
 import type { ThemeSetting } from '../lib/types'
@@ -45,7 +45,7 @@ export function AccountMenu({ variant }: { variant: 'side' | 'toolbar' }) {
         <MenuItem checked={s.settings.theme === 'dark'} onSelect={pick(() => setTheme('dark'))}>Бараан</MenuItem>
         <MenuItem checked={s.settings.theme === 'system'} onSelect={pick(() => setTheme('system'))}>Автомат</MenuItem>
         <hr />
-        <MenuItem danger icon={<RotateCcw className="ico" />} onSelect={pick(() => toast('Жишээ өгөгдөл сэргээгдлээ.', { undo: actions.reset() }))}>
+        <MenuItem danger icon={<RotateCcw className="ico" />} onSelect={pick(resetDemo)}>
           Жишээ өгөгдлийг сэргээх
         </MenuItem>
         <hr />

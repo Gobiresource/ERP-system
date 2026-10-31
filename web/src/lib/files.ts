@@ -1,5 +1,6 @@
 // Pictures and files of the boards. They are too big for the saved app state, so the browser keeps them in its
-// file store (IndexedDB) and a card keeps only the file's id. Nothing leaves the device.
+// file store (IndexedDB) and a card keeps only the file's id. Nothing leaves the device. Nothing is deleted from it
+// either: an undo, another tab or a scan being added can still need a file that no saved record names.
 import { useEffect, useState } from 'react'
 import { toast } from './ui'
 
@@ -26,12 +27,6 @@ async function run<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRe
 
 export const putFile = (id: string, blob: Blob) => run('readwrite', s => s.put(blob, id))
 export const getFile = (id: string) => run<Blob | undefined>('readonly', s => s.get(id))
-
-/** Removes files no board uses any more (a deleted card or an older copy of a PDF) */
-export async function sweepFiles(keep: Set<string>) {
-  const keys = await run('readonly', s => s.getAllKeys())
-  for (const k of keys) if (!keep.has(String(k))) await run('readwrite', s => s.delete(k))
-}
 
 const urls = new Map<string, Promise<string | null>>()
 /** A link to show a stored picture; null when the file is gone */

@@ -13,6 +13,8 @@ const typing = (el: Element | null) =>
 export function startHotkeys() {
   let gAt = 0
   addEventListener('keydown', e => {
+    // Not on the sign-in page: a key pressed there would act once the person is in
+    if (!getUi().session) return
     if ((e.ctrlKey || e.metaKey) && e.code === 'KeyK') {
       e.preventDefault()
       setFinder(!getUi().finder)

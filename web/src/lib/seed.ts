@@ -187,7 +187,7 @@ export function seed(): State {
   )
 
   const note = (company: string, kind: Notice['kind'], text: string, minutes: number, read: boolean, link: { task?: string; project?: string } = {}): Notice =>
-    ({ id: uid('n'), company, kind, text, at: ago(minutes), read, ...link })
+    ({ id: uid('n'), company, to: 'u1', kind, text, at: ago(minutes), read, ...link })
   const tid = (title: string) => tasks.find(t => t.title === title)!.id
   const notices: Notice[] = [
     note('c1', 'mention', 'Б.Батзориг таныг "Барилгын зөвшөөрлийн бичиг баримт" ажилд дурдлаа.', 18, false, { task: tid('Барилгын зөвшөөрлийн бичиг баримт') }),
@@ -201,7 +201,7 @@ export function seed(): State {
     note('c3', 'mention', 'Ж.Анударь таныг "Үнийн саналын загвар" ажилд дурдлаа.', 35, false, { task: tid('Үнийн саналын загвар') }),
   ]
 
-  // Focus sessions for the past 90 days (for Insights), deterministic
+  // Б.Болд's focus sessions for the past 90 days (for Insights), deterministic; the notices above are his too
   const focusLog = []
   let r = 7
   const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280
@@ -212,7 +212,7 @@ export function seed(): State {
     for (let i = 0; i < sessions; i++) {
       const s = o === 0 ? new Date(now.getTime() - (i + 1) * 70 * 6e4) : new Date(d)
       if (o !== 0) s.setHours(9 + i * 2, 15, 0, 0)
-      focusLog.push({ at: s.toISOString(), minutes: o === 0 ? (i ? 25 : 40) : [25, 25, 50, 15][Math.floor(rnd() * 4)] })
+      focusLog.push({ at: s.toISOString(), minutes: o === 0 ? (i ? 25 : 40) : [25, 25, 50, 15][Math.floor(rnd() * 4)], who: 'u1' })
     }
   }
 

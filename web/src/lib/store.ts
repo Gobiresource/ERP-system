@@ -41,7 +41,8 @@ function load(): State | null {
     if (!s.chats) s = { ...s, ...seedChats(new Date(), s) }
     // Saved before Гэрээ existed: the lawyer and the office clerk join, with the demo contracts
     if (!s.contracts) {
-      const add = seed().people.filter(p => ['u15', 'u16'].includes(p.id) && !s.people.some((x: Person) => x.id === p.id))
+      // Without the seed's accounts: data this old has none, and everyone gets one below
+      const add = seed().people.filter(p => ['u15', 'u16'].includes(p.id) && !s.people.some((x: Person) => x.id === p.id)).map(({ account: _, ...p }) => p)
       s = { ...s, people: [...s.people, ...add], ...seedContracts(new Date()) }
     }
     // Saved before Сарын тайлан existed: department heads, the general director above the reports, and the demo reports
@@ -66,6 +67,10 @@ function load(): State | null {
     // 'ds' ids, so one the office has since shared with everyone stays shared.
     const everyone = (d: Doc) => !!d.paper && d.to === 'all' && !d.id.startsWith('ds')
     if (s.docs.some(everyone)) s = { ...s, docs: s.docs.map((d: Doc) => (everyone(d) ? { ...d, to: [] } : d)) }
+    // Saved when notices and focus sessions belonged to no one: they were Б.Болд's
+    if (s.notices.some((n: { to?: Id }) => !n.to) || s.focusLog.some((f: { who?: Id }) => !f.who)) {
+      s = { ...s, notices: s.notices.map((n: object) => ({ to: 'u1', ...n })), focusLog: s.focusLog.map((f: object) => ({ who: 'u1', ...f })) }
+    }
     return s
   } catch {
     return null
@@ -86,6 +91,29 @@ function set(fn: (s: State) => State) {
   subs.forEach(f => f())
 }
 
+/**
+ * `s` as the person signed in here sees it: still them, in the same ХХК while they work in it. ui.ts signs out someone
+ * who is not in `s`.
+ */
+function asMe(s: State): State {
+  const me = s.people.find(p => p.id === state.me)
+  return me ? { ...s, me: me.id, company: me.companies.includes(state.company) ? state.company : me.companies[0] } : { ...s, me: state.me }
+}
+
+/**
+ * Another tab saved: this one carries on from that data, migrated like any saved data, and does not save it again.
+ * ui.ts calls it from the same 'storage' listener that checks the session, so the screen never draws the new data with
+ * a person who is no longer in it.
+ */
+export function takeSaved(e: StorageEvent) {
+  if (e.key !== KEY || !e.newValue) return
+  const next = load()
+  if (!next) return
+  clearTimeout(saveTimer)
+  state = asMe(next)
+  subs.forEach(f => f())
+}
+
 export const getState = () => state
 /** The whole state. Re-renders on every change, which is fine at this size. */
 export const useApp = () => useSyncExternalStore(subscribe, () => state)
@@ -96,6 +124,8 @@ export interface Scoped {
   projects: Project[]
   events: CalEvent[]
   notices: State['notices']
+  /** My focus sessions, in every ХХК (the notices are mine too) */
+  focusLog: State['focusLog']
   people: Person[]
   person: (id: Id) => Person | undefined
   project: (id?: Id) => Project | undefined
@@ -112,7 +142,8 @@ export function scoped(s: State): Scoped {
       tasks: s.tasks.filter(t => t.company === c),
       projects: s.projects.filter(p => p.company === c),
       events: s.events.filter(e => e.company === c).sort((a, b) => a.start.localeCompare(b.start)),
-      notices: s.notices.filter(x => x.company === c),
+      notices: s.notices.filter(x => x.company === c && x.to === s.me),
+      focusLog: s.focusLog.filter(f => f.who === s.me),
       people: s.people.filter(p => p.companies.includes(c)),
       person: id => people.get(id),
       project: id => (id ? projects.get(id) : undefined),
@@ -260,8 +291,9 @@ export const actions = {
     return true
   },
 
-  markRead: (id: Id) => set(s => ({ ...s, notices: s.notices.map(n => (n.id === id ? { ...n, read: true } : n)) })),
-  markAllRead: () => set(s => ({ ...s, notices: s.notices.map(n => (n.company === s.company ? { ...n, read: true } : n)) })),
+  // Each person reads only their own notices
+  markRead: (id: Id) => set(s => ({ ...s, notices: s.notices.map(n => (n.id === id && n.to === s.me ? { ...n, read: true } : n)) })),
+  markAllRead: () => set(s => ({ ...s, notices: s.notices.map(n => (n.company === s.company && n.to === s.me ? { ...n, read: true } : n)) })),
 
   setSettings: (patch: Partial<Settings>) => set(s => ({ ...s, settings: { ...s.settings, ...patch } })),
   setProfile: (patch: Partial<Pick<Person, 'given' | 'family' | 'email' | 'role' | 'avatar'>>) =>
@@ -275,7 +307,7 @@ export const actions = {
         employees: Object.keys(hr).length ? s.employees.map(e => (e.user === s.me ? { ...e, ...hr } : e)) : s.employees,
       }
     }),
-  logFocus: (minutes: number) => set(s => ({ ...s, focusLog: [...s.focusLog, { at: new Date().toISOString(), minutes }] })),
+  logFocus: (minutes: number) => set(s => ({ ...s, focusLog: [...s.focusLog, { at: new Date().toISOString(), minutes, who: s.me }] })),
 
   // Human resources
   addEmployee(e: Omit<Employee, 'id' | 'company' | 'moves' | 'files' | 'hue'>) {
@@ -644,10 +676,10 @@ export const actions = {
         : r)),
     })),
 
-  /** Puts back fresh demo data and returns a function that undoes it */
+  /** Puts back fresh demo data, for the same person, and returns a function that undoes it */
   reset() {
     const before = state
-    set(() => ({ ...seed(), settings: state.settings }))
+    set(() => asMe({ ...seed(), settings: state.settings }))
     return () => set(() => before)
   },
 }

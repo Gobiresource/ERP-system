@@ -150,6 +150,8 @@ export type NoteKind = 'mention' | 'review' | 'moved' | 'approval' | 'done' | 'i
 export interface Notice {
   id: Id
   company: Id
+  /** Who it is for: only they see it and read it */
+  to: Id
   kind: NoteKind
   text: string
   at: string
@@ -161,6 +163,8 @@ export interface Notice {
 export interface FocusLog {
   at: string
   minutes: number
+  /** Whose session it was */
+  who: Id
 }
 
 export type ThemeSetting = 'light' | 'dark' | 'system'

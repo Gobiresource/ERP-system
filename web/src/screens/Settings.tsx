@@ -4,7 +4,7 @@ import '../styles/screens/settings.css'
 import type { Accent, Settings as Prefs, Wall } from '../lib/types'
 import { actions, getState, scoped, useApp } from '../lib/store'
 import { clock, dayOf, initials, short, today } from '../lib/format'
-import { focus, focusLeft, toast, useUi } from '../lib/ui'
+import { focus, focusLeft, resetDemo, toast, useUi } from '../lib/ui'
 import { applyAppearance } from '../lib/theme'
 import { gsap, reduced, useLens, usePageEnter } from '../lib/motion'
 import { downloadCsv } from '../lib/insights'
@@ -408,7 +408,7 @@ function Data() {
           <p id="reset-q">Энд хийсэн бүх өөрчлөлт арилж, жишээ өгөгдөл анхны байдалдаа орно. Үргэлжлүүлэх үү?</p>
           <div>
             <button type="button" className="btn btn--glass btn--sm" onClick={() => setConfirm(false)} autoFocus>Болих</button>
-            <button type="button" className="btn btn--danger btn--sm" onClick={() => { setConfirm(false); toast('Жишээ өгөгдөл сэргээгдлээ.', { undo: actions.reset() }) }}>Сэргээх</button>
+            <button type="button" className="btn btn--danger btn--sm" onClick={() => { setConfirm(false); resetDemo() }}>Сэргээх</button>
           </div>
         </div>
       )}

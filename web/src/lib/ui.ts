@@ -1,7 +1,8 @@
 // Screen state that is not saved: which window is open, the island message, the focus timer.
 import { useSyncExternalStore } from 'react'
 import type { BoardFile, Id, Task, CalEvent } from './types'
-import { actions, getState } from './store'
+import { actions, getState, takeSaved } from './store'
+import { go } from './router'
 
 export type Dialog =
   | { kind: 'task'; id: Id }
@@ -74,6 +75,7 @@ function readSession(): Id | null {
     const p = v && getState().people.find(x => x.id === v.user)
     if (!p?.account?.active || !(v.until > Date.now())) return null
     if (getState().me !== p.id) actions.setMe(p.id)
+    if (!p.companies.includes(getState().company)) actions.switchCompany(p.companies[0])
     return p.id
   } catch {
     return null
@@ -101,9 +103,29 @@ export function signIn(user: Id) {
   try { localStorage.setItem(SESSION, JSON.stringify({ user, until: Date.now() + KEEP })) } catch { /* private window: signed in until the tab closes */ }
   set({ session: user })
 }
+/**
+ * Ends a running focus timer (its minutes count for the person), drops the message and its undo, and opens Нүүр for
+ * whoever signs in next
+ */
 export function signOut() {
+  focus.end()
   try { localStorage.removeItem(SESSION) } catch { /* nothing kept */ }
-  set({ session: null, dialog: null, actAs: null, finder: false })
+  set({ session: null, dialog: null, actAs: null, finder: false, note: null })
+  go('home')
+}
+
+// Another tab saved or signed out. This tab takes in the data, and signs out too when the other tab signed out or its
+// change left this person out of the data or unable to sign in (demo data put back, made inactive).
+addEventListener('storage', e => {
+  takeSaved(e)
+  if (ui.session && (e.key === SESSION ? !e.newValue : !getState().people.find(p => p.id === ui.session)?.account?.active)) signOut()
+})
+
+/** Puts back the demo data. Someone who is not in it (added later) is signed out. */
+export function resetDemo() {
+  const undo = actions.reset()
+  if (!getState().people.some(p => p.id === ui.session)) return signOut()
+  toast('Жишээ өгөгдөл сэргээгдлээ.', { undo })
 }
 
 let noteId = 0

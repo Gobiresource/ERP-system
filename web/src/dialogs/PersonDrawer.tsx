@@ -19,7 +19,7 @@ export function PersonDrawer({ id }: { id: string }) {
   const me = p.id === s.me
   const load = workload(p, sc.tasks)
   const where = localTime(p)
-  const focusHours = me ? focusByDay(s.focusLog, 7).reduce((n, d) => n + d.minutes, 0) / 60 : demoFocusHours(p)
+  const focusHours = me ? focusByDay(sc.focusLog, 7).reduce((n, d) => n + d.minutes, 0) / 60 : demoFocusHours(p)
   const tasks = sc.tasks.filter(t => t.assignees.includes(p.id) && t.status !== 'done').sort((a, b) => a.due.localeCompare(b.due))
   const events = sc.events.filter(e => e.attendees.includes(p.id) && thisWeek(e.start) && daysFromToday(e.start) >= 0)
   const projects = sc.projects.filter(x => x.members.includes(p.id) || x.lead === p.id)

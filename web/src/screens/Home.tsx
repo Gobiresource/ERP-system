@@ -10,7 +10,7 @@ import { eventEnd, focusToday, projectProgress } from '../lib/derive'
 import { addDays, ago, clock, daysFromToday, dec, dueLabel, hm, monthDay, monthDayDots, parse, short, today, until, weekStart, weekday, weekdayShort, ymd } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
-import { AvatarStack, Avatar, Prio, ProjectChip, ProjectGlyph, PRESENCE, PSTATUS, eventHue } from '../ui/bits'
+import { AvatarStack, Avatar, Empty, Prio, ProjectChip, ProjectGlyph, PRESENCE, PSTATUS, eventHue } from '../ui/bits'
 import { Bars } from '../ui/charts'
 import { moveTask } from './tasks/TaskCard'
 
@@ -35,7 +35,7 @@ export default function Home() {
   const dueToday = mine.filter(x => x.due === t)
   const ringTotal = new Set([...dueToday, ...doneToday].map(x => x.id)).size
   const late = mine.filter(x => x.status !== 'done' && x.due < t)
-  const focused = focusToday(s.focusLog)
+  const focused = focusToday(sc.focusLog)
   const myEvents = sc.events.filter(e => e.attendees.includes(s.me))
   const meetingsToday = myEvents.filter(e => e.start.startsWith(t) && e.kind !== 'focus' && e.kind !== 'deadline')
   const meetingsDone = meetingsToday.filter(e => eventEnd(e) <= now).length
@@ -176,7 +176,7 @@ function FocusCard() {
   const left = running ? focusLeft(f) : total
   const r = 52
   const c = 2 * Math.PI * r
-  const today_ = focusToday(s.focusLog)
+  const today_ = focusToday(scoped(s).focusLog)
   const open_ = s.tasks.filter(t => t.company === s.company && t.assignees.includes(s.me) && t.status !== 'done')
   const current = f.task ? s.tasks.find(t => t.id === f.task) : undefined
 
@@ -384,6 +384,7 @@ function RightNow() {
         </div>
       ) : (
         <div className="people">
+          {!feed.length && <Empty title="Мэдэгдэл алга" text="Шинэ зүйл гарахад энд харагдана." />}
           {feed.map(n => {
             const Icon = FEED_ICON[n.kind]
             return (

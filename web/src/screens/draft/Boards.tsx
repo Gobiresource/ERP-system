@@ -1,19 +1,17 @@
 // Ноорог, first page: my boards (last changed first) and ready-made boards to start from.
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { Ellipsis, Plus, StickyNote, Trash2 } from 'lucide-react'
 import type { Draft, DraftCard } from '../../lib/types'
-import { actions, getState, useApp } from '../../lib/store'
+import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
 import { usePageEnter } from '../../lib/motion'
 import { TEMPLATES } from '../../lib/draft'
-import { sweepFiles } from '../../lib/files'
 import { ago } from '../../lib/format'
 import { toast } from '../../lib/ui'
 import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
 
-let swept = false
 const create = (name: string, cards: DraftCard[] = []) => go('draft', actions.addDraft(name, cards).id)
 
 export default function Boards() {
@@ -22,16 +20,6 @@ export default function Boards() {
   usePageEnter(ref)
   const mine = s.drafts.filter(d => d.company === s.company && d.owner === s.me).sort((a, b) => b.updated.localeCompare(a.updated))
   const previews = useMemo(() => TEMPLATES.map(t => t.cards()), [])
-
-  // Once per visit, drop stored files that no board, document, message or contract uses any more (deleted cards, older
-  // copies of a PDF)
-  useEffect(() => {
-    if (swept) return
-    swept = true
-    const s = getState()
-    const keep = new Set([...s.drafts.flatMap(d => d.cards.flatMap(c => (c.file ? [c.file.id] : []))), ...s.docs.flatMap(d => (d.file ? [d.file.id] : [])), ...s.messages.flatMap(m => m.files.map(f => f.id)), ...s.contracts.flatMap(c => (c.scan ? [c.scan.id] : [])), ...s.scans.flatMap(it => [it.file.id, ...(it.thumb ? [it.thumb] : [])])])
-    sweepFiles(keep).catch(() => {})
-  }, [])
 
   return (
     <div ref={ref}>

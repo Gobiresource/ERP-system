@@ -42,7 +42,7 @@ export function history(s: State, days: number): Day[] {
     const noise = r()
     if (i < REAL_DAYS) {
       const done = sc.tasks.filter(t => t.doneAt && ymd(new Date(t.doneAt)) === key)
-      const mine = s.focusLog.filter(f => ymd(new Date(f.at)) === key).reduce((n, f) => n + f.minutes, 0)
+      const mine = sc.focusLog.filter(f => ymd(new Date(f.at)) === key).reduce((n, f) => n + f.minutes, 0)
       out.push({
         day: key,
         done: done.length,
