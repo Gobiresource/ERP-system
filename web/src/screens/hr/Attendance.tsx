@@ -130,8 +130,9 @@ export default function Attendance() {
       <TimelyBar a={a} />
       {m && sum ? (
         <div className="hr-grid">
-          <Low rows={sum.low} />
-          <ByDept rows={m.rows} />
+          {/* Before anyone has a day to work (a month starting on a day off) these cards have nothing true to say */}
+          {sum.avg !== null && <Low rows={sum.low} />}
+          {sum.avg !== null && <ByDept rows={m.rows} />}
           <Everyone rows={m.rows} />
           {(m.onlyTimely.length > 0 || m.onlyErp.length > 0) && <Unmatched a={a} onlyTimely={m.onlyTimely} onlyErp={m.onlyErp} />}
         </div>

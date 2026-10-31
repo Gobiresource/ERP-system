@@ -47,7 +47,8 @@ function DeptCard({ d }: { d: Department }) {
   const list = hr.positions.filter(p => p.dept === d.id)
   const q = list.reduce((n, p) => n + p.quota, 0)
   const f = list.reduce((n, p) => n + Math.min(p.quota, hr.filled.get(p.id) ?? 0), 0)
-  const people = list.reduce((n, p) => n + (hr.filled.get(p.id) ?? 0), 0)
+  // Those who left count too: their records still name the department
+  const people = hr.all.filter(e => e.dept === d.id || list.some(p => p.id === e.position))
   const head = hr.employees.find(e => e.id === d.head && current(e))
   const edit = hr.access.hrEdit
   const remove = () => {
@@ -73,7 +74,7 @@ function DeptCard({ d }: { d: Department }) {
         )}
         <Menu state={pop} label="Хэлтсийн үйлдэл">
           <MenuItem icon={<Pencil className="ico" />} onSelect={() => { pop.close(); open({ kind: 'dept', id: d.id }) }}>Хэлтэс засах</MenuItem>
-          <MenuItem danger icon={<Trash2 className="ico" />} onSelect={remove} disabled={people > 0 ? 'Энэ хэлтэст ажилтан байгаа тул устгах боломжгүй.' : undefined}>Хэлтэс устгах</MenuItem>
+          <MenuItem danger icon={<Trash2 className="ico" />} onSelect={remove} disabled={people.some(current) ? 'Энэ хэлтэст ажилтан байгаа тул устгах боломжгүй.' : people.length ? 'Энэ хэлтэст ажиллаж байсан ажилтны бүртгэл байгаа тул устгах боломжгүй.' : undefined}>Хэлтэс устгах</MenuItem>
         </Menu>
       </div>
       {list.length === 0 ? (

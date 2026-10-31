@@ -59,7 +59,7 @@ export default function EmployeePage({ id }: { id: string }) {
             </>
           }
           stats={[
-            { label: 'Ажилласан', value: tenure(e.hired) },
+            { label: 'Ажилласан', value: tenure(e.hired, e.status === 'left' ? e.moves.find(m => m.kind === 'left')?.date : undefined) },
             { label: 'Хувийн хэрэг', value: f.done, unit: `/ ${f.total}` },
             e.contract.end
               ? { label: 'Гэрээ дуусах', value: dots(e.contract.end), alert: end !== null && end <= ALERT_DAYS && e.status !== 'left' }

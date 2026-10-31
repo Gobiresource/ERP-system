@@ -105,10 +105,16 @@
   .show-sm { display: inline; }
   .etable__who small { white-space: normal; }
 }
+/* The employee list stays inside its card: a long position or status wraps; on a phone the status goes under the name */
+.emp-table td.hide-sm { white-space: normal; }
+.emp-table .pstatus { height: auto; min-height: 24px; padding-block: 4px; line-height: 1.2; white-space: normal; }
+.emp-table .etable__who .pstatus { margin-top: 4px; }
+@media (width <= 1180px) { .emp-table .hide-md { display: none; } }
 
 /* Employee page */
 .emp-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 14px; }
-.emp-user { height: 24px; padding: 0 10px; border-radius: 999px; background: var(--accent-soft); font: 650 12.5px/1 var(--font); color: var(--accent-ink); }
+/* A solid, light base: on the wallpaper, under the figures' shadow, the see-through tint fell below 4.5:1 */
+.emp-user { height: 24px; padding: 0 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, var(--glass-solid)); font: 650 12.5px/1 var(--font); color: var(--accent-ink); }
 .emp-user:hover { text-decoration: underline; text-underline-offset: 2px; }
 .emp-alerts { display: grid; gap: 6px; margin-bottom: 14px; }
 .emp-alerts p { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: color-mix(in srgb, var(--orange) 14%, transparent); font-size: 14px; }

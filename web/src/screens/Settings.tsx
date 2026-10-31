@@ -216,7 +216,7 @@ function Profile() {
         </div>
       </div>
       <InlineField id="pf-given" icon={User} hue="blue" label="Нэр" value={me.given} onSave={v => save({ given: v })} validate={v => (v ? null : 'Нэрээ бичнэ үү.')} />
-      <InlineField id="pf-family" icon={User} hue="indigo" label="Овог" value={me.family} onSave={v => save({ family: v })} validate={v => (v ? null : 'Овгоо бичнэ үү.')} />
+      <InlineField id="pf-family" icon={User} hue="indigo" label="Эцэг/эхийн нэр" value={me.family} onSave={v => save({ family: v })} validate={v => (v ? null : 'Эцэг/эхийн нэрээ бичнэ үү.')} />
       <InlineField id="pf-email" icon={Mail} hue="purple" label="Имэйл" type="email" value={me.email} onSave={v => save({ email: v })}
         validate={v => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'Имэйл хаяг буруу байна.')} />
       <InlineField id="pf-role" icon={BadgeCheck} hue="teal" label="Албан тушаал" value={me.role} onSave={v => save({ role: v })} validate={v => (v ? null : 'Албан тушаалаа бичнэ үү.')} />

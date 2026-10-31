@@ -34,7 +34,7 @@ export default function Overview() {
       <HrNav at="" />
       <PageHead
         title="Хүний нөөц"
-        sub={all ? `Энэ компанид ${staff.length} ажилтан ажиллаж байна.` : `Таны хариуцсан ${staff.length} ажилтан.`}
+        sub={all ? `Энэ компанид ${staff.length} ажилтан ажиллаж байна.` : `Таны хариуцсан ${staff.filter(e => e.user !== s.me).length} ажилтан.`}
         stats={[
           { label: 'Ажилтан', value: staff.length },
           ...(all ? [{ label: 'Орон тоо', value: filled, unit: `/ ${quota}` }] : []),
@@ -43,7 +43,7 @@ export default function Overview() {
         ]}
       />
       <div className="hr-grid">
-        <Alerts alerts={alerts} />
+        <Alerts alerts={alerts} wide={!all} />
         {all && <Headcount />}
         <Movement />
         <Makeup staff={staff} />
@@ -53,12 +53,13 @@ export default function Overview() {
   )
 }
 
-function Alerts({ alerts }: { alerts: ReturnType<typeof alertsOf> }) {
+/** Beside Орон тоо, or the whole row without it */
+function Alerts({ alerts, wide }: { alerts: ReturnType<typeof alertsOf>; wide: boolean }) {
   const hr = hrView(useApp())
   const [all, setAll] = useState(false)
   const shown = all ? alerts : alerts.slice(0, 6)
   return (
-    <section className="card glass span-7" aria-labelledby="hra-t" data-enter>
+    <section className={`card glass ${wide ? 'span-12' : 'span-7'}`} aria-labelledby="hra-t" data-enter>
       <div className="card__head">
         <div>
           <h2 className="card__title" id="hra-t">Анхаарах зүйл</h2>
@@ -202,7 +203,7 @@ function Makeup({ staff }: { staff: Employee[] }) {
       <div className="card__head">
         <div>
           <h2 className="card__title" id="hrk-t">Нас, хүйс</h2>
-          <p className="card__sub">Регистрийн дугаараас тооцсон. Дундаж нас {avg}.</p>
+          <p className="card__sub">Регистрийн дугаараас тооцсон.{ages.length > 0 && ` Дундаж нас ${avg}.`}</p>
         </div>
       </div>
       <div className="hr-sex">
@@ -245,14 +246,15 @@ function Birthdays({ staff }: { staff: Employee[] }) {
       ) : (
         <ul className="hr-people">
           {list.map(({ e, birth }) => {
-            const day = new Date(now.getFullYear(), birth.getMonth(), birth.getDate())
+            // 29 February is the 28th in other years
+            const day = new Date(now.getFullYear(), birth.getMonth(), Math.min(birth.getDate(), new Date(now.getFullYear(), birth.getMonth() + 1, 0).getDate()))
             const today = day.getDate() === now.getDate()
             return (
               <li key={e.id}>
                 <a href={`#hr-${e.id}`} className={`hr-person${today ? ' is-today' : ''}`}>
                   <EmpAvatar e={e} size="md" />
                   <span><b>{short(e)}</b><small>{monthDay(day)}{today ? ', өнөөдөр' : ''}</small></span>
-                  <span className="hr-person__aside">{ageOn(birth, day)} нас</span>
+                  <span className="hr-person__aside">{now.getFullYear() - birth.getFullYear()} нас</span>
                 </a>
               </li>
             )

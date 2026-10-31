@@ -78,7 +78,7 @@ export default function Employees() {
       <HrNav at="employees" />
       <PageHead
         title="Ажилтан"
-        sub={hr.access.hr === 'all' ? `Энэ компанид ${staff} ажилтан ажиллаж байна.` : `Таны хариуцсан ${staff} ажилтан.`}
+        sub={hr.access.hr === 'all' ? `Энэ компанид ${staff} ажилтан ажиллаж байна.` : `Таны хариуцсан ${hr.employees.filter(e => current(e) && e.user !== s.me).length} ажилтан.`}
         actions={
           <>
             <button type="button" className="btn btn--glass" onClick={exportCsv}><Download className="ico" />Excel-ээр татах</button>
@@ -148,14 +148,14 @@ export default function Employees() {
             </div>
           </div>
           <div className="etable-wrap">
-            <table className="etable">
+            <table className="etable emp-table">
               <caption className="sr-only">Ажилтны жагсаалт. Баганын нэр дээр дарж эрэмбэлнэ.</caption>
               <thead>
                 <tr>
                   {head('name', 'Ажилтан')}
                   <th scope="col" className="hide-md">Хэлтэс</th>
                   <th scope="col" className="hide-sm">Албан тушаал</th>
-                  <th scope="col">Төлөв</th>
+                  <th scope="col" className="hide-sm">Төлөв</th>
                   {head('hired', 'Ажилд орсон', 'num hide-md')}
                   {head('contract', 'Гэрээ дуусах', 'num hide-md')}
                   {head('files', 'Хувийн хэрэг', 'num')}
@@ -174,12 +174,13 @@ export default function Employees() {
                           <span>
                             <a href={`#hr-${e.id}`}>{short(e)}</a>
                             <small>{e.code}<span className="show-sm">, {pos}</span></small>
+                            <span className="show-sm"><EmpStatusPill status={e.status} /></span>
                           </span>
                         </span>
                       </th>
                       <td className="hide-md">{hr.dept(e.dept)?.name}</td>
                       <td className="hide-sm">{pos}</td>
-                      <td><EmpStatusPill status={e.status} /></td>
+                      <td className="hide-sm"><EmpStatusPill status={e.status} /></td>
                       <td className="num tnum hide-md">{dots(e.hired)}</td>
                       <td className={`num tnum hide-md${end !== null && end <= ALERT_DAYS && current(e) ? ' is-warn' : ''}`}>
                         {e.contract.end ? dots(e.contract.end) : <span className="muted">{CONTRACT.open}</span>}

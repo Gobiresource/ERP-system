@@ -1,6 +1,6 @@
 // Demo HR data: departments, positions, the personal-file checklist and employees for the three demo ХХК.
 // Everyone is made up. Registration numbers start with "ЖШ" (жишээ) and phone numbers count up, so none is real.
-import type { ContractKind, Department, DocType, EmpStatus, Employee, FileItem, Hue, Move, MoveKind, Person, Position } from './types'
+import type { ContractKind, Department, DocType, EmpStatus, Employee, FileItem, Hue, Id, Move, MoveKind, Person, Position } from './types'
 import { addDays, ymd } from './format'
 
 /** The personal-file list every ХХК starts with: 12 required documents and 2 that depend on the job */
@@ -20,6 +20,8 @@ const DOCS: [name: string, required: boolean, expires: boolean][] = [
   ['Мэргэжлийн үнэмлэх', false, true],
   ['Жолооны үнэмлэх', false, true],
 ]
+/** That list for one ХХК, the demo ones and every one added later */
+export const docTypesFor = (company: Id): DocType[] => DOCS.map(([name, required, expires], i) => ({ id: `${company}-d${i + 1}`, company, name, required, expires }))
 
 /** Departments → [position, headcount] */
 type Plan = [dept: string, code: string, positions: [string, number][]][]
@@ -170,7 +172,7 @@ export function seedHr(now: Date, people: Person[]) {
   const users = new Map<string, { birth: Date; reg: string; clan: string; address: string; contact: Employee['contact'] }>()
 
   for (const [c, plan] of Object.entries(PLAN)) {
-    DOCS.forEach(([name, required, expires], i) => docTypes.push({ id: `${c}-d${i + 1}`, company: c, name, required, expires }))
+    docTypes.push(...docTypesFor(c))
     for (const [dname, code, list] of plan) {
       const dept = { id: `${c}-${code}`, company: c, name: dname, code }
       departments.push(dept)

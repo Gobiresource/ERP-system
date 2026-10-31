@@ -29,7 +29,7 @@ export function Invite() {
     const e: Errors = {}
     const login = loginKey(f.login)
     if (!f.given.trim()) e['inv-given'] = 'Нэрийг бичнэ үү.'
-    if (!f.family.trim()) e['inv-family'] = 'Овгийг бичнэ үү.'
+    if (!f.family.trim()) e['inv-family'] = 'Эцэг/эхийн нэрийг бичнэ үү.'
     if (!f.email.trim()) e['inv-email'] = 'Имэйл хаягийг бичнэ үү.'
     else if (!EMAIL.test(f.email.trim())) e['inv-email'] = 'Имэйл хаяг буруу байна. Жишээ нь: bold@example.mn'
     if (!login) e['inv-login'] = 'Нэвтрэх нэрийг бичнэ үү.'
@@ -50,7 +50,7 @@ export function Invite() {
       <Field id="inv-given" label="Нэр" error={errors['inv-given']}>
         <input {...fieldAria('inv-given', errors['inv-given'])} value={f.given} onChange={set('given')} autoComplete="off" placeholder="Сараа" data-autofocus />
       </Field>
-      <Field id="inv-family" label="Овог" error={errors['inv-family']}>
+      <Field id="inv-family" label="Эцэг/эхийн нэр" error={errors['inv-family']}>
         <input {...fieldAria('inv-family', errors['inv-family'])} value={f.family} onChange={set('family')} autoComplete="off" placeholder="Бат" />
       </Field>
       <Field id="inv-email" label="Имэйл" error={errors['inv-email']} wide>

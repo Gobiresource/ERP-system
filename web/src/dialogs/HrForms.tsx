@@ -26,6 +26,7 @@ export function DeptForm({ id }: { id?: string }) {
     if (!name) e['df-name'] = 'Хэлтсийн нэрийг бичнэ үү.'
     else if (hr.departments.some(x => x.id !== id && x.name === name)) e['df-name'] = 'Ийм нэртэй хэлтэс бүртгэлтэй байна.'
     if (!code) e['df-code'] = 'Товч кодыг бичнэ үү.'
+    else if (hr.departments.some(x => x.id !== id && x.code === code)) e['df-code'] = 'Ийм кодтой хэлтэс бүртгэлтэй байна.'
     setErrors(e)
     if (Object.keys(e).length) return false
     if (d) actions.updateDept(d.id, { name, code, head: f.head || undefined })
@@ -58,6 +59,8 @@ export function PositionForm({ id, dept }: { id?: string; dept?: string }) {
   const hr = hrView(useApp())
   const p = id ? hr.position(id) : undefined
   const taken = p ? hr.filled.get(p.id) ?? 0 : 0
+  // Someone who left keeps it on their record, so it stays
+  const held = !!p && hr.all.some(e => e.position === p.id)
   const [f, setF] = useState({ name: p?.name ?? '', quota: String(p?.quota ?? 1), dept: p?.dept ?? dept ?? hr.departments[0]?.id ?? '' })
   const [errors, setErrors] = useState<Errors>({})
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
@@ -100,9 +103,9 @@ export function PositionForm({ id, dept }: { id?: string; dept?: string }) {
       </Field>
       {p && (
         <div className="field field--wide">
-          {taken === 0
+          {!held
             ? <button type="button" className="btn btn--glass btn--sm hf-del" onClick={remove}><Trash2 className="ico" />Албан тушаал устгах</button>
-            : <p className="field__hint">Энэ албан тушаалд ажилтан байгаа тул устгах боломжгүй.</p>}
+            : <p className="field__hint">{taken ? 'Энэ албан тушаалд ажилтан байгаа тул устгах боломжгүй.' : 'Энэ албан тушаалд ажиллаж байсан ажилтны бүртгэл байгаа тул устгах боломжгүй.'}</p>}
         </div>
       )}
     </FormSheet>

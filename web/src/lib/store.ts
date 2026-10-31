@@ -9,6 +9,7 @@ import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedC
 import { bandOf, dueOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
 import { accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
 import { companyMark, today } from './format'
+import { docTypesFor } from './seedHr'
 
 const KEY = 'erp:v1'
 
@@ -22,6 +23,12 @@ function load(): State | null {
       const code = (c: Company) => fresh.companies.find(f => f.id === c.id)?.code ?? c.name.slice(0, 2).toUpperCase()
       s = { ...s, companies: s.companies.map((c: Company) => ({ ...c, code: code(c) })), departments: fresh.departments, positions: fresh.positions, docTypes: fresh.docTypes, employees: fresh.employees }
     }
+    // A ХХК added before every new one got the personal-file list
+    const bare = s.companies.filter((c: Company) => !s.docTypes.some((t: { company: Id }) => t.company === c.id))
+    if (bare.length) s = { ...s, docTypes: [...s.docTypes, ...bare.flatMap((c: Company) => docTypesFor(c.id))] }
+    // A position moved to another department before its people moved with it
+    const deptOf = (e: Employee) => s.positions.find((p: Position) => p.id === e.position)?.dept ?? e.dept
+    s = { ...s, employees: s.employees.map((e: Employee) => (deptOf(e) === e.dept ? e : { ...e, dept: deptOf(e) })) }
     // Saved before Ноорог existed
     if (!s.drafts) s = { ...s, drafts: seedDrafts(new Date(), s.me) }
     // Saved before Бичиг хэрэг existed
@@ -139,7 +146,7 @@ export const actions = {
   addCompany(c: Pick<Company, 'name' | 'hue'>) {
     if (!sysadmin()) return null
     const company: Company = { ...c, id: uid('c'), code: companyMark(c.name) }
-    set(s => ({ ...s, companies: [...s.companies, company], people: s.people.map(p => (p.id === s.me ? { ...p, companies: [...p.companies, company.id] } : p)) }))
+    set(s => ({ ...s, companies: [...s.companies, company], docTypes: [...s.docTypes, ...docTypesFor(company.id)], people: s.people.map(p => (p.id === s.me ? { ...p, companies: [...p.companies, company.id] } : p)) }))
     return company
   },
   /** Its name and folder colour, by an admin of the ХХК */
@@ -326,7 +333,8 @@ export const actions = {
     set(s => ({ ...s, departments: s.departments.map(d => (d.id === id ? { ...d, ...patch } : d)) })),
   /** Removes an empty department with its positions; returns undo */
   removeDept(id: Id) {
-    if (!mayEditHr()) return () => {}
+    // Kept while any record names it or one of its positions, a former employee's too
+    if (!mayEditHr() || state.employees.some(e => e.dept === id || state.positions.find(p => p.id === e.position)?.dept === id)) return () => {}
     const before = { departments: state.departments, positions: state.positions }
     set(s => ({ ...s, departments: s.departments.filter(d => d.id !== id), positions: s.positions.filter(p => p.dept !== id) }))
     return () => set(s => ({ ...s, ...before }))
@@ -337,11 +345,17 @@ export const actions = {
     set(s => ({ ...s, positions: [...s.positions, pos] }))
     return pos
   },
+  /** Saves a position. Moved to another department, the people who hold it or held it move with it. */
   updatePosition: (id: Id, patch: Partial<Position>) =>
     mayEditHr() &&
-    set(s => ({ ...s, positions: s.positions.map(p => (p.id === id ? { ...p, ...patch } : p)) })),
+    set(s => ({
+      ...s,
+      positions: s.positions.map(p => (p.id === id ? { ...p, ...patch } : p)),
+      employees: s.employees.map(e => (e.position === id && patch.dept ? { ...e, dept: patch.dept } : e)),
+    })),
   removePosition(id: Id) {
-    if (!mayEditHr()) return () => {}
+    // Kept while any record names it, a former employee's too
+    if (!mayEditHr() || state.employees.some(e => e.position === id)) return () => {}
     const before = state.positions
     set(s => ({ ...s, positions: s.positions.filter(p => p.id !== id) }))
     return () => set(s => ({ ...s, positions: before }))
