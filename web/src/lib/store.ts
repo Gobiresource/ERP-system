@@ -1,12 +1,13 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, KpiRules, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, KpiRules, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
 import { bandOf, dueOf, findReport, kpiOf, managerOf, nextMonth, seedReports, total } from './reports'
+import { accessOf, demoAccounts, hashOf, loginKey, newSalt } from './access'
 import { companyMark } from './format'
 
 const KEY = 'erp:v1'
@@ -50,6 +51,8 @@ function load(): State | null {
     if (!s.scans) s = { ...s, scans: [], aiSpent: 0 }
     // Saved before Ирц existed
     if (!s.timely) s = { ...s, timely: {} }
+    // Saved before anyone signed in: the example accounts
+    if (!s.people.some((p: Person) => p.account)) s = { ...s, people: demoAccounts(s) }
     return s
   } catch {
     return null
@@ -110,6 +113,15 @@ export function scoped(s: State): Scoped {
 const uid = (p: string) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 const patchTask = (id: Id, fn: (t: Task) => Task) => set(s => ({ ...s, tasks: s.tasks.map(t => (t.id === id ? fn(t) : t)) }))
 const patchContract = (id: Id, fn: (c: Contract, s: State) => Contract) => set(s => ({ ...s, contracts: s.contracts.map(c => (c.id === id ? fn(c, s) : c)) }))
+const editAccount = (who: Id, patch: Partial<Account>) =>
+  set(s => ({ ...s, people: s.people.map(p => (p.id === who && p.account ? { ...p, account: { ...p.account, ...patch } } : p)) }))
+/** Adds and edits employees, departments and positions in the current ХХК */
+const mayEditHr = () => accessOf(state, state.me, state.company).hrEdit
+/** Whoever sets the system up, or an admin of a ХХК the person belongs to */
+const manages = (who: Id) =>
+  !!state.people.find(p => p.id === state.me)?.account?.sysadmin || !!state.people.find(p => p.id === who)?.companies.some(c => accessOf(state, state.me, c).admin)
+/** No one else signs in with this login */
+const loginFree = (login: string, who?: Id) => !!loginKey(login) && !state.people.some(p => p.id !== who && p.account?.login === loginKey(login))
 
 export const actions = {
   switchCompany: (company: Id) => set(s => ({ ...s, company })),
@@ -178,11 +190,45 @@ export const actions = {
     set(s => ({ ...s, projects: s.projects.map(p => (p.id === id ? { ...p, milestones: p.milestones.map(x => (x.id === m ? { ...x, done: !x.done } : x)) } : p)) })),
 
   setPresence: (id: Id, presence: Presence) => set(s => ({ ...s, people: s.people.map(p => (p.id === id ? { ...p, presence } : p)) })),
-  invite(p: Pick<Person, 'given' | 'family' | 'email' | 'role' | 'team'>) {
+  /** A new person in the ХХК, who signs in with the login and password given; only an admin adds people */
+  async invite(p: Pick<Person, 'given' | 'family' | 'email' | 'role' | 'team'>, login: string, password: string, access: Access): Promise<Person | null> {
+    if (!accessOf(state, state.me, state.company).admin || !loginFree(login)) return null
     const hues = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'indigo'] as const
-    const person: Person = { ...p, id: uid('u'), companies: [state.company], presence: 'away', hue: hues[state.people.length % hues.length], capacity: 40 }
+    const salt = newSalt()
+    const account: Account = { login: loginKey(login), salt, hash: await hashOf(password, salt), active: true, access: { [state.company]: access } }
+    const person: Person = { ...p, id: uid('u'), companies: [state.company], presence: 'away', hue: hues[state.people.length % hues.length], capacity: 40, account }
     set(s => ({ ...s, people: [...s.people, person] }))
     return person
+  },
+
+  // Удирдлага: accounts and rights. Only an admin of the ХХК changes them there; whoever sets the system up, anywhere.
+  setMe: (me: Id) => set(s => ({ ...s, me })),
+  /** When the person signed in last */
+  signedIn: (who: Id) => editAccount(who, { lastLogin: new Date().toISOString() }),
+  /** The person's rights in a ХХК. An admin keeps their own Удирдлага right, so the ХХК never loses its last admin. */
+  setAccess(who: Id, company: Id, access: Access) {
+    if (!accessOf(state, state.me, company).admin) return false
+    if (who === state.me && !access.admin && !state.people.find(p => p.id === who)?.account?.sysadmin) return false
+    const a = state.people.find(p => p.id === who)?.account
+    if (!a) return false
+    editAccount(who, { access: { ...a.access, [company]: access } })
+    return true
+  },
+  /** Renames the login, or stops and lets again someone signing in; never oneself */
+  setAccount(who: Id, patch: Partial<Pick<Account, 'login' | 'active'>>): string | null {
+    if (!manages(who)) return 'Танд энэ хэрэглэгчийг өөрчлөх эрх алга.'
+    if (patch.active === false && who === state.me) return 'Өөрийгөө идэвхгүй болгох боломжгүй.'
+    if (patch.login !== undefined && !loginFree(patch.login, who)) return 'Энэ нэвтрэх нэр өөр хүнд бүртгэлтэй байна.'
+    editAccount(who, { ...patch, ...(patch.login !== undefined ? { login: loginKey(patch.login) } : {}) })
+    return null
+  },
+  /** A new password: the person's own, or one an admin sets for them to change later */
+  async setPassword(who: Id, password: string) {
+    if (who !== state.me && !manages(who)) return false
+    const salt = newSalt()
+    const hash = await hashOf(password, salt)
+    editAccount(who, { salt, hash })
+    return true
   },
 
   markRead: (id: Id) => set(s => ({ ...s, notices: s.notices.map(n => (n.id === id ? { ...n, read: true } : n)) })),
@@ -204,6 +250,7 @@ export const actions = {
 
   // Human resources
   addEmployee(e: Omit<Employee, 'id' | 'company' | 'moves' | 'files' | 'hue'>) {
+    if (!mayEditHr()) return null
     const hues = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'indigo'] as const
     const note = state.positions.find(p => p.id === e.position)?.name
     const emp: Employee = { ...e, id: uid('e'), company: state.company, moves: [{ id: uid('m'), date: e.hired, kind: 'hired', note }], files: [], hue: hues[state.employees.length % hues.length] }
@@ -212,6 +259,7 @@ export const actions = {
   },
   /** Saves an employee. For an ERP user, the name and e-mail also change on their account and their other HR records. */
   updateEmployee: (id: Id, patch: Partial<Employee>) =>
+    mayEditHr() &&
     set(s => {
       const user = s.employees.find(e => e.id === id)?.user
       const same = user ? { given: patch.given, family: patch.family, email: patch.email } : {}
@@ -224,33 +272,41 @@ export const actions = {
     }),
   /** Adds or replaces one document of the personal file */
   setFile: (id: Id, item: FileItem) =>
+    mayEditHr() &&
     set(s => ({ ...s, employees: s.employees.map(e => (e.id === id ? { ...e, files: [...e.files.filter(f => f.type !== item.type), item] } : e)) })),
   removeFile(id: Id, type: Id) {
+    if (!mayEditHr()) return () => {}
     const item = state.employees.find(e => e.id === id)?.files.find(f => f.type === type)
     set(s => ({ ...s, employees: s.employees.map(e => (e.id === id ? { ...e, files: e.files.filter(f => f.type !== type) } : e)) }))
     return () => item && actions.setFile(id, item)
   },
   addDept(d: Pick<Department, 'name' | 'code'>) {
+    if (!mayEditHr()) return null
     const dept: Department = { ...d, id: uid('d'), company: state.company }
     set(s => ({ ...s, departments: [...s.departments, dept] }))
     return dept
   },
   updateDept: (id: Id, patch: Partial<Department>) =>
+    mayEditHr() &&
     set(s => ({ ...s, departments: s.departments.map(d => (d.id === id ? { ...d, ...patch } : d)) })),
   /** Removes an empty department with its positions; returns undo */
   removeDept(id: Id) {
+    if (!mayEditHr()) return () => {}
     const before = { departments: state.departments, positions: state.positions }
     set(s => ({ ...s, departments: s.departments.filter(d => d.id !== id), positions: s.positions.filter(p => p.dept !== id) }))
     return () => set(s => ({ ...s, ...before }))
   },
   addPosition(p: Pick<Position, 'dept' | 'name' | 'quota'>) {
+    if (!mayEditHr()) return null
     const pos: Position = { ...p, id: uid('o'), company: state.company }
     set(s => ({ ...s, positions: [...s.positions, pos] }))
     return pos
   },
   updatePosition: (id: Id, patch: Partial<Position>) =>
+    mayEditHr() &&
     set(s => ({ ...s, positions: s.positions.map(p => (p.id === id ? { ...p, ...patch } : p)) })),
   removePosition(id: Id) {
+    if (!mayEditHr()) return () => {}
     const before = state.positions
     set(s => ({ ...s, positions: s.positions.filter(p => p.id !== id) }))
     return () => set(s => ({ ...s, positions: before }))
@@ -469,6 +525,7 @@ export const actions = {
   setScan: (id: Id, patch: Partial<ScanItem>) => set(s => ({ ...s, scans: s.scans.map(x => (x.id === id ? { ...x, ...patch } : x)) })),
   /** Which Timely company a ХХК's attendance comes from; null goes back to finding it by name */
   linkTimely: (company: Id, id: number | null) =>
+    accessOf(state, state.me, company).admin &&
     set(s => {
       const timely = { ...s.timely }
       if (id === null) delete timely[company]

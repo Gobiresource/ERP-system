@@ -4,7 +4,8 @@ import { ArrowRight, Cake, CircleCheck, FileClock, FileWarning, Hourglass, Users
 import type { Employee } from '../../lib/types'
 import { useApp } from '../../lib/store'
 import { enter, usePageEnter } from '../../lib/motion'
-import { ALERT_DAYS, EMP_STATUS, MOVE, ageOn, alertsOf, current, dots, fileScore, hrScoped, readRegNo, whenEnds, type AlertKind } from '../../lib/hr'
+import { ALERT_DAYS, EMP_STATUS, MOVE, ageOn, alertsOf, current, dots, fileScore, readRegNo, whenEnds, type AlertKind } from '../../lib/hr'
+import { hrView } from '../../lib/access'
 import { monthDay, short, ymd } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Empty } from '../../ui/bits'
@@ -15,7 +16,7 @@ const ALERT_ICON: Record<AlertKind, typeof FileClock> = { contract: FileClock, p
 
 export default function Overview() {
   const s = useApp()
-  const hr = hrScoped(s)
+  const hr = hrView(s)
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
 
@@ -25,23 +26,25 @@ export default function Overview() {
   const scores = staff.map(e => fileScore(e, hr.docTypes))
   const filesPct = Math.round((100 * scores.reduce((n, x) => n + x.done, 0)) / Math.max(1, scores.reduce((n, x) => n + x.total, 0)))
   const alerts = alertsOf(hr.employees, hr.docTypes)
+  // A branch director sees their own people; headcount is the whole ХХК's
+  const all = hr.access.hr === 'all'
 
   return (
     <div ref={ref}>
       <HrNav at="" />
       <PageHead
         title="Хүний нөөц"
-        sub={`Энэ компанид ${staff.length} ажилтан ажиллаж байна.`}
+        sub={all ? `Энэ компанид ${staff.length} ажилтан ажиллаж байна.` : `Таны хариуцсан ${staff.length} ажилтан.`}
         stats={[
           { label: 'Ажилтан', value: staff.length },
-          { label: 'Орон тоо', value: filled, unit: `/ ${quota}` },
+          ...(all ? [{ label: 'Орон тоо', value: filled, unit: `/ ${quota}` }] : []),
           { label: 'Хувийн хэрэг', value: filesPct, unit: '%' },
           { label: 'Анхаарах зүйл', value: alerts.length, alert: alerts.length > 0 },
         ]}
       />
       <div className="hr-grid">
         <Alerts alerts={alerts} />
-        <Headcount />
+        {all && <Headcount />}
         <Movement />
         <Makeup staff={staff} />
         <Birthdays staff={staff} />
@@ -51,7 +54,7 @@ export default function Overview() {
 }
 
 function Alerts({ alerts }: { alerts: ReturnType<typeof alertsOf> }) {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const [all, setAll] = useState(false)
   const shown = all ? alerts : alerts.slice(0, 6)
   return (
@@ -90,7 +93,7 @@ function Alerts({ alerts }: { alerts: ReturnType<typeof alertsOf> }) {
 }
 
 function Headcount() {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const box = useRef<HTMLUListElement>(null)
   const quota = hr.positions.reduce((n, p) => n + p.quota, 0)
   const filled = hr.positions.reduce((n, p) => n + Math.min(p.quota, hr.filled.get(p.id) ?? 0), 0)
@@ -136,7 +139,7 @@ function Headcount() {
 
 /** Who joined and who left in the last 12 months, newest first. With one or two people a month, names say more than a chart. */
 function Movement() {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const [all, setAll] = useState(false)
   const now = new Date()
   const from = ymd(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()))

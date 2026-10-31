@@ -9,7 +9,8 @@ import { dueLabel, hm, parse, short } from '../lib/format'
 import { enter } from '../lib/motion'
 import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
 import { NAV } from './nav'
-import { EMP_STATUS, hrScoped } from '../lib/hr'
+import { EMP_STATUS } from '../lib/hr'
+import { hrView } from '../lib/access'
 import { DOC_KIND, seen } from '../lib/docs'
 import { STAGE } from '../lib/contracts'
 import { EmpAvatar } from '../screens/Hr'
@@ -40,7 +41,7 @@ export function Finder() {
 function FinderDialog() {
   const s = useApp()
   const sc = scoped(s)
-  const hr = hrScoped(s)
+  const hr = hrView(s)
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
   const ref = useRef<HTMLDialogElement>(null)

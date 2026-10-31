@@ -4,7 +4,7 @@ import { useRoute } from '../lib/router'
 import { useLens } from '../lib/motion'
 import { CompanySwitcher } from './CompanySwitcher'
 import { AccountMenu } from './AccountMenu'
-import { NAV } from './nav'
+import { navFor } from './nav'
 import { myChats, unread } from '../lib/chat'
 import { useContractTodo } from '../screens/docs/Contracts'
 import { useReportTodo } from '../screens/insights/Reports'
@@ -28,7 +28,7 @@ export function Sidebar() {
       <nav aria-label="Үндсэн цэс">
         <div className="nav__track" ref={track}>
           <span className="nav__lens" ref={lens} aria-hidden="true" />
-          {NAV.map(n => (
+          {navFor(s).map(n => (
             <a key={n.page} href={`#${n.page}`} className="nav__item" title={n.label} aria-current={route.page === n.page ? 'page' : undefined}>
               <n.icon className="ico" />
               <span className="nav__text">{n.label}</span>

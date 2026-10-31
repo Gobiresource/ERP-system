@@ -31,6 +31,37 @@ export interface Person {
   tz?: { city: string; offset: number }
   /** Emoji key from ui/avatars.ts, or 'letters' for initials. Unset: an emoji picked from the id */
   avatar?: string
+  /** How the person signs in, and their rights; none for someone who cannot sign in yet */
+  account?: Account
+}
+
+/** How far a right reaches in a ХХК: nobody, the people under the person by Шууд удирдлага, or everyone */
+export type Scope = 'none' | 'team' | 'all'
+
+/** What a person may see and do in one ХХК besides their own work, which everyone sees */
+export interface Access {
+  /** Users and their rights (Удирдлага) */
+  admin: boolean
+  /** Хүний нөөц: the employees' records */
+  hr: Scope
+  /** Adds and edits employees, departments and positions */
+  hrEdit: boolean
+  /** Ирц */
+  attendance: Scope
+}
+
+export interface Account {
+  /** Нэвтрэх нэр, lower case */
+  login: string
+  /** PBKDF2-SHA256 of the password with the salt, both base64; the password itself is never kept */
+  hash: string
+  salt: string
+  active: boolean
+  /** Every right in every ХХК: whoever sets the system up */
+  sysadmin?: boolean
+  /** Rights in each ХХК the person belongs to */
+  access: Record<Id, Access>
+  lastLogin?: string
 }
 
 export type TaskStatus = 'todo' | 'doing' | 'review' | 'done'

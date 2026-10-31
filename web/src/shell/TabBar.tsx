@@ -2,16 +2,17 @@
 import { useRef } from 'react'
 import { LayoutGrid, Search } from 'lucide-react'
 import { useRoute } from '../lib/router'
+import { useApp } from '../lib/store'
 import { setFinder } from '../lib/ui'
 import { useLens } from '../lib/motion'
 import { go } from '../lib/router'
 import { Menu, MenuItem, usePopover } from '../ui/Popover'
-import { NAV } from './nav'
-
-const MAIN = NAV.slice(0, 4)
-const MORE = NAV.slice(4)
+import { navFor } from './nav'
 
 export function TabBar() {
+  const nav = navFor(useApp())
+  const MAIN = nav.slice(0, 4)
+  const MORE = nav.slice(4)
   const route = useRoute()
   const track = useRef<HTMLDivElement>(null)
   const lens = useRef<HTMLSpanElement>(null)

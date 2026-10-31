@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { AtSign, Bell, CalendarClock, Check, ChevronRight, Contrast, Database, Download, Flag, Hourglass, Inbox, Layers, Mail, Minus, Moon, Palette, Play, Plus, RotateCcw, Shield, Smile, Square, Sun, SunMoon, Timer, User, BadgeCheck, Droplet } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
+import { AtSign, Bell, CalendarClock, Check, ChevronRight, Contrast, Database, Download, Flag, Hourglass, Inbox, KeyRound, Layers, Mail, Minus, Moon, Palette, Play, Plus, RotateCcw, Shield, Smile, Square, Sun, SunMoon, Timer, User, BadgeCheck, Droplet } from 'lucide-react'
 import '../styles/screens/settings.css'
 import type { Accent, Settings as Prefs, Wall } from '../lib/types'
 import { actions, getState, scoped, useApp } from '../lib/store'
@@ -8,6 +8,7 @@ import { focus, focusLeft, toast, useUi } from '../lib/ui'
 import { applyAppearance } from '../lib/theme'
 import { gsap, reduced, useLens, usePageEnter } from '../lib/motion'
 import { downloadCsv } from '../lib/insights'
+import { hashOf, strongEnough } from '../lib/access'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { Avatar, PRIO, STATUS } from '../ui/bits'
@@ -18,6 +19,7 @@ const WALLS: [Wall, string][] = [['ash', 'Үнс'], ['sand', 'Элс'], ['sage',
 const ACCENTS: [Accent, string][] = [['blue', 'Цэнхэр'], ['purple', 'Нил ягаан'], ['pink', 'Ягаан'], ['orange', 'Улбар шар'], ['green', 'Ногоон'], ['graphite', 'Бараан саарал']]
 const SECTIONS = [
   { id: 'set-profile', label: 'Хувийн мэдээлэл', icon: User, hue: 'blue' },
+  { id: 'set-login', label: 'Нэвтрэх', icon: KeyRound, hue: 'green' },
   { id: 'set-notifications', label: 'Мэдэгдэл', icon: Bell, hue: 'pink' },
   { id: 'set-appearance', label: 'Харагдах байдал', icon: Palette, hue: 'purple' },
   { id: 'set-focus', label: 'Төвлөрөх цаг', icon: Timer, hue: 'orange' },
@@ -76,6 +78,7 @@ export default function Settings() {
         </nav>
         <div className="settings__col">
           <Profile />
+          <SignIn />
           <Notifications />
           <Appearance />
           <FocusPrefs />
@@ -83,6 +86,61 @@ export default function Settings() {
         </div>
       </div>
     </div>
+  )
+}
+
+/** The person's own sign-in: the login, and a new password once the current one is right */
+function SignIn() {
+  const s = useApp()
+  const acc = scoped(s).me.account
+  const [f, setF] = useState({ now: '', next: '', again: '' })
+  const [errors, setErrors] = useState<Partial<typeof f>>({})
+  const [busy, setBusy] = useState(false)
+  if (!acc) return null
+  const put = (k: keyof typeof f) => (e: { target: { value: string } }) => {
+    setF({ ...f, [k]: e.target.value })
+    if (errors[k]) setErrors({ ...errors, [k]: undefined })
+  }
+  const change = async (e: FormEvent) => {
+    e.preventDefault()
+    const err: Partial<typeof f> = {}
+    if (!f.now) err.now = 'Одоогийн нууц үгээ бичнэ үү.'
+    if (!f.next) err.next = 'Шинэ нууц үгээ бичнэ үү.'
+    else if (!strongEnough(f.next)) err.next = 'Нууц үг 8-аас доошгүй тэмдэгттэй, үсэг, тоо хоёулаа орсон байх ёстой.'
+    else if (f.again !== f.next) err.again = 'Шинэ нууц үг таарахгүй байна.'
+    setErrors(err)
+    if (Object.keys(err).length) return
+    setBusy(true)
+    if ((await hashOf(f.now, acc.salt)) !== acc.hash) {
+      setBusy(false)
+      setErrors({ now: 'Одоогийн нууц үг буруу байна.' })
+      return
+    }
+    await actions.setPassword(s.me, f.next)
+    setBusy(false)
+    setF({ now: '', next: '', again: '' })
+    toast('Нууц үг солигдлоо.')
+  }
+  const input = (k: keyof typeof f, label: string, auto: string) => (
+    <div className="field">
+      <label className="field__label" htmlFor={`pw-${k}`}>{label}</label>
+      <input id={`pw-${k}`} type="password" value={f[k]} onChange={put(k)} autoComplete={auto} aria-invalid={errors[k] ? true : undefined} aria-describedby={errors[k] ? `pw-${k}-error` : undefined} />
+      {errors[k] && <span className="field__error" id={`pw-${k}-error`}>{errors[k]}</span>}
+    </div>
+  )
+  return (
+    <Group id="set-login" title="Нэвтрэх" sub="Нэвтрэх нэр, нууц үг">
+      <div className="cell">
+        <Icon icon={KeyRound} hue="green" />
+        <div className="cell__main"><span className="cell__text"><b>Нэвтрэх нэр</b><small>{acc.login}. Өөрчлөх бол удирдлагадаа хандана уу.</small></span></div>
+      </div>
+      <form className="set-pass" onSubmit={change} noValidate aria-label="Нууц үг солих">
+        {input('now', 'Одоогийн нууц үг', 'current-password')}
+        {input('next', 'Шинэ нууц үг', 'new-password')}
+        {input('again', 'Шинэ нууц үгээ давтах', 'new-password')}
+        <button type="submit" className="btn btn--glass" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нууц үг солих'}</button>
+      </form>
+    </Group>
   )
 }
 

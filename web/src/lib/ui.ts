@@ -35,6 +35,7 @@ export type Dialog =
   | { kind: 'reportPdf'; id: Id }
   | { kind: 'kpiRules' }
   | { kind: 'scanSplit'; id: Id; ai: boolean }
+  | { kind: 'password'; id: Id }
   | null
 
 export interface Note {
@@ -60,9 +61,26 @@ export interface Ui {
   focus: Focus
   /** Demo only: the person the contract pages act as, to try every step of the process (null: me) */
   actAs: Id | null
+  /** Who is signed in; null shows the sign-in page */
+  session: Id | null
 }
 
-let ui: Ui = { dialog: null, finder: false, note: null, islandOpen: false, focus: { status: 'idle', total: 0, endsAt: 0, left: 0 }, actAs: null }
+// Signed in for 14 days in this browser, or until Гарах; the server will keep sessions once it holds the data
+const SESSION = 'erp:session'
+const KEEP = 14 * 864e5
+function readSession(): Id | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(SESSION) ?? 'null')
+    const p = v && getState().people.find(x => x.id === v.user)
+    if (!p?.account?.active || !(v.until > Date.now())) return null
+    if (getState().me !== p.id) actions.setMe(p.id)
+    return p.id
+  } catch {
+    return null
+  }
+}
+
+let ui: Ui = { dialog: null, finder: false, note: null, islandOpen: false, focus: { status: 'idle', total: 0, endsAt: 0, left: 0 }, actAs: null, session: readSession() }
 const subs = new Set<() => void>()
 const subscribe = (f: () => void) => (subs.add(f), () => void subs.delete(f))
 const set = (patch: Partial<Ui>) => {
@@ -78,6 +96,15 @@ export const close = () => set({ dialog: null })
 export const setFinder = (finder: boolean) => set({ finder })
 export const setIslandOpen = (islandOpen: boolean) => set({ islandOpen })
 export const setActAs = (actAs: Id | null) => set({ actAs })
+
+export function signIn(user: Id) {
+  try { localStorage.setItem(SESSION, JSON.stringify({ user, until: Date.now() + KEEP })) } catch { /* private window: signed in until the tab closes */ }
+  set({ session: user })
+}
+export function signOut() {
+  try { localStorage.removeItem(SESSION) } catch { /* nothing kept */ }
+  set({ session: null, dialog: null, actAs: null, finder: false })
+}
 
 let noteId = 0
 let noteTimer = 0

@@ -7,6 +7,7 @@ import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { seedContracts } from './contracts'
 import { seedReports } from './reports'
+import { demoAccounts } from './access'
 
 let n = 0
 const uid = (p: string) => `${p}${++n}`
@@ -247,5 +248,5 @@ export function seed(): State {
       focus: { work: 25, rest: 5, autoStart: false },
     },
   }
-  return { ...state, ...seedReports(now, state) }
+  return { ...state, ...seedReports(now, state), people: demoAccounts(state) }
 }

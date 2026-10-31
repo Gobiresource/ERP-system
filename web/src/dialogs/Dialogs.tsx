@@ -14,6 +14,7 @@ import { FileSheet } from './Viewer'
 import { ContractAsk, ContractPdf, ContractReason, ContractRegister, NewContract, ProcessRoles } from './ContractForms'
 import { KpiRules, ReportPdf, ReportReturn } from './ReportForms'
 import { ScanSplit } from './ScanForms'
+import { PasswordReset } from './AdminForms'
 
 /** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
 export function Dialogs() {
@@ -51,5 +52,6 @@ export function Dialogs() {
     case 'reportPdf': return <ReportPdf key={dialog.id} id={dialog.id} />
     case 'kpiRules': return <KpiRules />
     case 'scanSplit': return <ScanSplit key={dialog.id} id={dialog.id} ai={dialog.ai} />
+    case 'password': return <PasswordReset key={dialog.id} id={dialog.id} />
   }
 }

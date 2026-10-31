@@ -5,7 +5,8 @@ import type { EmpStatus, Employee } from '../../lib/types'
 import { useApp } from '../../lib/store'
 import { go } from '../../lib/router'
 import { usePageEnter } from '../../lib/motion'
-import { ALERT_DAYS, CONTRACT, EMP_STATUS, EMP_STATUSES, current, dots, fileScore, fullName, hrScoped } from '../../lib/hr'
+import { ALERT_DAYS, CONTRACT, EMP_STATUS, EMP_STATUSES, current, dots, fileScore, fullName } from '../../lib/hr'
+import { hrView } from '../../lib/access'
 import { collator, daysFromToday, short } from '../../lib/format'
 import { downloadCsv } from '../../lib/insights'
 import { PageHead } from '../../ui/PageHead'
@@ -19,7 +20,7 @@ const STATUS_LABEL = (f: StatusFilter) => (f === 'current' ? 'Одоо ажил�
 
 export default function Employees() {
   const s = useApp()
-  const hr = hrScoped(s)
+  const hr = hrView(s)
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
   const [q, setQ] = useState('')
@@ -77,11 +78,11 @@ export default function Employees() {
       <HrNav at="employees" />
       <PageHead
         title="Ажилтан"
-        sub={`Энэ компанид ${staff} ажилтан ажиллаж байна.`}
+        sub={hr.access.hr === 'all' ? `Энэ компанид ${staff} ажилтан ажиллаж байна.` : `Таны хариуцсан ${staff} ажилтан.`}
         actions={
           <>
             <button type="button" className="btn btn--glass" onClick={exportCsv}><Download className="ico" />Excel-ээр татах</button>
-            <a className="btn btn--accent" href="#hr-new"><UserPlus className="ico" />Ажилтан нэмэх</a>
+            {hr.access.hrEdit && <a className="btn btn--accent" href="#hr-new"><UserPlus className="ico" />Ажилтан нэмэх</a>}
           </>
         }
       />
@@ -129,7 +130,7 @@ export default function Employees() {
       {hr.employees.length === 0 ? (
         <div className="card glass">
           <Empty title="Бүртгэлтэй ажилтан алга" text="Ажилтан бүрийн хувийн мэдээлэл, албан тушаал, гэрээ нэг дор хадгалагдана.">
-            <a className="btn btn--accent" href="#hr-new"><UserPlus className="ico" />Ажилтан нэмэх</a>
+            {hr.access.hrEdit && <a className="btn btn--accent" href="#hr-new"><UserPlus className="ico" />Ажилтан нэмэх</a>}
           </Empty>
         </div>
       ) : shown.length === 0 ? (

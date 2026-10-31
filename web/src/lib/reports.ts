@@ -91,9 +91,11 @@ export function writers(s: Org, company: Id, month: string): Id[] {
     .map(e => e.user!)
 }
 
-/** The director, the top and HR read every report of the ХХК. HR is known by its team here; the real system gives it a right. */
-export const seesAll = (s: Org & Pick<State, 'people'>, company: Id, who: Id) =>
-  (!!empOf(s, company, who) && !managerOf(s, company, who)) || s.people.find(p => p.id === who)?.team === 'Хүний нөөц'
+/** The director, the top and whoever may see every HR record (Удирдлага) read every report of the ХХК */
+export function seesAll(s: Org & Pick<State, 'people'>, company: Id, who: Id) {
+  const a = s.people.find(p => p.id === who)?.account
+  return (!!empOf(s, company, who) && !managerOf(s, company, who)) || !!a?.sysadmin || a?.access[company]?.hr === 'all'
+}
 
 /** Whose reports a person may read: their own and the ones they score, or everyone's */
 export function readable(s: Org & Pick<State, 'people'>, company: Id, who: Id, month: string): Id[] {

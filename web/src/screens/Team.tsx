@@ -3,6 +3,7 @@ import { Moon, SquareCheck, Sun, UserPlus } from 'lucide-react'
 import '../styles/screens/team.css'
 import type { Person } from '../lib/types'
 import { scoped, useApp } from '../lib/store'
+import { accessOf } from '../lib/access'
 import { open } from '../lib/ui'
 import { enter, usePageEnter } from '../lib/motion'
 import { localTime, teamHue, workload } from '../lib/derive'
@@ -52,10 +53,12 @@ export default function Team() {
             <div className="tfilter-wrap">
               <Seg label="Хэлтсээр шүүх" value={team} onChange={setTeam} options={[{ value: 'all', label: 'Бүгд' }, ...teams.map(t => ({ value: t, label: t }))]} />
             </div>
-            <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'invite' })}>
-              <UserPlus className="ico" />
-              Ажилтан нэмэх
-            </button>
+            {accessOf(s, s.me, s.company).admin && (
+              <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'invite' })}>
+                <UserPlus className="ico" />
+                Хэрэглэгч нэмэх
+              </button>
+            )}
           </>
         }
       />

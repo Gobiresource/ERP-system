@@ -5,16 +5,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, LoaderCircle, RefreshCw, TreePalm, UserRound } from 'lucide-react'
 import '../../styles/screens/attendance.css'
-import type { TimelyDay, TimelyEmployee, TimelyMonth } from '../../lib/types'
+import type { State, TimelyDay, TimelyEmployee, TimelyMonth } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { usePageEnter } from '../../lib/motion'
 import { DAY_STATE, EVERY, LOW, avgIn, datesOf, dayStateOf, linkOf, loadDays, loadMonth, matchUp, pctOf, sampleDays, sampleMonth, spanOf, sumUp, timelyState, type DayState, type Row, type TimelyState } from '../../lib/attendance'
-import { dots, hrScoped } from '../../lib/hr'
+import { dots } from '../../lib/hr'
+import { hrView, seer } from '../../lib/access'
 import { monthKey, monthName, prevMonth } from '../../lib/reports'
 import { collator, hm, parse, short, today, weekdayShort } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
-import { Empty } from '../../ui/bits'
+import { Empty, NoAccess } from '../../ui/bits'
 import { EmpAvatar, HrNav } from '../Hr'
 
 /** Kept while moving between the overview and an employee, and back */
@@ -80,6 +81,19 @@ function useAttendance() {
 }
 type Att = ReturnType<typeof useAttendance>
 
+/**
+ * The month within the person's attendance right: everyone, or only their own people by Шууд удирдлага. Those in one
+ * system only are for whoever sees everyone.
+ */
+function visible(s: State, data: TimelyMonth) {
+  const hr = hrView(s)
+  const m = matchUp(hr.all, data.employees)
+  const scope = hr.access.attendance
+  if (scope === 'all') return m
+  const sees = seer(s, s.me, s.company, scope)
+  return { rows: m.rows.filter(r => r.e && sees(r.e)), onlyTimely: [], onlyErp: [] }
+}
+
 /** A Timely employee's name the way ours are shown: "Д.Бат-Эрдэнэ" */
 const tname = (t: TimelyEmployee) => (t.family ? short(t) : t.given || `№ ${t.workerId}`)
 /** The employee's address in Ирц: ours by id, one only Timely knows by its worker number */
@@ -88,17 +102,17 @@ const pctText = (p: number | null) => (p === null ? '—' : `${p}%`)
 
 export default function Attendance() {
   const a = useAttendance()
-  const hr = hrScoped(a.s)
+  const hr = hrView(a.s)
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
-  const m = a.data ? matchUp(hr.employees, a.data.employees) : null
+  const m = a.data ? visible(a.s, a.data) : null
   const sum = m ? sumUp(m.rows) : null
   return (
     <div ref={ref}>
       <HrNav at="attendance" />
       <PageHead
         title="Ирц"
-        sub="Timely-ийн ирц. Ажилтныг регистрийн дугаараар тулгана."
+        sub={hr.access.attendance === 'all' ? 'Timely-ийн ирц. Ажилтныг регистрийн дугаараар тулгана.' : 'Таны хариуцсан ажилтны ирц, Timely-ээс.'}
         stats={sum ? [
           { label: 'Дундаж ирц', value: sum.avg ?? '—', unit: sum.avg === null ? undefined : '%' },
           { label: 'Ажиллавал зохих өдөр', value: sum.workDays },
@@ -143,8 +157,8 @@ function TimelyBar({ a }: { a: Att }) {
   const { s, timely, link } = a
   if (!timely) return <p className="sbar" role="status"><LoaderCircle className="ico spin" />Timely-тэй холболтыг шалгаж байна…</p>
   const picked = s.timely[s.company]
-  // Found by name: nothing to pick unless Timely has several companies
-  const pick = timely.companies.length > 0 && (picked !== undefined || !link || timely.companies.length > 1) && (
+  // Found by name: nothing to pick unless Timely has several companies; only an admin picks
+  const pick = hrView(s).access.admin && timely.companies.length > 0 && (picked !== undefined || !link || timely.companies.length > 1) && (
     <label className="att-pick">
       <span>Timely-ийн байгууллага</span>
       <select value={picked ?? ''} onChange={e => actions.linkTimely(s.company, e.target.value ? Number(e.target.value) : null)}>
@@ -214,7 +228,7 @@ function Waiting({ a }: { a: Att }) {
 
 /** The employee: ours with their avatar, or one only Timely knows */
 function Who({ r, sub }: { r: Row; sub?: string }) {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   return (
     <span className="etable__who">
       {r.e ? <EmpAvatar e={r.e} size="sm" /> : <span className="att-stranger" aria-hidden="true"><UserRound className="ico" /></span>}
@@ -253,7 +267,7 @@ function Low({ rows }: { rows: Row[] }) {
 
 /** Each department's average, our departments where the employee is ours */
 function ByDept({ rows }: { rows: Row[] }) {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const groups = new Map<string, number[]>()
   for (const r of rows) {
     const p = pctOf(r.t)
@@ -287,7 +301,7 @@ type Sort = { key: 'name' | 'pct'; dir: 1 | -1 }
 
 /** Everyone's month: days and hours worked of those to work, the share, and the annual leave left */
 function Everyone({ rows }: { rows: Row[] }) {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const [dept, setDept] = useState('')
   const [sort, setSort] = useState<Sort>({ key: 'name', dir: 1 })
   const deptOf = (r: Row) => (r.e ? hr.dept(r.e.dept)?.name : r.t.division) || 'Хэлтэсгүй'
@@ -359,7 +373,7 @@ function Everyone({ rows }: { rows: Row[] }) {
 
 /** Those in one system only: often a registration number typed differently, or someone not yet added */
 function Unmatched({ a, onlyTimely, onlyErp }: { a: Att; onlyTimely: TimelyEmployee[]; onlyErp: ReturnType<typeof matchUp>['onlyErp'] }) {
-  const hr = hrScoped(a.s)
+  const hr = hrView(a.s)
   return (
     <section className="card glass span-12" aria-labelledby="atu-t" data-enter>
       <div className="card__head">
@@ -405,12 +419,14 @@ const ICON: Partial<Record<DayState, typeof CircleCheck>> = { part: CircleAlert,
 /** One employee's month, day by day */
 export function AttendanceOne({ id }: { id: string }) {
   const a = useAttendance()
-  const hr = hrScoped(a.s)
+  const hr = hrView(a.s)
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
-  const m = a.data ? matchUp(hr.employees, a.data.employees) : null
+  const m = a.data ? visible(a.s, a.data) : null
   const row = m?.rows.find(r => keyOf(r) === id)
-  const ours = hr.employee(id)
+  const ours = hr.all.find(e => e.id === id)
+  // Someone outside the person's right is not shown, not even as missing from Timely
+  const outside = hr.access.attendance !== 'all' && !(ours && seer(a.s, a.s.me, a.s.company, hr.access.attendance)(ours))
   const [days, setDays] = useState<TimelyDay[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   /** Шинэчлэх here reads the days again too */
@@ -434,7 +450,7 @@ export function AttendanceOne({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [worker, linkId, a.month, a.demo, again])
 
-  const name = row ? (row.e ? short(row.e) : tname(row.t)) : ours ? short(ours) : 'Ажилтны ирц'
+  const name = outside ? 'Ажилтны ирц' : row ? (row.e ? short(row.e) : tname(row.t)) : ours ? short(ours) : 'Ажилтны ирц'
   const back = <a className="ibtn ibtn--glass head__back" href="#hr-attendance" aria-label="Ирц руу буцах"><ChevronLeft className="ico" /></a>
   const p = row ? pctOf(row.t) : null
   const avg = days ? avgIn(days) : null
@@ -445,7 +461,7 @@ export function AttendanceOne({ id }: { id: string }) {
       <PageHead
         title={name}
         sub={row ? [row.e ? hr.position(row.e.position)?.name : row.t.position, row.e ? hr.dept(row.e.dept)?.name : row.t.division].filter(Boolean).join(', ') : undefined}
-        lead={<>{back}{row?.e || ours ? <span className="head__icon"><EmpAvatar e={(row?.e ?? ours)!} size="xl" /></span> : null}</>}
+        lead={<>{back}{!outside && (row?.e || ours) ? <span className="head__icon"><EmpAvatar e={(row?.e ?? ours)!} size="xl" /></span> : null}</>}
         stats={row ? [
           { label: 'Ирц', value: p ?? '—', unit: p === null ? undefined : '%', alert: p !== null && p < LOW },
           { label: 'Ажилласан өдөр', value: row.t.workedDays, unit: `/ ${row.t.supposedDays}` },
@@ -455,7 +471,9 @@ export function AttendanceOne({ id }: { id: string }) {
         actions={<MonthTools a={{ ...a, load: (fresh: boolean) => (a.load(fresh), setAgain(n => n + 1)) }} />}
       />
       <TimelyBar a={a} />
-      {!m ? (
+      {outside ? (
+        <NoAccess inline text="Та зөвхөн хариуцсан ажилтныхаа ирцийг харах эрхтэй." />
+      ) : !m ? (
         <Waiting a={a} />
       ) : !row ? (
         <section className="card glass" data-enter>

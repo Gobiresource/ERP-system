@@ -134,3 +134,8 @@ label.cell__text { cursor: pointer; }
   .stepper__btn { width: 46px; height: 46px; }
   .cell__input { min-height: 44px; }
 }
+
+/* Changing one's password (Нэвтрэх) */
+.set-pass { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 12px; padding: 12px 4px 4px; }
+.set-pass .btn { grid-column: 1 / -1; justify-self: start; }
+@media (width <= 720px) { .set-pass { grid-template-columns: minmax(0, 1fr); } }

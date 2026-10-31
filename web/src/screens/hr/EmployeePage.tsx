@@ -5,24 +5,27 @@ import type { DocType, Employee } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { ALERT_DAYS, CONTRACT, MOVE, MOVE_HUE, ageOn, alertsOf, dots, fileScore, fileState, hrScoped, readRegNo, tenure, whenEnds, type FileState } from '../../lib/hr'
+import { ALERT_DAYS, CONTRACT, MOVE, MOVE_HUE, ageOn, alertsOf, dots, fileScore, fileState, readRegNo, tenure, whenEnds, type FileState } from '../../lib/hr'
+import { hrView } from '../../lib/access'
 import { addDays, daysFromToday, short, today, ymd } from '../../lib/format'
 import { bossOf } from '../../lib/reports'
 import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
-import { Empty } from '../../ui/bits'
+import { Empty, NoAccess } from '../../ui/bits'
 import { EmpAvatar, EmpStatusPill } from '../Hr'
 
 type Tab = 'general' | 'history' | 'file'
 
 export default function EmployeePage({ id }: { id: string }) {
   const s = useApp()
-  const hr = hrScoped(s)
+  const hr = hrView(s)
   const e = hr.employee(id)
   const ref = useRef<HTMLDivElement>(null)
   const [tab, setTab] = useState<Tab>('general')
   usePageEnter(ref)
 
+  // Someone outside the person's right: said so, without their name
+  if (!e && hr.all.some(x => x.id === id)) return <NoAccess text="Та зөвхөн хариуцсан ажилтныхаа мэдээллийг харах эрхтэй." />
   if (!e) {
     return (
       <div ref={ref}>
@@ -64,8 +67,8 @@ export default function EmployeePage({ id }: { id: string }) {
           ]}
           actions={
             <>
-              <a className="btn btn--glass" href={`#hr-attendance-${e.id}`}><CalendarCheck className="ico" />Ирц</a>
-              <a className="btn btn--glass" href={`#hr-${e.id}-edit`}><Pencil className="ico" />Засах</a>
+              {hr.access.attendance !== 'none' && <a className="btn btn--glass" href={`#hr-attendance-${e.id}`}><CalendarCheck className="ico" />Ирц</a>}
+              {hr.access.hrEdit && <a className="btn btn--glass" href={`#hr-${e.id}-edit`}><Pencil className="ico" />Засах</a>}
             </>
           }
         />
@@ -99,7 +102,7 @@ export default function EmployeePage({ id }: { id: string }) {
 
       {tab === 'general' && <General e={e} />}
       {tab === 'history' && <History e={e} />}
-      {tab === 'file' && <PersonalFile e={e} types={hr.docTypes} />}
+      {tab === 'file' && <PersonalFile e={e} types={hr.docTypes} edit={hr.access.hrEdit} />}
     </div>
   )
 }
@@ -116,7 +119,7 @@ function Row({ label, children }: { label: string; children?: React.ReactNode })
 /** One sheet of ruled rows, a topic per heading: reads like the paper form, not a wall of boxes */
 function General({ e }: { e: Employee }) {
   const s = useApp()
-  const hr = hrScoped(s)
+  const hr = hrView(s)
   const boss = bossOf(s, e)
   const reg = readRegNo(e.regNo)
   const prob = e.probationEnd ? daysFromToday(e.probationEnd) : null
@@ -192,7 +195,7 @@ function History({ e }: { e: Employee }) {
 
 const FILE_ICON: Record<FileState, typeof FileCheck2> = { ok: FileCheck2, soon: FileClock, expired: FileX2, missing: CircleDashed }
 
-function PersonalFile({ e, types }: { e: Employee; types: DocType[] }) {
+function PersonalFile({ e, types, edit }: { e: Employee; types: DocType[]; edit: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<DocType | null>(null)
   const f = fileScore(e, types)
@@ -239,10 +242,10 @@ function PersonalFile({ e, types }: { e: Employee; types: DocType[] }) {
               {t.expires && item && (
                 <label className="efile__exp">
                   <span>Хүчинтэй хугацаа</span>
-                  <input type="date" value={item.expires ?? ''} onChange={ev => ev.target.value && actions.setFile(e.id, { ...item, expires: ev.target.value })} />
+                  <input type="date" value={item.expires ?? ''} disabled={!edit} onChange={ev => ev.target.value && actions.setFile(e.id, { ...item, expires: ev.target.value })} />
                 </label>
               )}
-              <span className="efile__acts">
+              {edit && <span className="efile__acts">
                 <button type="button" className="btn btn--glass btn--sm" onClick={() => pick(t)}>
                   <Upload className="ico" />{item ? 'Солих' : 'Хавсаргах'}<span className="sr-only">: {t.name}</span>
                 </button>
@@ -252,7 +255,7 @@ function PersonalFile({ e, types }: { e: Employee; types: DocType[] }) {
                     <X className="ico" />
                   </button>
                 ) : <span className="ibtn ibtn--sm efile__nox" aria-hidden="true" />}
-              </span>
+              </span>}
             </li>
           )
         })}

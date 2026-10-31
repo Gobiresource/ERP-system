@@ -7,7 +7,8 @@ import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
 import { toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { CONTRACT, EMP_STATUS, EMP_STATUSES, ageOn, current, dots, hrScoped, nextCode, readRegNo } from '../../lib/hr'
+import { CONTRACT, EMP_STATUS, EMP_STATUSES, ageOn, current, dots, nextCode, readRegNo } from '../../lib/hr'
+import { hrView } from '../../lib/access'
 import { bossOf } from '../../lib/reports'
 import { collator, short, today, ymd } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
@@ -32,7 +33,7 @@ const REQUIRED: Partial<Record<Key, string>> = {
 
 export default function EmployeeForm({ id }: { id?: string }) {
   const s = useApp()
-  const hr = hrScoped(s)
+  const hr = hrView(s)
   const ref = useRef<HTMLDivElement>(null)
   const summary = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
@@ -77,7 +78,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
       case 'regNo': {
         const r = readRegNo(val)
         if (!r) return 'Регистрийн дугаарыг зөв бичнэ үү, жишээ нь УБ90010112.'
-        if (hr.employees.some(e => e.id !== id && e.regNo === r.value)) return 'Энэ регистрийн дугаартай ажилтан бүртгэлтэй байна.'
+        if (hr.all.some(e => e.id !== id && e.regNo === r.value)) return 'Энэ регистрийн дугаартай ажилтан бүртгэлтэй байна.'
         return ''
       }
       case 'phone':
@@ -86,7 +87,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
       case 'email':
         return EMAIL.test(val) ? '' : 'Имэйл хаяг буруу байна. Жишээ нь: bold@example.mn'
       case 'code':
-        return hr.employees.some(e => e.id !== id && e.code === val) ? 'Энэ кодтой ажилтан бүртгэлтэй байна.' : ''
+        return hr.all.some(e => e.id !== id && e.code === val) ? 'Энэ кодтой ажилтан бүртгэлтэй байна.' : ''
       case 'probationEnd':
         return v.hired && val <= v.hired ? 'Туршилтын хугацаа дуусах огноо ажилд орсон огнооноос хойш байх ёстой.' : ''
       case 'cEnd':
@@ -140,6 +141,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
       go('hr', editing.id)
     } else {
       const emp = actions.addEmployee(data)
+      if (!emp) return toast('Танд ажилтан нэмэх эрх алга.', { kind: 'warn' })
       toast('Ажилтан нэмэгдлээ.')
       go('hr', emp.id)
     }
@@ -149,7 +151,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
   // Who scores the monthly report when nobody is set: the head of the chosen department, else the director
   const found = bossOf(s, { ...(editing ?? { id: '', company: s.company }), dept: f.dept, manager: undefined } as Employee)
   const auto = found === 'none' ? undefined : found
-  const bosses = hr.employees.filter(x => current(x) && x.id !== editing?.id && x.id !== auto?.id).sort((a, b) => collator.compare(a.given, b.given))
+  const bosses = hr.all.filter(x => current(x) && x.id !== editing?.id && x.id !== auto?.id).sort((a, b) => collator.compare(a.given, b.given))
   const pos = hr.positions.find(p => p.id === f.position)
   const free = pos ? pos.quota - (hr.filled.get(pos.id) ?? 0) + (editing?.position === pos.id && editing.status !== 'left' ? 1 : 0) : 0
   const back = editing ? `#hr-${editing.id}` : '#hr-employees'

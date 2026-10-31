@@ -3,12 +3,13 @@ import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { actions, useApp } from '../lib/store'
 import { close, toast } from '../lib/ui'
-import { current, hrScoped } from '../lib/hr'
+import { current } from '../lib/hr'
+import { hrView } from '../lib/access'
 import { collator, short } from '../lib/format'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 
 export function DeptForm({ id }: { id?: string }) {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const d = id ? hr.dept(id) : undefined
   const [f, setF] = useState({ name: d?.name ?? '', code: d?.code ?? '', head: d?.head ?? '' })
   const staff = d ? hr.employees.filter(e => e.dept === d.id && current(e)).sort((a, b) => collator.compare(a.given, b.given)) : []
@@ -54,7 +55,7 @@ export function DeptForm({ id }: { id?: string }) {
 }
 
 export function PositionForm({ id, dept }: { id?: string; dept?: string }) {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const p = id ? hr.position(id) : undefined
   const taken = p ? hr.filled.get(p.id) ?? 0 : 0
   const [f, setF] = useState({ name: p?.name ?? '', quota: String(p?.quota ?? 1), dept: p?.dept ?? dept ?? hr.departments[0]?.id ?? '' })

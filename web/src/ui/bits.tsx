@@ -1,10 +1,11 @@
-// Small shared pieces: labels, avatars, chips, priority, project icons, empty state.
+// Small shared pieces: labels, avatars, chips, priority, project icons, empty state, a page without the right to see it.
 import type { ReactNode } from 'react'
-import { Boxes, Building, ClipboardList, FileText, Flag, GraduationCap, Handshake, Hourglass, MonitorSmartphone, Moon, PartyPopper, Receipt, Rocket, Sparkles, Truck, Users, Warehouse } from 'lucide-react'
+import { Boxes, Building, ClipboardList, FileText, Flag, GraduationCap, Handshake, Hourglass, Lock, MonitorSmartphone, Moon, PartyPopper, Receipt, Rocket, Sparkles, Truck, Users, Warehouse } from 'lucide-react'
 import type { CalEvent, EventKind, Hue, Person, Presence, Priority, Project, ProjectIcon, ProjectStatus, TaskStatus } from '../lib/types'
 import type { Scoped } from '../lib/store'
 import { initials, short } from '../lib/format'
 import { avatarOf } from './avatars'
+import { PageHead } from './PageHead'
 
 export const PRIO: Record<Priority, string> = { low: 'Бага', medium: 'Дунд', high: 'Өндөр', urgent: 'Яаралтай' }
 export const STATUS: Record<TaskStatus, string> = { todo: 'Хийх', doing: 'Хийж буй', review: 'Хянаж буй', done: 'Дууссан' }
@@ -101,4 +102,16 @@ export function Empty({ icon, title, text, children }: { icon?: ReactNode; title
       {children}
     </div>
   )
+}
+
+/** In place of a page, or of a part under its title (inline), the signed-in person has no right to see */
+export function NoAccess({ text = 'Эрх авахын тулд удирдлагадаа хандана уу.', inline }: { id?: string; text?: string; inline?: boolean }) {
+  const card = (
+    <section className="card glass no-access">
+      <Empty icon={<Lock className="ico" />} title="Танд энэ хэсгийг харах эрх алга" text={text}>
+        <a className="btn btn--glass" href="#home">Нүүр хуудас руу очих</a>
+      </Empty>
+    </section>
+  )
+  return inline ? card : <div><PageHead title="Хандах эрхгүй" />{card}</div>
 }

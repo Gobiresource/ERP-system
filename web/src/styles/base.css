@@ -348,7 +348,7 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 .empty { display: grid; justify-items: center; gap: 6px; padding: 28px 16px; text-align: center; color: var(--text-2); }
 .empty .ico { width: 30px; height: 30px; margin-bottom: 4px; color: var(--text-3); }
 .empty__title { font-weight: 650; color: var(--text); }
-.empty__text { font-size: 14px; }
+.empty__text { font-size: 14px; text-wrap: pretty; }
 
 .row { display: flex; align-items: center; gap: 12px; }
 .list-sep > * + * { border-top: 1px solid var(--sep); }

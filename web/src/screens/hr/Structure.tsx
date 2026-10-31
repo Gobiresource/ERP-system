@@ -5,7 +5,8 @@ import type { Department } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
-import { current, hrScoped } from '../../lib/hr'
+import { current } from '../../lib/hr'
+import { hrView } from '../../lib/access'
 import { short } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
@@ -13,7 +14,7 @@ import { Ring } from '../../ui/charts'
 import { HrNav } from '../Hr'
 
 export default function Structure() {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const ref = useRef<HTMLDivElement>(null)
   usePageEnter(ref)
   const quota = hr.positions.reduce((n, p) => n + p.quota, 0)
@@ -31,7 +32,7 @@ export default function Structure() {
           { label: 'Сул', value: quota - filled },
           { label: 'Бүрдэлт', value: quota ? Math.round((100 * filled) / quota) : 0, unit: '%' },
         ]}
-        actions={<button type="button" className="btn btn--accent" onClick={() => open({ kind: 'dept' })}><Plus className="ico" />Хэлтэс нэмэх</button>}
+        actions={hr.access.hrEdit && <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'dept' })}><Plus className="ico" />Хэлтэс нэмэх</button>}
       />
       <div className="dgrid">
         {hr.departments.map(d => <DeptCard key={d.id} d={d} />)}
@@ -41,13 +42,14 @@ export default function Structure() {
 }
 
 function DeptCard({ d }: { d: Department }) {
-  const hr = hrScoped(useApp())
+  const hr = hrView(useApp())
   const pop = usePopover()
   const list = hr.positions.filter(p => p.dept === d.id)
   const q = list.reduce((n, p) => n + p.quota, 0)
   const f = list.reduce((n, p) => n + Math.min(p.quota, hr.filled.get(p.id) ?? 0), 0)
   const people = list.reduce((n, p) => n + (hr.filled.get(p.id) ?? 0), 0)
   const head = hr.employees.find(e => e.id === d.head && current(e))
+  const edit = hr.access.hrEdit
   const remove = () => {
     pop.close()
     toast(`${d.name} хэлтэс устгагдлаа.`, { undo: actions.removeDept(d.id) })
@@ -64,9 +66,11 @@ function DeptCard({ d }: { d: Department }) {
             <p className="dcard__boss">Хэлтсийн дарга: {head ? <b>{short(head)}</b> : 'сонгоогүй'}</p>
           </div>
         </div>
-        <button ref={pop.anchor} type="button" className="ibtn ibtn--sm" aria-label={`${d.name}: үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
-          <Ellipsis className="ico" />
-        </button>
+        {edit && (
+          <button ref={pop.anchor} type="button" className="ibtn ibtn--sm" aria-label={`${d.name}: үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
+            <Ellipsis className="ico" />
+          </button>
+        )}
         <Menu state={pop} label="Хэлтсийн үйлдэл">
           <MenuItem icon={<Pencil className="ico" />} onSelect={() => { pop.close(); open({ kind: 'dept', id: d.id }) }}>Хэлтэс засах</MenuItem>
           <MenuItem danger icon={<Trash2 className="ico" />} onSelect={remove} disabled={people > 0 ? 'Энэ хэлтэст ажилтан байгаа тул устгах боломжгүй.' : undefined}>Хэлтэс устгах</MenuItem>
@@ -97,7 +101,7 @@ function DeptCard({ d }: { d: Department }) {
                   <td className="num tnum">{n}</td>
                   <td className="num tnum">{free > 0 ? <span className="ptable__free">{free}</span> : free < 0 ? <span className="ptable__over" title="Орон тооноос хэтэрсэн">+{-free}</span> : <span className="muted">0</span>}</td>
                   <td className="ptable__act">
-                    <button type="button" className="ibtn ibtn--sm" aria-label={`${p.name}: засах`} onClick={() => open({ kind: 'position', id: p.id })}><Pencil className="ico" /></button>
+                    {edit && <button type="button" className="ibtn ibtn--sm" aria-label={`${p.name}: засах`} onClick={() => open({ kind: 'position', id: p.id })}><Pencil className="ico" /></button>}
                   </td>
                 </tr>
               )
@@ -105,9 +109,11 @@ function DeptCard({ d }: { d: Department }) {
           </tbody>
         </table>
       )}
-      <button type="button" className="btn btn--ghost btn--sm dcard__add" onClick={() => open({ kind: 'position', dept: d.id })}>
-        <Plus className="ico" />Албан тушаал нэмэх
-      </button>
+      {edit && (
+        <button type="button" className="btn btn--ghost btn--sm dcard__add" onClick={() => open({ kind: 'position', dept: d.id })}>
+          <Plus className="ico" />Албан тушаал нэмэх
+        </button>
+      )}
     </section>
   )
 }
