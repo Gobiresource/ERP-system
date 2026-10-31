@@ -48,6 +48,8 @@ function load(): State | null {
     }
     // Saved before Скан оруулах existed
     if (!s.scans) s = { ...s, scans: [], aiSpent: 0 }
+    // Saved before Ирц existed
+    if (!s.timely) s = { ...s, timely: {} }
     return s
   } catch {
     return null
@@ -465,6 +467,14 @@ export const actions = {
   /** A stack's place in the inbox goes to the papers cut from it */
   replaceScan: (id: Id, items: ScanItem[]) => set(s => ({ ...s, scans: s.scans.flatMap(x => (x.id === id ? items : [x])) })),
   setScan: (id: Id, patch: Partial<ScanItem>) => set(s => ({ ...s, scans: s.scans.map(x => (x.id === id ? { ...x, ...patch } : x)) })),
+  /** Which Timely company a ХХК's attendance comes from; null goes back to finding it by name */
+  linkTimely: (company: Id, id: number | null) =>
+    set(s => {
+      const timely = { ...s.timely }
+      if (id === null) delete timely[company]
+      else timely[company] = id
+      return { ...s, timely }
+    }),
   addAiCost: (usd: number) => set(s => ({ ...s, aiSpent: s.aiSpent + usd })),
   /** Takes a scan out of the inbox; returns undo */
   dropScan(id: Id) {

@@ -1,13 +1,6 @@
 /* Скан оруулах (screens/docs/Scans.tsx): whether AI reads, where scans go in, and a card for each paper with its page
    beside what it will be filed as; one line for a paper AI is sure of. Cutting a file by hand: dialogs/ScanForms.tsx. */
 
-/* AI on or off */
-.saibar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; padding: 10px 14px; border-radius: 14px; background: var(--fill); font-size: 13.5px; line-height: 1.45; }
-.saibar > .ico { flex: none; width: 18px; height: 18px; color: var(--text-2); }
-.saibar > span { flex: 1 1 280px; min-width: 0; }
-.saibar.is-on { background: var(--accent-soft); }
-.saibar.is-on > .ico { color: var(--accent-ink); }
-
 /* Where scans go in */
 .sdrop {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; margin-bottom: 18px; padding: 26px 20px;
@@ -31,9 +24,6 @@
 .schip.is-high { background: color-mix(in srgb, var(--green) 16%, var(--glass-solid)); color: var(--ok-ink); }
 .schip.is-low, .schip.is-bad { background: color-mix(in srgb, var(--danger) 10%, var(--glass-solid)); color: var(--bad-ink); }
 .schip.is-sample { background: var(--glass-solid); color: var(--text); box-shadow: 0 0 0 1px var(--sep); }
-.spin { animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 
 /* A paper: its first page, then what it will be filed as */
 .scards { display: grid; gap: 14px; }

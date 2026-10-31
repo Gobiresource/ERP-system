@@ -8,7 +8,8 @@ export interface Route { page: Page; id?: string }
 export function parse(hash: string): Route {
   const h = hash.replace(/^#/, '')
   if (h.startsWith('project-')) return { page: 'projects', id: h.slice(8) }
-  // Human resources: #hr, #hr-employees, #hr-structure, #hr-new, #hr-<employee>, #hr-<employee>-edit
+  // Human resources: #hr, #hr-employees, #hr-structure, #hr-new, #hr-<employee>, #hr-<employee>-edit, #hr-attendance,
+  // #hr-attendance-<employee> (or -t<Timely worker number>)
   if (h.startsWith('hr-')) return { page: 'hr', id: h.slice(3) }
   // Бичиг хэрэг: #docs, #docs-folder-<company>, #docs-folder-<company>-<kind>, #docs-requests, #docs-pdf, #docs-pdf-<board>-<card>
   // (the PDF tool was at #draft-pdf before)

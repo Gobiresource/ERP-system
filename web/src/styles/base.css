@@ -379,3 +379,14 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 4px; paddi
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Whether an outside service is connected (AI for scans, Timely for attendance), above the page's content */
+.sbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; padding: 10px 14px; border-radius: 14px; background: var(--fill); font-size: 13.5px; line-height: 1.45; }
+.sbar > .ico { flex: none; width: 18px; height: 18px; color: var(--text-2); }
+.sbar > span { flex: 1 1 280px; min-width: 0; }
+.sbar.is-on { background: var(--accent-soft); }
+.sbar.is-on > .ico { color: var(--accent-ink); }
+/* A spinning loader icon, still for those who ask for less motion */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }

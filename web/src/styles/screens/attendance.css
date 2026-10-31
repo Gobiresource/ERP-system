@@ -1,0 +1,95 @@
+/* Ирц (screens/hr/Attendance.tsx): the month from Timely at a glance, everyone's days, one employee's month as a
+   calendar. A day's colour always comes with its time, an icon or a word, and the key below the calendar. */
+
+.att-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.att-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+.att-pick select { min-height: 32px; max-width: 16em; padding: 4px 28px 4px 10px; font-size: 13.5px; color: var(--text); }
+.att-errs { display: block; margin-top: 2px; color: var(--bad-ink); }
+.att-demo { display: block; margin-top: 2px; }
+.att-stranger { display: inline-grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--fill); color: var(--text-2); }
+.att-stranger .ico { width: 17px; height: 17px; }
+
+/* Who is low */
+.att-low { display: grid; }
+.att-low li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+.att-low li + li { border-top: 1px solid var(--sep); }
+.att-low .etable__who { min-width: 0; }
+.att-low__n { display: grid; flex: none; justify-items: end; }
+.att-low__n b { font-size: 15px; font-weight: 650; color: var(--bad-ink); }
+.att-low__n small { font-size: 12.5px; color: var(--text-2); }
+
+/* By department: the low ones in orange, their share always written */
+.att-depts li.is-low .hr-bar i { background: var(--orange); }
+.att-depts li.is-low .hr-depts__n { color: var(--bad-ink); }
+
+/* The table */
+.att-table .efiles__bar { width: 56px; }
+.att-days tr.is-rest th, .att-days tr.is-rest td { color: var(--text-2); }
+.att-days tbody tr { cursor: default; }
+
+/* In one system only */
+.att-un { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
+.att-un__t { margin-bottom: 8px; font-size: 14px; font-weight: 650; }
+.att-un__t span { font-weight: 560; color: var(--text-2); }
+.att-un__list { display: grid; gap: 8px; }
+.att-un__list li { display: grid; font-size: 14px; }
+.att-un__list a { font-weight: 600; }
+.att-un__list small { font-size: 12.5px; color: var(--text-2); }
+.att-un__none { font-size: 14px; }
+@media (width <= 600px) { .att-un { grid-template-columns: minmax(0, 1fr); } }
+
+/* The month as a calendar */
+.acal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.acal__wd { padding: 0 0 4px; font-size: 12px; font-weight: 650; text-align: center; color: var(--text-2); }
+.acal__day { display: grid; align-content: space-between; gap: 2px; min-height: 56px; padding: 6px 8px; border-radius: 10px; background: var(--fill); font-variant-numeric: tabular-nums; }
+.acal__n { font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.acal__t { display: flex; align-items: center; gap: 4px; min-height: 18px; font-size: 13px; font-weight: 620; }
+.acal__t .ico { flex: none; width: 14px; height: 14px; }
+.acal__day.is-in { background: color-mix(in srgb, var(--green) 16%, var(--glass-solid)); }
+.acal__day.is-in .acal__t { color: var(--ok-ink); }
+.acal__day.is-part { background: color-mix(in srgb, var(--yellow) 22%, var(--glass-solid)); }
+.acal__day.is-part .acal__t { color: var(--text); }
+.acal__day.is-none { background: color-mix(in srgb, var(--danger) 12%, var(--glass-solid)); }
+.acal__day.is-none .acal__t { color: var(--bad-ink); }
+.acal__day.is-leave { background: color-mix(in srgb, var(--accent) 14%, var(--glass-solid)); }
+.acal__day.is-leave .acal__t { color: var(--accent-ink); }
+.acal__day.is-rest, .acal__day.is-later { background: transparent; box-shadow: inset 0 0 0 1px var(--sep); }
+.acal__day.is-today { box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.acal__day.is-today .acal__n { color: var(--accent-ink); }
+
+.acal-key { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 13px; color: var(--text-2); }
+.acal-key li { display: inline-flex; align-items: center; gap: 6px; }
+.acal-key i { width: 12px; height: 12px; border-radius: 4px; }
+.acal-key i.is-in { background: color-mix(in srgb, var(--green) 40%, var(--glass-solid)); }
+.acal-key i.is-part { background: color-mix(in srgb, var(--yellow) 50%, var(--glass-solid)); }
+.acal-key i.is-none { background: color-mix(in srgb, var(--danger) 35%, var(--glass-solid)); }
+.acal-key i.is-leave { background: color-mix(in srgb, var(--accent) 35%, var(--glass-solid)); }
+.acal-key i.is-rest { box-shadow: inset 0 0 0 1px var(--text-3); }
+
+/* A day's state in the list */
+.apill { display: inline-flex; padding: 2px 9px; border-radius: 999px; background: var(--fill); font: 620 12.5px/1.5 var(--font); color: var(--text-2); white-space: nowrap; }
+.apill.is-in { background: color-mix(in srgb, var(--green) 16%, var(--glass-solid)); color: var(--ok-ink); }
+.apill.is-part { background: color-mix(in srgb, var(--yellow) 22%, var(--glass-solid)); color: var(--text); }
+.apill.is-none { background: color-mix(in srgb, var(--danger) 12%, var(--glass-solid)); color: var(--bad-ink); }
+.apill.is-leave { background: color-mix(in srgb, var(--accent) 14%, var(--glass-solid)); color: var(--accent-ink); }
+
+/* Annual leave */
+.att-leave { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.att-leave div { display: grid; gap: 2px; padding: 12px; border-radius: 12px; background: var(--fill); }
+.att-leave dt { font-size: 12.5px; color: var(--text-2); }
+.att-leave dd { font-size: 22px; font-weight: 650; }
+.att-leave dd small { font-size: 12.5px; font-weight: 560; color: var(--text-2); }
+.att-taken { display: grid; gap: 8px; }
+.att-taken li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.att-taken .ico { flex: none; width: 16px; height: 16px; color: var(--accent-ink); }
+.att-taken small { margin-left: auto; color: var(--text-2); }
+
+@media (width <= 600px) {
+  .att-tools { justify-content: flex-start; }
+  .acal { gap: 3px; }
+  .acal__day { min-height: 48px; padding: 4px 5px; }
+  /* The icon goes above the time when both do not fit */
+  .acal__t { flex-wrap: wrap; gap: 0 4px; font-size: 11.5px; }
+  .acal__t .ico { width: 12px; height: 12px; }
+  .att-leave dd { font-size: 19px; }
+}

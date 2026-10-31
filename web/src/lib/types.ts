@@ -290,6 +290,31 @@ export interface ScanReading {
   notes: string | null
 }
 
+// Ирц from Timely, as our server passes it on (server/timely.ts): read only, tidied, without salaries
+
+/** A Timely company the server's keys open, with what each key may read */
+export interface TimelyCompany { id: number; name: string; register: string | null; scopes: string[] }
+/** The current leave year's annual leave, in days, and the leave taken */
+export interface TimelyLeave { year: number; earned: number; used: number; left: number; taken: { from: string; to: string; days: number }[] }
+export interface TimelyEmployee {
+  workerId: number
+  family: string
+  given: string
+  /** Регистрийн дугаар, upper case: what ties the employee to ours */
+  register: string
+  position: string
+  division: string
+  leave: TimelyLeave | null
+  /** From the month's first day to its last, or to today in the current month */
+  supposedDays: number
+  supposedHours: number
+  workedDays: number
+  workedHours: number
+}
+export interface TimelyMonth { month: string; from: string; to: string; updated: string; employees: TimelyEmployee[] }
+/** A day's clock-in and clock-out, HH:MM in Ulaanbaatar time */
+export interface TimelyDay { date: string; in: string | null; out: string | null }
+
 /** What the office files a scan as: the reading, with their changes. Text fields as typed; `amount` in figures. */
 export interface ScanFields { company: Id; kind: DocKind; title: string; number: string; date: string; party: string; amount: string }
 
@@ -530,5 +555,7 @@ export interface State {
   scans: ScanItem[]
   /** All AI readings of scans so far, in US dollars */
   aiSpent: number
+  /** The Timely company each ХХК's attendance comes from, when picked by hand (names that differ) */
+  timely: Record<Id, number>
   settings: Settings
 }

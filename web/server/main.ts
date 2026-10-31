@@ -1,9 +1,11 @@
-// The ERP's server, for now only /api/scan (scan.ts). Runs on Node 22 or newer, with nothing to install:
-//   OPENROUTER_API_KEY=… node server/main.ts
-// The key comes from the environment, never from the code or the repository. PORT is 8787 unless set; Vite's dev and
+// The ERP's server, for now /api/scan (scan.ts) and /api/attendance (timely.ts). Runs on Node 22 or newer, with nothing
+// to install:
+//   OPENROUTER_API_KEY=… TIMELY_API_KEYS=… node server/main.ts
+// The keys come from the environment, never from the code or the repository. PORT is 8787 unless set; Vite's dev and
 // preview servers pass /api here (vite.config.ts). In production it sits behind the ERP's sign-in.
 import { createServer } from 'node:http'
 import { handleScan } from './scan.ts'
+import { handleAttendance } from './timely.ts'
 
 const port = Number(process.env.PORT) || 8787
 /** Three pages of about 3 MB each, with room */
@@ -11,6 +13,14 @@ const LIMIT = 13_000_000
 
 createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+  const send = async (out: Response) => {
+    res.writeHead(out.status, Object.fromEntries(out.headers))
+    res.end(Buffer.from(await out.arrayBuffer()))
+  }
+  if (url.pathname === '/api/attendance' || url.pathname.startsWith('/api/attendance/')) {
+    await send(await handleAttendance(new Request(url, { method: req.method }), process.env))
+    return
+  }
   if (url.pathname !== '/api/scan') {
     res.writeHead(404).end()
     return
@@ -25,7 +35,5 @@ createServer(async (req, res) => {
     }
     chunks.push(chunk)
   }
-  const out = await handleScan(new Request(url, { method: req.method, body: req.method === 'POST' ? Buffer.concat(chunks) : undefined }), process.env)
-  res.writeHead(out.status, Object.fromEntries(out.headers))
-  res.end(Buffer.from(await out.arrayBuffer()))
-}).listen(port, () => console.log(`ERP server: http://localhost:${port}/api/scan`))
+  await send(await handleScan(new Request(url, { method: req.method, body: req.method === 'POST' ? Buffer.concat(chunks) : undefined }), process.env))
+}).listen(port, () => console.log(`ERP server: http://localhost:${port}/api`))

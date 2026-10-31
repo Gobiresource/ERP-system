@@ -1,6 +1,6 @@
 // One employee: general details, employment history and the personal file
 import { useRef, useState } from 'react'
-import { ChevronLeft, CircleDashed, FileCheck2, FileClock, FileX2, Pencil, TriangleAlert, Upload, UserRound, X } from 'lucide-react'
+import { CalendarCheck, ChevronLeft, CircleDashed, FileCheck2, FileClock, FileX2, Pencil, TriangleAlert, Upload, UserRound, X } from 'lucide-react'
 import type { DocType, Employee } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
@@ -62,7 +62,12 @@ export default function EmployeePage({ id }: { id: string }) {
               ? { label: 'Гэрээ дуусах', value: dots(e.contract.end), alert: end !== null && end <= ALERT_DAYS && e.status !== 'left' }
               : { label: 'Хөдөлмөрийн гэрээ', value: CONTRACT.open },
           ]}
-          actions={<a className="btn btn--glass" href={`#hr-${e.id}-edit`}><Pencil className="ico" />Засах</a>}
+          actions={
+            <>
+              <a className="btn btn--glass" href={`#hr-attendance-${e.id}`}><CalendarCheck className="ico" />Ирц</a>
+              <a className="btn btn--glass" href={`#hr-${e.id}-edit`}><Pencil className="ico" />Засах</a>
+            </>
+          }
         />
       </div>
 

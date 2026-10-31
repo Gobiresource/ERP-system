@@ -236,6 +236,7 @@ export function seed(): State {
     kpi: {},
     scans: [],
     aiSpent: 0,
+    timely: {},
     settings: {
       theme: 'system',
       wall: 'ash',

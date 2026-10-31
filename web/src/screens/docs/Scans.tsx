@@ -98,10 +98,10 @@ export default function Scans() {
 /** Whether AI reads the scans, and how many wait; without it, the papers are filled in by hand, and demo papers show the way */
 function AiBar({ ai, samples, work }: { ai: AiState | null; samples: boolean; work: number }) {
   const [adding, setAdding] = useState(false)
-  if (!ai) return <p className="saibar" role="status"><LoaderCircle className="ico spin" />AI холболтыг шалгаж байна…</p>
+  if (!ai) return <p className="sbar" role="status"><LoaderCircle className="ico spin" />AI холболтыг шалгаж байна…</p>
   if (ai.ready) {
     return (
-      <p className="saibar is-on" role="status">
+      <p className="sbar is-on" role="status">
         {work ? <LoaderCircle className="ico spin" /> : <Sparkles className="ico" />}
         <span><b>AI холбогдсон</b> ({ai.model}). Баримтыг хадгалахгүй, сургалтад ашиглахгүй.{work > 0 && ` Уншиж байна: ${work} баримт үлдлээ.`}</span>
       </p>
@@ -112,7 +112,7 @@ function AiBar({ ai, samples, work }: { ai: AiState | null; samples: boolean; wo
     addSamples().then(() => setAdding(false), () => setAdding(false))
   }
   return (
-    <div className="saibar" role="status">
+    <div className="sbar" role="status">
       <CircleAlert className="ico" />
       <span><b>AI холбогдоогүй байна.</b> Серверт түлхүүр тохируулсны дараа скан автоматаар танигдана. Одоогоор мэдээллийг гараар бөглөнө үү.</span>
       {!samples && <button type="button" className="btn btn--glass btn--sm" disabled={adding} onClick={add}>{adding ? 'Бэлтгэж байна…' : 'Жишээ скан нэмэх'}</button>}
