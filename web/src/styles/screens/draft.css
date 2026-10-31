@@ -1,11 +1,12 @@
 /* Ноорог: the list of boards, the board (a desk of paper cards with its tools) and the PDF tool. */
 
-/* Paper: warm white, or tinted by a hue (lib/draft.ts PAPER). Used by cards, colour swatches and the miniatures. */
-.paper, .mini__card { --paper: #fffef9; }
-.paper[class*="hue--"], .mini__card[class*="hue--"] { --paper: color-mix(in oklab, var(--hue) 24%, #fffdf6); }
-.paper.hue--yellow, .mini__card.hue--yellow { --paper: #fff1b5; }
-[data-mode="dark"] :is(.paper, .mini__card) { --paper: #2c2c33; }
-[data-mode="dark"] :is(.paper, .mini__card)[class*="hue--"] { --paper: color-mix(in oklab, var(--hue) 30%, #232329); }
+/* Paper: warm white, or tinted by a hue (lib/draft.ts PAPER). Used by cards, colour swatches and the miniatures. Not
+   .paper: that is Гэрээ's sheet (contracts.css), whose padding once swelled the swatches. */
+.bpaper, .mini__card { --paper: #fffef9; }
+.bpaper[class*="hue--"], .mini__card[class*="hue--"] { --paper: color-mix(in oklab, var(--hue) 24%, #fffdf6); }
+.bpaper.hue--yellow, .mini__card.hue--yellow { --paper: #fff1b5; }
+[data-mode="dark"] :is(.bpaper, .mini__card) { --paper: #2c2c33; }
+[data-mode="dark"] :is(.bpaper, .mini__card)[class*="hue--"] { --paper: color-mix(in oklab, var(--hue) 30%, #232329); }
 
 /* The desk the cards lie on: dots over the wallpaper */
 .desk {

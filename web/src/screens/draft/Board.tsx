@@ -620,7 +620,7 @@ function Desk({ d }: { d: Draft }) {
           {COLOURED.includes(selected.kind) && (
             <div className="dock__colors" role="group" aria-label="Цаасны өнгө">
               {PAPER.map(([hue, label]) => (
-                <button key={label} type="button" className={`swatch paper${hue ? ` hue--${hue}` : ''}`} aria-label={label} aria-pressed={selected.hue === hue}
+                <button key={label} type="button" className={`swatch bpaper${hue ? ` hue--${hue}` : ''}`} aria-label={label} aria-pressed={selected.hue === hue}
                   onClick={() => patchCard(d.id, selected.id, { hue })} />
               ))}
             </div>
@@ -699,7 +699,7 @@ function Card({ c, selected, editing, edit, warn, onSelect, onFinish, onToggle, 
   return (
     <div
       data-card={c.id}
-      className={`bcard bcard--${c.kind}${paper ? ' paper' : ''}${c.hue && paper ? ` hue--${c.hue}` : ''}${selected ? ' is-sel' : ''}${editing ? ' is-edit' : ''}`}
+      className={`bcard bcard--${c.kind}${paper ? ' bpaper' : ''}${c.hue && paper ? ` hue--${c.hue}` : ''}${selected ? ' is-sel' : ''}${editing ? ' is-edit' : ''}`}
       style={style}
       role="group"
       aria-roledescription={KIND[c.kind]}

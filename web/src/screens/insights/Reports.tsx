@@ -96,7 +96,7 @@ export default function Reports() {
               const r = findReport(s, s.company, t.person, t.month)
               return (
                 <li key={t.person + t.month}>
-                  <a className="ctrow rrow" href={href(t.person, t.month)} onClick={e => { e.preventDefault(); go('insights', `report-${t.person}-${t.month}`) }}>
+                  <a className="ctrow ctrow--report" href={href(t.person, t.month)} onClick={e => { e.preventDefault(); go('insights', `report-${t.person}-${t.month}`) }}>
                     {mine || !p ? <span className="ctrow__ico" aria-hidden="true"><PenLine className="ico" /></span> : <Avatar person={p} size="md" />}
                     <span className="ctrow__text">
                       <b>{mine ? `Таны ${ofMonth(t.month)} тайлан` : `${p ? short(p) : ''}, ${ofMonth(t.month)} тайлан`}</b>

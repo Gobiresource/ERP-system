@@ -5,8 +5,9 @@
 /* "Миний хийх" */
 .rtodo { margin-bottom: 16px; }
 .rtodo__h { padding: 8px 12px 4px; font: 650 15px/1.3 var(--font); }
-.rrow { grid-template-columns: 40px minmax(0, 1fr) auto; }
-.rrow > .av { justify-self: center; }
+/* Not .rrow or plain .rpill--*: those are Бичиг хэрэг's request rows and pills (docs.css), which these once changed */
+.ctrow--report { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.ctrow--report > .av { justify-self: center; }
 .ctrow__todo.is-late { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--bad-ink); }
 
 /* The table */
@@ -14,9 +15,9 @@
 .rstate { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .rlate { font: 650 12px/1.3 var(--font); color: var(--bad-ink); white-space: nowrap; }
 .rscore-n { font-weight: 700; }
-.rpill--sent { background: var(--accent-soft); color: var(--accent-ink); }
-.rpill--returned, .rpill--overdue { background: color-mix(in srgb, var(--danger) 9%, transparent); color: var(--bad-ink); }
-.rpill--scored { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--ok-ink); }
+.ctpill.rpill--sent { background: var(--accent-soft); color: var(--accent-ink); }
+.ctpill:is(.rpill--returned, .rpill--overdue) { background: color-mix(in srgb, var(--danger) 9%, transparent); color: var(--bad-ink); }
+.ctpill.rpill--scored { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--ok-ink); }
 
 /* The rules: criteria with their weights, and the bonus grades */
 .rrules { margin-top: 16px; }
@@ -153,7 +154,7 @@
   .rscale { margin-top: 6px; }
 }
 @media (width <= 760px) {
-  .rrow > .av { grid-area: ico; align-self: start; }
+  .ctrow--report > .av { grid-area: ico; align-self: start; }
   .rlines li { font-size: 16px; }
   .rscale__opt > span:first-of-type { width: 44px; height: 44px; }
 }

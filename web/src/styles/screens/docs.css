@@ -311,9 +311,9 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 }
 .dpaper__dl { position: absolute; right: 10px; bottom: 10px; color: var(--text-2); }
 
-/* A company folder's colour */
+/* A company folder's colour (not .swatch: that is Ноорог's paper colour, draft.css) */
 .swatches { display: flex; flex-wrap: wrap; gap: 12px; }
-.swatch { position: relative; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
-.swatch input { position: absolute; opacity: 0; pointer-events: none; }
-.swatch:has(input:checked) { box-shadow: 0 0 0 3px var(--glass-solid), 0 0 0 5.5px var(--text); }
-.swatch:has(input:focus-visible) { outline: 2.5px solid var(--accent-ink); outline-offset: 6px; }
+.fswatch { position: relative; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
+.fswatch input { position: absolute; opacity: 0; pointer-events: none; }
+.fswatch:has(input:checked) { box-shadow: 0 0 0 3px var(--glass-solid), 0 0 0 5.5px var(--text); }
+.fswatch:has(input:focus-visible) { outline: 2.5px solid var(--accent-ink); outline-offset: 6px; }

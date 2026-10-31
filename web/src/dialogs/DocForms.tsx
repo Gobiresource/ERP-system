@@ -390,7 +390,7 @@ export function CompanyForm({ id }: { id?: string }) {
         <legend className="field__label">Хавтасны өнгө</legend>
         <div className="swatches">
           {FOLDER_HUES.map(h => (
-            <label key={h} className="swatch" style={{ background: `linear-gradient(160deg, ${FOLDER_COLORS[h][0]}, ${FOLDER_COLORS[h][1]})` }}>
+            <label key={h} className="fswatch" style={{ background: `linear-gradient(160deg, ${FOLDER_COLORS[h][0]}, ${FOLDER_COLORS[h][1]})` }}>
               <input type="radio" name="co-hue" checked={f.hue === h} onChange={() => setF({ ...f, hue: h })} />
               <span className="sr-only">{HUE_NAME[h]}</span>
             </label>
