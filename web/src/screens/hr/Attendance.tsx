@@ -338,8 +338,8 @@ function Everyone({ rows }: { rows: Row[] }) {
                 <tr key={keyOf(r)} onClick={ev => { if (!(ev.target as HTMLElement).closest('a')) location.hash = `hr-attendance-${keyOf(r)}` }}>
                   <th scope="row"><Who r={r} /></th>
                   <td className="hide-md">{deptOf(r)}</td>
-                  <td className="num tnum">{r.t.workedDays}<small className="muted"> / {r.t.supposedDays}</small></td>
-                  <td className="num tnum hide-sm">{Math.round(r.t.workedHours)}<small className="muted"> / {Math.round(r.t.supposedHours)}</small></td>
+                  <td className="num tnum">{r.t.workedDays}<small className="att-of"> / {r.t.supposedDays}</small></td>
+                  <td className="num tnum hide-sm">{Math.round(r.t.workedHours)}<small className="att-of"> / {Math.round(r.t.supposedHours)}</small></td>
                   <td className="num">
                     <span className={`efiles att-pct${p !== null && p < LOW ? ' is-short' : ''}`}>
                       <span className="tnum">{pctText(p)}</span>
