@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import { AtSign, BadgeCheck, Bell, CalendarClock, CalendarPlus, CircleCheck, FolderPlus, ListChecks, MessageSquarePlus, Moon, Plus, Search, SquareCheck, Sun, UserPlus } from 'lucide-react'
 import type { NoteKind } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
-import { focus, open, setFinder } from '../lib/ui'
+import { focus, getUi, open, setFinder, setIslandOpen } from '../lib/ui'
 import { go } from '../lib/router'
 import { useMode } from '../lib/theme'
 import { ago } from '../lib/format'
@@ -51,6 +51,8 @@ function CreateMenu() {
   const pop = usePopover()
   const minutes = s.settings.focus.work
   const pick = (fn: () => void) => () => { pop.close(); fn() }
+  // A running session opens instead of starting over, as F does (src/shell/hotkeys.ts)
+  const startFocus = () => (getUi().focus.status === 'idle' ? focus.start(minutes) : setIslandOpen(true))
 
   // N opens this menu (src/shell/hotkeys.ts)
   useEffect(() => {
@@ -70,7 +72,7 @@ function CreateMenu() {
         <MenuItem icon={<FolderPlus className="ico" />} onSelect={pick(() => open({ kind: 'newProject' }))}>Шинэ төсөл</MenuItem>
         <MenuItem icon={<MessageSquarePlus className="ico" />} onSelect={pick(() => open({ kind: 'newChat' }))}>Шинэ зурвас</MenuItem>
         <hr />
-        <MenuItem icon={<Moon className="ico" />} onSelect={pick(() => focus.start(minutes))}>{minutes} минут төвлөрөх</MenuItem>
+        <MenuItem icon={<Moon className="ico" />} onSelect={pick(startFocus)}>{minutes} минут төвлөрөх</MenuItem>
       </Menu>
     </>
   )

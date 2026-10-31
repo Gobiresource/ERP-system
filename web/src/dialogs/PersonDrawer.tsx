@@ -5,8 +5,8 @@ import type { Presence } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open } from '../lib/ui'
 import { go } from '../lib/router'
-import { demoFocusHours, focusByDay, localTime, teamHue, thisWeek, workload } from '../lib/derive'
-import { dec, dueLabel, hm, parse, short, weekdayShort, daysFromToday } from '../lib/format'
+import { demoFocusHours, localTime, teamHue, thisWeek, workload } from '../lib/derive'
+import { dec, dueLabel, hm, parse, short, weekdayShort, daysFromToday, ymd } from '../lib/format'
 import { Sheet } from '../ui/Sheet'
 import { Seg } from '../ui/Seg'
 import { Avatar, KIND_HUE, PRESENCE, PresenceLabel, Prio, ProjectGlyph } from '../ui/bits'
@@ -19,7 +19,8 @@ export function PersonDrawer({ id }: { id: string }) {
   const me = p.id === s.me
   const load = workload(p, sc.tasks)
   const where = localTime(p)
-  const focusHours = me ? focusByDay(sc.focusLog, 7).reduce((n, d) => n + d.minutes, 0) / 60 : demoFocusHours(p)
+  // This week runs from Monday, by the local date of each session; my sessions only
+  const focusHours = me ? sc.focusLog.filter(f => thisWeek(ymd(new Date(f.at)))).reduce((n, f) => n + f.minutes, 0) / 60 : demoFocusHours(p)
   const tasks = sc.tasks.filter(t => t.assignees.includes(p.id) && t.status !== 'done').sort((a, b) => a.due.localeCompare(b.due))
   const events = sc.events.filter(e => e.attendees.includes(p.id) && thisWeek(e.start) && daysFromToday(e.start) >= 0)
   const projects = sc.projects.filter(x => x.members.includes(p.id) || x.lead === p.id)

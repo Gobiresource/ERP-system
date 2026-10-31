@@ -10,7 +10,7 @@ import { eventEnd, focusToday, projectProgress } from '../lib/derive'
 import { addDays, ago, clock, daysFromToday, dec, dueLabel, hm, monthDay, monthDayDots, parse, short, today, until, weekStart, weekday, weekdayShort, ymd } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
-import { AvatarStack, Avatar, Empty, Prio, ProjectChip, ProjectGlyph, PRESENCE, PSTATUS, eventHue } from '../ui/bits'
+import { AvatarStack, Avatar, Prio, ProjectChip, ProjectGlyph, PRESENCE, PSTATUS, eventHue } from '../ui/bits'
 import { Bars } from '../ui/charts'
 import { moveTask } from './tasks/TaskCard'
 
@@ -329,22 +329,24 @@ function HomeProjects() {
         <h2 className="card__title" id="hp-t">Төсөл</h2>
         <button type="button" className="btn btn--ghost btn--sm" onClick={() => go('projects')}>Бүгдийг харах</button>
       </div>
-      <ul className="hprojects">
-        {list.map(p => {
-          const prog = projectProgress(p.id, sc.tasks)
-          return (
-            <li key={p.id}>
-              <button type="button" className={`hproject hue--${p.hue}`} onClick={() => go('projects', p.id)}>
-                <ProjectGlyph project={p} size="md" />
-                <span className="hproject__name"><b>{p.name}</b><small>{PSTATUS[p.status]}, дуусах {monthDayDots(parse(p.due))}</small></span>
-                <span className="hproject__bar" aria-hidden="true"><i style={{ transform: `scaleX(${prog.pct / 100})` }} /></span>
-                <span className="hproject__pct tnum">{prog.pct}%</span>
-                <AvatarStack people={p.members.map(id => sc.person(id)).filter(x => x !== undefined)} max={3} size="xs" />
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+      {list.length === 0 ? <p className="tp-none">Дуусаагүй төсөл алга.</p> : (
+        <ul className="hprojects">
+          {list.map(p => {
+            const prog = projectProgress(p.id, sc.tasks)
+            return (
+              <li key={p.id}>
+                <button type="button" className={`hproject hue--${p.hue}`} onClick={() => go('projects', p.id)}>
+                  <ProjectGlyph project={p} size="md" />
+                  <span className="hproject__name"><b>{p.name}</b><small>{PSTATUS[p.status]}, дуусах {monthDayDots(parse(p.due))}</small></span>
+                  <span className="hproject__bar" aria-hidden="true"><i style={{ transform: `scaleX(${prog.pct / 100})` }} /></span>
+                  <span className="hproject__pct tnum">{prog.pct}%</span>
+                  <AvatarStack people={p.members.map(id => sc.person(id)).filter(x => x !== undefined)} max={3} size="xs" />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </section>
   )
 }
@@ -375,6 +377,7 @@ function RightNow() {
       </div>
       {tab === 'team' ? (
         <div className="people">
+          {people.length === 0 && <p className="tp-none">Идэвхтэй хүн алга.</p>}
           {people.map(p => (
             <button key={p.id} type="button" className="person" onClick={() => open({ kind: 'person', id: p.id })}>
               <Avatar person={p} size="md" presence />
@@ -384,13 +387,20 @@ function RightNow() {
         </div>
       ) : (
         <div className="people">
-          {!feed.length && <Empty title="Мэдэгдэл алга" text="Шинэ зүйл гарахад энд харагдана." />}
+          {feed.length === 0 && <p className="tp-none">Мэдэгдэл алга.</p>}
           {feed.map(n => {
             const Icon = FEED_ICON[n.kind]
-            return (
-              <button key={n.id} type="button" className="person" onClick={() => n.task ? open({ kind: 'task', id: n.task }) : n.project && go('projects', n.project)}>
+            const row = (
+              <>
                 <span className="lead"><Icon className="ico" /></span>
                 <span><b style={{ fontWeight: 560, whiteSpace: 'normal' }}>{n.text}</b><small>{ago(n.at)}</small></span>
+              </>
+            )
+            // A notice with no task or project has nothing to open, so it is plain text
+            if (!n.task && !n.project) return <div key={n.id} className="person">{row}</div>
+            return (
+              <button key={n.id} type="button" className="person" onClick={() => n.task ? open({ kind: 'task', id: n.task }) : n.project && go('projects', n.project)}>
+                {row}
               </button>
             )
           })}

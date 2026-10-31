@@ -1,6 +1,10 @@
 /* Team: member cards and the profile window */
 
-.tfilter-wrap { max-width: 100%; overflow-x: auto; border-radius: 999px; scrollbar-width: none; }
+/* Departments that run past the edge scroll; the edge fades as for the task chips (tasks.css), and keyboard focus scrolls clear of it */
+.tfilter-wrap {
+  display: flex; margin-bottom: var(--gap); padding-right: 36px; overflow-x: auto; scroll-padding-right: 36px; border-radius: 999px; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+}
 .tfilter-wrap::-webkit-scrollbar { display: none; }
 .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); align-items: start; gap: var(--gap); }
 
@@ -12,7 +16,7 @@
     var(--glass);
 }
 .mcard__top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }
-.mcard__id { flex: 1; min-width: 0; }
+.mcard__id { flex: 1 1 10em; min-width: 0; }
 .mcard__name { display: flex; align-items: center; gap: 8px; min-width: 0; font: 650 17px/1.25 var(--font); letter-spacing: -.01em; }
 .mcard__name button { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; text-align: left; }
 .mcard__name button:hover { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
@@ -87,10 +91,6 @@
 .prof__none { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); }
 .prof__none .ico { width: 18px; height: 18px; }
 
-@media (width <= 760px) {
-  .tfilter-wrap { flex: 100%; }
-  .tfilter-wrap .seg { min-width: max-content; }
-}
 @media (width <= 420px) {
   .prof__hero { flex-direction: column; align-items: flex-start; padding-right: 18px; }
   .prof__stats { gap: 14px; }

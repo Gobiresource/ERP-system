@@ -96,7 +96,8 @@
 .mytask__body { display: grid; flex: 1; gap: 4px; min-width: 0; text-align: left; }
 .mytask__title { overflow: hidden; font-weight: 560; text-overflow: ellipsis; white-space: nowrap; transition: color .25s; }
 .mytask__meta { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--text-2); }
-.mytask__meta .pchip { height: 22px; font-size: 12px; }
+.mytask__meta .pchip { min-width: 0; height: 22px; overflow: hidden; font-size: 12px; }
+.mytask__meta > :last-child { flex: none; }
 .mytask__meta .is-late { font-weight: 600; color: var(--bad-ink); }
 .mytask.is-done .mytask__title { color: var(--text-3); text-decoration: line-through; text-decoration-thickness: 1.5px; }
 
@@ -120,7 +121,7 @@
 /* Right now */
 .people { display: grid; gap: 2px; }
 .person { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 6px; border-radius: 16px; text-align: left; }
-.person:hover { background: var(--fill-hover); }
+button.person:hover { background: var(--fill-hover); }
 .person > span:last-child { display: grid; min-width: 0; }
 .person b { font-size: 14.5px; font-weight: 600; }
 .person small { overflow: hidden; font-size: 13px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }

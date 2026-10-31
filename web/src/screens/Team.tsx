@@ -48,20 +48,17 @@ export default function Team() {
           { label: 'Төвлөрсөн', value: inFocus },
           { label: 'Дундаж ачаалал', value: avg, unit: '%' },
         ]}
-        actions={
-          <>
-            <div className="tfilter-wrap">
-              <Seg label="Хэлтсээр шүүх" value={team} onChange={setTeam} options={[{ value: 'all', label: 'Бүгд' }, ...teams.map(t => ({ value: t, label: t }))]} />
-            </div>
-            {accessOf(s, s.me, s.company).admin && (
-              <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'invite' })}>
-                <UserPlus className="ico" />
-                Хэрэглэгч нэмэх
-              </button>
-            )}
-          </>
-        }
+        actions={accessOf(s, s.me, s.company).admin && (
+          <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'invite' })}>
+            <UserPlus className="ico" />
+            Хэрэглэгч нэмэх
+          </button>
+        )}
       />
+      {/* In its own row: beside the stats there was no room for every department */}
+      <div className="tfilter-wrap">
+        <Seg label="Хэлтсээр шүүх" value={team} onChange={setTeam} options={[{ value: 'all', label: 'Бүгд' }, ...teams.map(t => ({ value: t, label: t }))]} />
+      </div>
       <div className="tgrid" ref={grid}>
         {shown.map(p => <MemberCard key={p.id} person={p} me={p.id === s.me} />)}
       </div>

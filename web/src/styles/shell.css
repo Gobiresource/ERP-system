@@ -131,6 +131,13 @@
   .island.is-docked { left: auto; right: calc(var(--frame-right) + var(--tools-w, 340px) + 12px); top: 25px; margin: 0; }
   .island.is-right { left: auto; right: var(--frame-right); top: 86px; margin: 0; }
 }
+/* Tablets: the company pill holds the left of the toolbar, so the timer docks beside the tools and keeps room for the pill */
+@media (width > 760px) and (width <= 1100px) {
+  .island.is-docked { left: auto; right: calc(var(--frame-right) + var(--tools-w, 340px) + 12px); top: 25px; margin: 0; }
+  .island.is-docked .island__label { display: none; }
+  .island.is-docked .island__compact { justify-content: space-between; }
+  .app:has(.island.is-docked) .toolbar__company { margin-right: 116px; }
+}
 @media (width <= 760px) {
   .island.is-docked { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; margin: 0; top: calc(13px + env(safe-area-inset-top, 0px)); }
   .app:has(.island.is-docked) .toolbar__company { visibility: hidden; }
@@ -247,9 +254,14 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
   .search-pill span, .search-pill kbd { display: none; }
 }
 
-@media (height <= 640px) and (width > 760px) {
+/* Laptop heights: a tighter menu keeps the pinned projects whole and the account button inside the side menu (12 menu items) */
+@media (height <= 880px) and (width > 760px) {
   .side { gap: 8px; }
-  .nav__item { height: 40px; }
+  .nav__item { height: 38px; }
+}
+/* Shorter still, a whole pinned project no longer fits under the menu, so the group gives way */
+@media (height <= 770px) and (width > 760px) {
+  .nav__item { height: 34px; }
   .side__group { display: none; }
 }
 

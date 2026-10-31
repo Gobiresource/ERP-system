@@ -117,7 +117,7 @@ function ProjectList({ sc }: { sc: Scoped }) {
         {order.map(p => <ProjectCard key={p.id} p={p} sc={sc} hidden={filter !== 'all' && p.status !== filter} />)}
       </div>
       {order.every(p => filter !== 'all' && p.status !== filter) && (
-        <div className="card glass"><Empty icon={<FolderSearch className="ico" />} title="Энэ төлөвт төсөл алга" /></div>
+        <div className="card glass"><Empty icon={<FolderSearch className="ico" />} title={filter === 'all' ? 'Төсөл алга' : 'Энэ төлөвт төсөл алга'} /></div>
       )}
     </div>
   )

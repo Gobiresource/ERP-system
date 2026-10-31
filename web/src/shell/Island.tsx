@@ -10,12 +10,14 @@ type Mode = 'hidden' | 'compact' | 'note' | 'full'
 
 const wideQuery = window.matchMedia('(width >= 1360px)')
 const phoneQuery = window.matchMedia('(width <= 760px)')
+// Tablets show the company in the toolbar, so the timer docks beside the tools there, without its label (styles/shell.css)
+const tabletQuery = window.matchMedia('(width > 760px) and (width <= 1100px)')
 const useQuery = (q: MediaQueryList) =>
   useSyncExternalStore(f => (q.addEventListener('change', f), () => q.removeEventListener('change', f)), () => q.matches)
 
 function size(mode: Mode) {
   const vw = window.innerWidth
-  if (mode === 'compact') return { width: 204, height: 38, borderRadius: 19 }
+  if (mode === 'compact') return { width: tabletQuery.matches ? 104 : 204, height: 38, borderRadius: 19 }
   if (mode === 'note') return { width: Math.min(384, vw - 24), height: 62, borderRadius: 31 }
   if (mode === 'full') return { width: Math.min(440, vw - 20), height: 168, borderRadius: 34 }
   return { width: 204, height: 38, borderRadius: 19 }
@@ -39,6 +41,7 @@ export function Island() {
   const f = ui.focus
   const wide = useQuery(wideQuery)
   const phone = useQuery(phoneQuery)
+  const tablet = useQuery(tabletQuery)
   const body = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLElement | null>(null)
   const setInner = (el: HTMLElement | null) => { inner.current = el }
@@ -52,7 +55,7 @@ export function Island() {
   }, [f.status])
 
   const mode: Mode = ui.note ? 'note' : f.status === 'idle' ? 'hidden' : ui.islandOpen ? 'full' : 'compact'
-  const docked = mode === 'compact' && (wide || phone)
+  const docked = mode === 'compact' && (wide || phone || tablet)
   const right = wide && (mode === 'note' || mode === 'full')
 
   // Keep the page title clear of the docked island
@@ -66,6 +69,9 @@ export function Island() {
     const el = body.current!
     const from = last.current
     last.current = mode
+    // Keyboard focus follows the timer: into the open panel, and back to the pill when the panel folds
+    if (from !== mode && mode === 'full') inner.current?.querySelector('button')?.focus()
+    if (from === 'full' && mode === 'compact' && (!document.activeElement || document.activeElement === document.body)) inner.current?.focus()
     const target = size(mode)
     if (reduced()) {
       gsap.set(el, { ...target, opacity: mode === 'hidden' ? 0 : 1, scale: 1 })
@@ -81,7 +87,7 @@ export function Island() {
       gsap.to(el, { ...target, opacity: 1, scale: 1, duration: grows ? 0.5 : 0.35, ease: grows ? 'power3.inOut' : 'power3.in' })
     }
     if (inner.current) gsap.fromTo(inner.current, { opacity: 0 }, { opacity: 1, duration: 0.3, delay: 0.15 })
-  }, [mode])
+  }, [mode, tablet])
 
   // A click outside or Esc folds the open timer back
   useEffect(() => {
