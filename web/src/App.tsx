@@ -42,8 +42,8 @@ export function App() {
 
   useEffect(() => {
     const company = s.companies.find(c => c.id === s.company)?.name
-    document.title = `${pageLabel(route.page)} · ${company}`
-  }, [route.page, s.company, s.companies])
+    document.title = session ? `${pageLabel(route.page)} · ${company}` : 'Нэвтрэх'
+  }, [route.page, s.company, s.companies, session])
 
   // After the first page, a page change scrolls up and focuses the new title (see usePageEnter)
   useEffect(() => {

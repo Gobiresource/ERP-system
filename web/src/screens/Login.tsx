@@ -72,7 +72,7 @@ export default function Login() {
             <label className="field__label" htmlFor="login-name">Нэвтрэх нэр</label>
             <input ref={first} id="login-name" value={name} onChange={e => setName(e.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false}
               aria-describedby={CYRILLIC.test(name) ? 'login-name-hint' : undefined} />
-            {CYRILLIC.test(name) && <span className="field__hint login__warn" id="login-name-hint">Нэвтрэх нэрийг латин үсгээр бичнэ үү. Гарын хэлээ англи болгоно уу.</span>}
+            {CYRILLIC.test(name) && <span className="field__hint login__warn" id="login-name-hint" role="alert">Нэвтрэх нэрийг латин үсгээр бичнэ үү. Гарын хэлээ англи болгоно уу.</span>}
           </div>
           <div className="field">
             <label className="field__label" htmlFor="login-pass">Нууц үг</label>
@@ -84,7 +84,7 @@ export default function Login() {
               </button>
             </span>
             {(caps || CYRILLIC.test(password)) && (
-              <span className="field__hint login__warn" id="login-pass-hint">
+              <span className="field__hint login__warn" id="login-pass-hint" role="alert">
                 {caps ? 'Caps Lock асаалттай байна.' : 'Нууц үгэнд кирилл үсэг орсон байна. Гарын хэлээ шалгана уу.'}
               </span>
             )}

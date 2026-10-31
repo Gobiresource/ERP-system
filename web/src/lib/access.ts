@@ -35,6 +35,16 @@ export function accessOf(s: Pick<State, 'people'>, who: Id, company: Id): Access
   return s.people.find(p => p.id === who)!.companies.includes(company) ? a.access[company] ?? NO_ACCESS : NO_ACCESS
 }
 
+/**
+ * Whether the person may change someone's login, password and whether they sign in. These hold in every ХХК, so it takes
+ * whoever sets the system up, or an admin of each ХХК the other works in; the system admin's own, only a system admin.
+ */
+export function managesAccount(s: Pick<State, 'people'>, who: Id, other: Id): boolean {
+  if (s.people.find(p => p.id === who)?.account?.sysadmin) return true
+  const p = s.people.find(x => x.id === other)
+  return !!p?.companies.length && !p.account?.sysadmin && p.companies.every(c => accessOf(s, who, c).admin)
+}
+
 type Org = Pick<State, 'employees' | 'departments' | 'roles'>
 
 /** The ХХК's employees under the person by Шууд удирдлага, all the way down, and the person's own record */
@@ -154,13 +164,21 @@ function presetFor(s: Org, p: Person, company: Id): Access {
   return { ...PRESETS.find(x => x.key === key)!.access }
 }
 
-/** Accounts for the example people: the e-mail's name to sign in with, the example password, and their rights */
+/**
+ * Accounts for the example people: the e-mail's name to sign in with, the example password, and their rights. The login is
+ * kept as sign-in reads it, and a name already taken gets a number (people added before sign-in existed may share one).
+ */
 export function demoAccounts(s: Pick<State, 'people' | 'companies'> & Org): Person[] {
+  const taken = new Set(s.people.map(p => p.account?.login))
   return s.people.map(p => {
     if (p.account) return p
+    const name = loginKey(p.email.split('@')[0])
+    let login = name
+    for (let n = 2; taken.has(login); n++) login = `${name}${n}`
+    taken.add(login)
     const access: Account['access'] = {}
     for (const c of p.companies) access[c] = presetFor(s, p, c)
-    return { ...p, account: { login: p.email.split('@')[0], ...DEMO, active: true, sysadmin: p.id === 'u1' || undefined, access } }
+    return { ...p, account: { login, ...DEMO, active: true, sysadmin: p.id === 'u1' || undefined, access } }
   })
 }
 

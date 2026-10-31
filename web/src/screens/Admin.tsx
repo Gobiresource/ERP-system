@@ -10,7 +10,7 @@ import { actions, scoped, useApp } from '../lib/store'
 import { open, toast } from '../lib/ui'
 import { go } from '../lib/router'
 import { usePageEnter } from '../lib/motion'
-import { DOC_SCOPE, NO_ACCESS, PRESETS, SCOPE, accessOf, presetOf, teamOf } from '../lib/access'
+import { DOC_SCOPE, NO_ACCESS, PRESETS, SCOPE, accessOf, managesAccount, presetOf, teamOf } from '../lib/access'
 import { dots } from '../lib/hr'
 import { collator, short } from '../lib/format'
 import { PageHead } from '../ui/PageHead'
@@ -120,6 +120,9 @@ function User({ id }: { id: string }) {
   const mine = rightsOf(p, s.company)
   const me = id === s.me
   const company = s.companies.find(c => c.id === s.company)?.name
+  // A login and password hold in every ХХК the person works in, so an admin of only some of them leaves them be
+  const may = managesAccount(s, s.me, id)
+  const elsewhere = s.companies.filter(c => p.companies.includes(c.id) && !accessOf(s, s.me, c.id).admin).map(c => c.name).join(', ')
   const save = (next: Access, what: string) => {
     const before = mine
     if (!actions.setAccess(id, s.company, next)) return toast(me ? 'Өөрийн удирдлагын эрхийг хасах боломжгүй.' : 'Танд энэ үйлдлийг хийх эрх алга.', { kind: 'warn' })
@@ -207,23 +210,33 @@ function User({ id }: { id: string }) {
               <p className="card__sub">Нэвтрэх нэр, нууц үг</p>
             </div>
           </div>
-          <div className="field">
-            <label className="field__label" htmlFor="adm-login">Нэвтрэх нэр</label>
-            <span className="adm-inline">
-              <input id="adm-login" value={login} onChange={e => { setLogin(e.target.value); setLoginError(null) }} autoCapitalize="none" spellCheck={false}
-                aria-invalid={loginError ? true : undefined} aria-describedby={loginError ? 'adm-login-error' : undefined} onKeyDown={e => e.key === 'Enter' && rename()} />
-              <button type="button" className="btn btn--glass" onClick={rename}>Хадгалах</button>
-            </span>
-            {loginError && <span className="field__error" id="adm-login-error">{loginError}</span>}
-          </div>
-          <div className="adm-acts">
-            <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'password', id })}><KeyRound className="ico" />Нууц үг шинэчлэх</button>
-            {!me && (
-              <button type="button" className={`btn ${acc.active ? 'btn--ghost adm-stop' : 'btn--glass'}`} onClick={toggle}>
-                <Power className="ico" />{acc.active ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
-              </button>
-            )}
-          </div>
+          {may ? (
+            <>
+              <div className="field">
+                <label className="field__label" htmlFor="adm-login">Нэвтрэх нэр</label>
+                <span className="adm-inline">
+                  <input id="adm-login" value={login} onChange={e => { setLogin(e.target.value); setLoginError(null) }} autoCapitalize="none" spellCheck={false}
+                    aria-invalid={loginError ? true : undefined} aria-describedby={loginError ? 'adm-login-error' : undefined} onKeyDown={e => e.key === 'Enter' && rename()} />
+                  <button type="button" className="btn btn--glass" onClick={rename}>Хадгалах</button>
+                </span>
+                {loginError && <span className="field__error" id="adm-login-error">{loginError}</span>}
+              </div>
+              <div className="adm-acts">
+                <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'password', id })}><KeyRound className="ico" />Нууц үг шинэчлэх</button>
+                {!me && (
+                  <button type="button" className={`btn ${acc.active ? 'btn--ghost adm-stop' : 'btn--glass'}`} onClick={toggle}>
+                    <Power className="ico" />{acc.active ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="adm-note">
+              {acc.sysadmin
+                ? 'Системийн админы нэвтрэх нэр, нууц үгийг зөвхөн системийн админ өөрчилнө.'
+                : `Энэ хэрэглэгч ${elsewhere}-д ч ажилладаг. Нэвтрэх нэр, нууц үгийг нь түүний бүх ХХК-д удирдлагын эрхтэй хүн өөрчилнө.`}
+            </p>
+          )}
         </section>
 
         {team && (

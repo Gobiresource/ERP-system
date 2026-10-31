@@ -7,7 +7,7 @@ import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
 import { bandOf, dueOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
-import { accessOf, demoAccounts, hashOf, loginKey, newSalt, withDocRights } from './access'
+import { accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
 import { companyMark } from './format'
 
 const KEY = 'erp:v1'
@@ -119,9 +119,8 @@ const editAccount = (who: Id, patch: Partial<Account>) =>
   set(s => ({ ...s, people: s.people.map(p => (p.id === who && p.account ? { ...p, account: { ...p.account, ...patch } } : p)) }))
 /** Adds and edits employees, departments and positions in the current ХХК */
 const mayEditHr = () => accessOf(state, state.me, state.company).hrEdit
-/** Whoever sets the system up, or an admin of a ХХК the person belongs to */
-const manages = (who: Id) =>
-  !!state.people.find(p => p.id === state.me)?.account?.sysadmin || !!state.people.find(p => p.id === who)?.companies.some(c => accessOf(state, state.me, c).admin)
+/** Whoever sets the system up, or an admin of every ХХК the person works in: a login and password reach them all */
+const manages = (who: Id) => managesAccount(state, state.me, who)
 /** Keeps the office of the ХХК: its documents, requests and scans */
 const keepsDocs = (company: Id) => accessOf(state, state.me, company).docsEdit
 /** Whoever sets the system up */
@@ -216,12 +215,15 @@ export const actions = {
   setMe: (me: Id) => set(s => ({ ...s, me })),
   /** When the person signed in last */
   signedIn: (who: Id) => editAccount(who, { lastLogin: new Date().toISOString() }),
-  /** The person's rights in a ХХК. An admin keeps their own Удирдлага right, so the ХХК never loses its last admin. */
+  /**
+   * The person's rights in a ХХК. An admin keeps their own Удирдлага right, so the ХХК never loses its last admin. The
+   * system admin's are only a system admin's to change.
+   */
   setAccess(who: Id, company: Id, access: Access) {
     if (!accessOf(state, state.me, company).admin) return false
     if (who === state.me && !access.admin && !state.people.find(p => p.id === who)?.account?.sysadmin) return false
     const a = state.people.find(p => p.id === who)?.account
-    if (!a) return false
+    if (!a || (a.sysadmin && !sysadmin())) return false
     editAccount(who, { access: { ...a.access, [company]: access } })
     return true
   },

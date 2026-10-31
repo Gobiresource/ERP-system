@@ -8,7 +8,7 @@ import { go } from '../lib/router'
 import { dueLabel, hm, parse, short } from '../lib/format'
 import { enter } from '../lib/motion'
 import { Avatar, ProjectGlyph, STATUS } from '../ui/bits'
-import { NAV } from './nav'
+import { navFor } from './nav'
 import { EMP_STATUS } from '../lib/hr'
 import { docView, hrView } from '../lib/access'
 import { DOC_KIND } from '../lib/docs'
@@ -58,7 +58,7 @@ function FinderDialog() {
     const has = (...xs: (string | undefined)[]) => !t || xs.some(x => x && lower(x).includes(t))
     const out: Hit[] = []
     const add = (items: Hit[]) => out.push(...items.slice(0, t ? 6 : 3))
-    add(NAV.filter(n => has(n.label)).map(n => ({
+    add(navFor(s).filter(n => has(n.label)).map(n => ({
       id: `page-${n.page}`, group: 'Хуудас', title: n.label, lead: <span className="lead"><n.icon className="ico" /></span>, run: () => go(n.page),
     })))
     // The PDF tool sits inside Бичиг хэрэг; typing "PDF" finds it

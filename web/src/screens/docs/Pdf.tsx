@@ -21,8 +21,8 @@ import { forget } from '../draft/Board'
 
 const THUMB = 360
 const INK = '#1d2b6e'
-/** The signature drawn on this visit, offered again for the next page */
-let lastInk: { png: string; ratio: number } | null = null
+/** The signature drawn on this visit, offered again for the next page; only to whoever drew it, not the next to sign in */
+let lastInk: { who: string; png: string; ratio: number } | null = null
 
 // While a page is dragged with a finger, the page must not scroll
 let touchDragging = false
@@ -430,13 +430,15 @@ function Sheetlet({ p, thumb }: { p: Page; thumb?: string }) {
 }
 
 function SignSheet({ page, src, onSave, onClose }: { page: Page; src: Source; onSave: (s: Sign | undefined) => void; onClose: () => void }) {
-  const [ink, setInk] = useState(lastInk)
-  const [drawing, setDrawing] = useState(!lastInk)
+  const me = useApp().me
+  const mine = lastInk?.who === me ? lastInk : null
+  const [ink, setInk] = useState(mine)
+  const [drawing, setDrawing] = useState(!mine)
   return (
     <Sheet label="Гарын үсэг" onClose={onClose} wide>
       <h2 className="sheet__title">Гарын үсэг</h2>
       {drawing || !ink
-        ? <Pad onDone={i => { lastInk = i; setInk(i); setDrawing(false) }} />
+        ? <Pad onDone={i => { lastInk = { ...i, who: me }; setInk(lastInk); setDrawing(false) }} />
         : <Place page={page} src={src} ink={ink} onSave={onSave} onRedraw={() => setDrawing(true)} />}
     </Sheet>
   )

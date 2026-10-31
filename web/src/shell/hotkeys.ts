@@ -2,7 +2,7 @@
 import { getState } from '../lib/store'
 import { focus, getUi, open, setFinder, setIslandOpen } from '../lib/ui'
 import { go, type Page } from '../lib/router'
-import { NAV } from './nav'
+import { NAV, navFor } from './nav'
 
 /** G then a page's letter (shell/nav.ts) */
 const GO: Record<string, Page> = Object.fromEntries(NAV.map(n => [`Key${n.key}`, n.page]))
@@ -21,7 +21,8 @@ export function startHotkeys() {
     if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return
     if (typing(document.activeElement) || document.querySelector('dialog[open]') || getUi().finder) return
 
-    if (Date.now() - gAt < 1200 && GO[e.code]) {
+    // Only the pages the person may open, as in the menu
+    if (Date.now() - gAt < 1200 && navFor(getState()).some(n => n.page === GO[e.code])) {
       gAt = 0
       e.preventDefault()
       return go(GO[e.code])

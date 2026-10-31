@@ -1,7 +1,8 @@
 import { Sheet } from '../ui/Sheet'
 import { close } from '../lib/ui'
+import { useApp } from '../lib/store'
 import { modKey } from './Toolbar'
-import { NAV } from './nav'
+import { navFor } from './nav'
 
 const ROWS: [string, string[]][] = [
   ['Хайх', [`${modKey} K`, '/']],
@@ -13,6 +14,7 @@ const ROWS: [string, string[]][] = [
 ]
 
 export function Shortcuts() {
+  const nav = navFor(useApp())
   return (
     <Sheet kind="drawer" label="Гарын товчлол" onClose={close}>
       <h2 className="sheet__title">Гарын товчлол</h2>
@@ -27,7 +29,7 @@ export function Shortcuts() {
       </dl>
       <h3 className="keys__head">Хуудас солих: эхлээд G, дараа нь</h3>
       <dl className="keys">
-        {NAV.map(n => (
+        {nav.map(n => (
           <div key={n.page}>
             <dt>{n.label}</dt>
             <dd><kbd>G</kbd><kbd>{n.key}</kbd></dd>

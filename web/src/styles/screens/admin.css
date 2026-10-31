@@ -1,6 +1,9 @@
 /* Удирдлага (screens/Admin.tsx): the ХХК's users, and one user's rights with how they sign in */
 
 .adm-table tbody tr.is-off th, .adm-table tbody tr.is-off td { color: var(--text-2); }
+/* Seven columns: the rights wrap onto two lines, below 1280 px the names and headings too, so none runs past the card */
+.adm-table td { white-space: normal; }
+@media (width <= 1280px) { .adm-table th { white-space: normal; } }
 .adm-pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: var(--fill); font: 620 12.5px/1.5 var(--font); color: var(--text); white-space: nowrap; }
 .adm-pill .ico { width: 13px; height: 13px; }
 .adm-pill.is-admin { background: var(--accent-soft); color: var(--accent-ink); }
@@ -31,7 +34,9 @@
 .adm-row > span { display: grid; gap: 2px; min-width: 0; }
 .adm-row b { font-size: 14.5px; font-weight: 620; }
 .adm-row small { font-size: 12.5px; color: var(--text-2); }
-.adm-check { cursor: pointer; }
+/* A checkbox stays on the right of its text, however long the text wraps */
+.adm-check { flex-wrap: nowrap; cursor: pointer; }
+.adm-check > span { flex: 1; }
 .adm-check input { flex: none; width: 20px; height: 20px; accent-color: var(--accent); }
 .adm-check.is-off { cursor: default; }
 .adm-check.is-off > span { opacity: .55; }
@@ -41,6 +46,7 @@
 .adm-inline input { flex: 1; min-width: 0; }
 .adm-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .adm-stop { color: var(--bad-ink); }
+.adm-note { font-size: 14px; line-height: 1.5; color: var(--text-2); }
 
 /* The people under them */
 .adm-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px 16px; }

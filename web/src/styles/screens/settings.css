@@ -135,7 +135,11 @@ label.cell__text { cursor: pointer; }
   .cell__input { min-height: 44px; }
 }
 
-/* Changing one's password (Нэвтрэх) */
-.set-pass { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 12px; padding: 12px 4px 4px; }
+/* Changing one's password (Нэвтрэх): side by side once each label fits on one line (half a row is too narrow), else
+   one under another; tops aligned, so an error below one field moves none */
+#set-login .cells { container-type: inline-size; }
+.set-pass { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 12px; padding: 12px 4px 4px; }
+@container (width >= 520px) { .set-pass { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .set-pass .btn { grid-column: 1 / -1; justify-self: start; }
+.set-pass .btn[aria-disabled="true"] { opacity: .45; cursor: default; }
 @media (width <= 720px) { .set-pass { grid-template-columns: minmax(0, 1fr); } }

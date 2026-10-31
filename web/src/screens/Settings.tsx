@@ -103,6 +103,7 @@ function SignIn() {
   }
   const change = async (e: FormEvent) => {
     e.preventDefault()
+    if (busy) return
     const err: Partial<typeof f> = {}
     if (!f.now) err.now = 'Одоогийн нууц үгээ бичнэ үү.'
     if (!f.next) err.next = 'Шинэ нууц үгээ бичнэ үү.'
@@ -125,7 +126,7 @@ function SignIn() {
     <div className="field">
       <label className="field__label" htmlFor={`pw-${k}`}>{label}</label>
       <input id={`pw-${k}`} type="password" value={f[k]} onChange={put(k)} autoComplete={auto} aria-invalid={errors[k] ? true : undefined} aria-describedby={errors[k] ? `pw-${k}-error` : undefined} />
-      {errors[k] && <span className="field__error" id={`pw-${k}-error`}>{errors[k]}</span>}
+      {errors[k] && <span className="field__error" id={`pw-${k}-error`} role="alert">{errors[k]}</span>}
     </div>
   )
   return (
@@ -138,7 +139,8 @@ function SignIn() {
         {input('now', 'Одоогийн нууц үг', 'current-password')}
         {input('next', 'Шинэ нууц үг', 'new-password')}
         {input('again', 'Шинэ нууц үгээ давтах', 'new-password')}
-        <button type="submit" className="btn btn--glass" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нууц үг солих'}</button>
+        {/* aria-disabled, not disabled: a disabled button would drop the keyboard focus while the password is checked */}
+        <button type="submit" className="btn btn--glass" aria-disabled={busy || undefined}>{busy ? 'Шалгаж байна…' : 'Нууц үг солих'}</button>
       </form>
     </Group>
   )
