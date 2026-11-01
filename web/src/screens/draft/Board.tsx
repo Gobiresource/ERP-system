@@ -22,8 +22,8 @@ const clampZ = (z: number) => Math.min(ZMAX, Math.max(ZMIN, z))
 const MIN: Record<CardKind, [number, number]> = { note: [120, 80], todo: [160, 80], title: [120, 40], image: [120, 60], link: [180, 64], file: [180, 64] }
 const EDITABLE: CardKind[] = ['note', 'todo', 'title', 'link', 'image']
 const isPdf = (c?: DraftCard) => c?.kind === 'file' && (c.file?.type === 'application/pdf' || /\.pdf$/i.test(c.file?.name ?? ''))
-// A ticked box is not typing (Ctrl+Z still steps back), unless its card is open: that tick is not saved yet
-const typing = (el: Element | null) => !!el?.closest('input:not([type="checkbox"]), .is-edit input, textarea, select, [contenteditable="true"]')
+// A ticked box is not typing (Ctrl+Z still steps back), unless its card is open: nothing in an open card is saved yet
+const typing = (el: Element | null) => !!el?.closest('input:not([type="checkbox"]), .is-edit, textarea, select, [contenteditable="true"]')
 
 // Undo history, per board, for this visit
 const history = new Map<string, { past: DraftCard[][]; future: DraftCard[][] }>()

@@ -11,7 +11,7 @@ import { Sheet, useCloseSheet } from '../ui/Sheet'
 import { Seg } from '../ui/Seg'
 import { Avatar, Prio, ProjectChip, STATUS, STATUSES } from '../ui/bits'
 import { PeoplePick } from '../ui/PeoplePick'
-import { moveTask } from '../screens/tasks/TaskCard'
+import { moveToTop } from '../screens/tasks/TaskCard'
 
 /** "Маргааш (10.30)" near today, otherwise "2026.11.19" */
 function dueText(due: string) {
@@ -72,7 +72,7 @@ function Body({ id }: { id: string }) {
       <h2 className="tp__title">{t.title}</h2>
 
       <div className="tp__seg">
-        <Seg<TaskStatus> label="Төлөв" value={t.status} onChange={st => moveTask(t, st)} options={STATUSES.map(st => ({ value: st, label: STATUS[st] }))} />
+        <Seg<TaskStatus> label="Төлөв" value={t.status} onChange={st => { if (st !== t.status) moveToTop(t, st) }} options={STATUSES.map(st => ({ value: st, label: STATUS[st] }))} />
       </div>
 
       <dl className="meta tp__meta">
@@ -161,11 +161,11 @@ function Body({ id }: { id: string }) {
       ) : (
         <div className="tp__foot">
           {t.status === 'done' ? (
-            <button type="button" className="btn btn--glass" onClick={() => moveTask(t, 'todo')}><RotateCcw className="ico" />Дахин нээх</button>
+            <button type="button" className="btn btn--glass" onClick={() => moveToTop(t, 'todo')}><RotateCcw className="ico" />Дахин нээх</button>
           ) : (
-            <button type="button" className="btn btn--accent" onClick={() => moveTask(t, 'done')}>Дуусгах</button>
+            <button type="button" className="btn btn--accent" onClick={() => moveToTop(t, 'done')}>Дуусгах</button>
           )}
-          <button type="button" className="btn btn--ghost tp__del" style={{ color: 'var(--danger)' }} onClick={() => setConfirm(true)}>
+          <button type="button" className="btn btn--ghost tp__del" style={{ color: 'var(--bad-ink)' }} onClick={() => setConfirm(true)}>
             <Trash className="ico" />
             Устгах
           </button>

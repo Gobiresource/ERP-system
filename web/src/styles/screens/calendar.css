@@ -62,7 +62,7 @@
 .cal-tl__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 2px; }
 .cal-kind { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 999px; background: color-mix(in srgb, var(--hue) 15%, transparent); font: 600 12px/1 var(--font); }
 .cal-kind .ico { width: 13px; height: 13px; stroke-width: 2.2; }
-.cal-live { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--danger); color: #fff; font: 700 12px/1 var(--font); }
+.cal-live { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: #d92d3a; color: #fff; font: 700 12px/1 var(--font); } /* light --danger in both modes, as .btn--danger */
 .cal-tl__item.is-past .cal-tl__title, .cal-tl__item.is-past .cal-tl__time b { color: var(--text-2); }
 .cal-tl__item.is-past .cal-tl__rail { opacity: .45; }
 .cal-tl__now { display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
@@ -83,6 +83,7 @@
 
 .cal-wk__scroll { margin: 0 -8px; padding: 0 8px 4px; overflow-x: auto; scrollbar-width: thin; }
 .cal-wk { --hh: clamp(46px, 5.6vh, 60px); min-width: 660px; }
+.cal-wk__scroll > .cal-stage { min-width: 660px; } /* the stage clips only its slide; the week scrolls on narrow screens */
 .cal-wk__head, .cal-wk__body { display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); }
 .cal-wk__head { padding-bottom: 10px; }
 .cal-wk__day { display: flex; align-items: baseline; justify-content: center; gap: 6px; padding: 6px 0; border-radius: 12px; }
@@ -109,7 +110,10 @@
 .cal-blk:hover { background-color: color-mix(in srgb, var(--hue) 30%, transparent); }
 .cal-blk b { overflow: hidden; font: 650 12.5px/1.2 var(--font); text-overflow: ellipsis; white-space: nowrap; }
 .cal-blk small { overflow: hidden; font: 560 12px/1.2 var(--font); color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
-.cal-blk.is-short { flex-direction: row; align-items: center; padding-block: 0; }
+.cal-blk.is-short { flex-direction: row; align-items: center; gap: 6px; padding-block: 0; container-type: inline-size; }
+.cal-blk.is-short small { flex: none; }
+/* Too narrow for both (windows under about 1300 px, events side by side): the title keeps the line, the time stays for screen readers */
+@container (width < 100px) { .cal-blk.is-short small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
 .cal-blk.is-past { background-color: color-mix(in srgb, var(--hue) 10%, transparent); }
 .cal-blk.is-past b { color: var(--text-2); }
 .cal-now { position: absolute; left: -1px; right: 0; z-index: 2; height: 2px; margin-top: -1px; background: var(--danger); pointer-events: none; }
@@ -117,6 +121,7 @@
 
 /* Event window */
 .ep { display: grid; gap: 16px; }
+.ep .meta dd span { white-space: normal; overflow-wrap: anywhere; text-align: start; }
 .ep__kind { justify-self: start; }
 
 @media (width <= 1280px) { .cal { grid-template-columns: minmax(0, 1fr) minmax(280px, 330px); } }

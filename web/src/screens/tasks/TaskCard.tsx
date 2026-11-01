@@ -32,9 +32,13 @@ export function moveTask(t: Task, status: TaskStatus, before?: string) {
   toast(status === 'done' ? `${t.title} дууслаа.` : `${STATUS[status]} төлөвт шилжлээ.`, { undo })
 }
 
-/** The card menu's move: to the top of the column, where it is in view, with focus back on the card's menu button */
+/** To the top of the new column, where it is in view on the board (the card menu and the task window) */
+export const moveToTop = (t: Task, status: TaskStatus) =>
+  moveTask(t, status, getState().tasks.find(x => x.company === t.company && x.status === status && x.id !== t.id)?.id)
+
+/** The card menu's move, with focus back on the card's menu button */
 function moveCard(t: Task, status: TaskStatus) {
-  moveTask(t, status, getState().tasks.find(x => x.company === t.company && x.status === status)?.id)
+  moveToTop(t, status)
   requestAnimationFrame(() => document.querySelector<HTMLElement>(`.tk-card[data-id="${t.id}"] .tk-card__more`)?.focus())
 }
 

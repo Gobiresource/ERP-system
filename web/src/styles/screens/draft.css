@@ -151,7 +151,9 @@
   position: fixed; z-index: 20; top: 88px; left: var(--board-left);
   display: flex; align-items: center; gap: 2px; height: 52px; max-width: calc(100vw - var(--board-left) - var(--frame-right)); padding: 6px; border-radius: 999px;
 }
-@media (width > 1100px) { .bhead { top: 18px; max-width: calc(100vw - var(--board-left) - var(--frame-right) - var(--tools-w, 340px) - 24px); } }
+@media (width > 1100px) { .bhead { top: 18px; max-width: calc(100vw - var(--board-left) - var(--frame-right) - var(--tools-w, 340px) - 24px - var(--isl-w, 0px)); } }
+/* The running focus timer sits in the middle of this row here (shell.css), so the name ends before it */
+@media (width > 1100px) and (width < 1360px) { .app:has(.island[data-mode="compact"]) .bhead { max-width: calc(50vw - 114px - var(--board-left)); } }
 .bhead__name {
   min-width: 0; max-width: 100%; height: 40px; padding: 0 12px; border: 0; border-radius: 999px; background: none; color: var(--text);
   font: 650 18px/1 var(--font); letter-spacing: -.01em; text-overflow: ellipsis; transition: background .2s;

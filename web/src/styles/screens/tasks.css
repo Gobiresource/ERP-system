@@ -38,10 +38,10 @@
 .tk-board {
   display: grid; grid-template-columns: repeat(4, minmax(208px, 1fr)); align-items: stretch; gap: var(--gap);
   margin: -14px calc(-1 * var(--gutter)) -44px; padding: 14px var(--gutter) 44px; overflow-x: auto;
-  scroll-padding-inline: var(--gutter); scrollbar-width: none;
+  scroll-padding-inline: var(--gutter); scrollbar-width: thin;
 }
-.tk-board::-webkit-scrollbar { display: none; }
-.tk-col { position: relative; display: flex; flex-direction: column; min-height: min(70vh, 760px); padding: 14px 10px 12px; }
+/* isolate: the drop ring stays inside the column's glass on flat wallpapers too, where the column has no blur */
+.tk-col { position: relative; isolation: isolate; display: flex; flex-direction: column; min-height: min(70vh, 760px); padding: 14px 10px 12px; }
 .tk-col::after {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0;
   background: color-mix(in srgb, var(--accent) 7%, transparent); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent-ink) 48%, transparent);
@@ -164,8 +164,10 @@
 .tp__confirm p { font-weight: 600; }
 .tp__confirm div { display: flex; flex-wrap: wrap; gap: 8px; }
 
+/* Swiped on tablets and phones, so no scrollbar there; on a computer it shows only while the columns do not fit */
 @media (width <= 1100px) {
-  .tk-board { scroll-snap-type: x proximity; }
+  .tk-board { scroll-snap-type: x proximity; scrollbar-width: none; }
+  .tk-board::-webkit-scrollbar { display: none; }
   .tk-col { scroll-snap-align: start; }
 }
 @media (width <= 900px) {

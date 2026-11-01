@@ -47,7 +47,8 @@ function Body({ id }: { id: string }) {
       <dl className="meta">
         <div>
           <dt>Огноо, цаг</dt>
-          <dd><CalendarClock className="ico" /><span className="tnum">{dueLabel(e.start.slice(0, 10))}, {hm(start)}–{hm(eventEnd(e))}</span></dd>
+          {/* The values wrap (calendar.css); a word joiner keeps the time range on one line */}
+          <dd><CalendarClock className="ico" /><span className="tnum">{dueLabel(e.start.slice(0, 10))}, {hm(start)}–{'\u2060'}{hm(eventEnd(e))}</span></dd>
         </div>
         <div>
           <dt>Үргэлжлэх хугацаа</dt>
@@ -77,7 +78,7 @@ function Body({ id }: { id: string }) {
         </div>
       </section>
       <div className="tp__foot">
-        <button type="button" className="btn btn--ghost tp__del" style={{ color: 'var(--danger)' }} onClick={remove}>
+        <button type="button" className="btn btn--ghost tp__del" style={{ color: 'var(--bad-ink)' }} onClick={remove}>
           <Trash className="ico" />
           Устгах
         </button>

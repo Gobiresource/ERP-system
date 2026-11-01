@@ -7,7 +7,7 @@ import { AtSign, CalendarDays, Check, CheckCheck, ChevronLeft, Download, FileTex
 import '../styles/screens/chat.css'
 import type { BoardFile, Chat, ChatRef, Id, Message, State } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
-import { open, toast, type Dialog } from '../lib/ui'
+import { open, setActAs, toast, type Dialog } from '../lib/ui'
 import { chatName, myChats, readers, unread } from '../lib/chat'
 import { DOC_KIND } from '../lib/docs'
 import { docView } from '../lib/access'
@@ -268,8 +268,9 @@ function Bubble({ m, first, group, fresh, on, toggle }: { m: Message; first: boo
           {mine && (
             <>
               <span className="cacts__sep" aria-hidden="true" />
-              {/* Who has read it: their faces (a tick while nobody has); the list opens on a press */}
-              <button type="button" className="cacts__icon" aria-label="Хэн уншсан" title="Хэн уншсан" onClick={() => { toggle(); open({ kind: 'readers', id: m.id }) }}>
+              {/* Who has read it: their faces (a tick while nobody has); the list opens on a press and gives the focus back
+                  to the message's button (focused first, as this bar closes) */}
+              <button type="button" className="cacts__icon" aria-label="Хэн уншсан" title="Хэн уншсан" onClick={() => { more.current?.focus({ preventScroll: true }); toggle(); open({ kind: 'readers', id: m.id }) }}>
                 {read.length ? <AvatarStack people={read} max={3} size="xs" /> : <Check className="ico" />}
               </button>
               <button type="button" className="cacts__icon is-danger" aria-label="Бүгдээс устгах" title="Бүгдээс устгах" onClick={recall}><Trash2 className="ico" /></button>
@@ -315,6 +316,7 @@ function RefCard({ r }: { r: ChatRef }) {
   // A task or a meeting of my other ХХК opens in that ХХК, so its people and project are that ХХК's
   const there = (company: Id, dialog: Dialog) => () => {
     if (company !== s.company) {
+      setActAs(null) // the demo's act-as person belongs to the company left, as in the ХХК switcher
       actions.switchCompany(company)
       toast(`Компани солигдлоо: ${s.companies.find(c => c.id === company)?.name}.`, { kind: 'info' })
     }
@@ -331,7 +333,7 @@ function RefCard({ r }: { r: ChatRef }) {
     const d = s.docs.find(x => x.id === r.id && mine.includes(x.company))
     if (d && docView(s).doc(d)) card = { icon: <DocTile kind={d.kind} />, title: d.name, sub: `Бичиг баримт, ${DOC_KIND[d.kind].toLowerCase()}`, go: () => open({ kind: 'doc', id: d.id }) }
   }
-  if (!card) return <p className="cref is-gone">{r.label}: устгагдсан эсвэл харах эрх байхгүй</p>
+  if (!card) return <p className="cref is-gone">{r.label}: устгагдсан эсвэл танд харах эрх алга</p>
   return (
     <button type="button" className="cref" onClick={card.go}>
       {card.icon}

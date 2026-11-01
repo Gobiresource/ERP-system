@@ -336,7 +336,7 @@ function WeekGrid({ from, sc }: { from: Date; sc: Scoped }) {
             <div key={k} className={`cal-wk__col${k === t ? ' is-today' : ''}${d.getDay() === 0 || d.getDay() === 6 ? ' is-weekend' : ''}`}
               onClick={e => addAt(e, d)} aria-label={`${monthDay(d)}, ${weekday(d)}`} role="group">
               {placed.map(({ e, s0, lane }) => {
-                // Two lines need an hour of height
+                // Two lines need an hour of height; a shorter event keeps its start time on the title's line
                 const short = e.minutes < 60
                 const mins = Math.max(e.minutes, 20)
                 return (
@@ -344,7 +344,7 @@ function WeekGrid({ from, sc }: { from: Date; sc: Scoped }) {
                     style={{ top: top(s0), height: `${(mins / span) * 100}%`, left: `calc(${lane * width}% + 2px)`, width: `calc(${width}% - 4px)` }}
                     onClick={() => open({ kind: 'event', id: e.id })}>
                     <b>{e.title}</b>
-                    {!short && <small>{hm(parse(e.start))}{e.where ? `, ${e.where}` : ''}</small>}
+                    <small>{hm(parse(e.start))}{!short && e.where ? `, ${e.where}` : ''}</small>
                   </button>
                 )
               })}
