@@ -2,7 +2,7 @@
 // document it was opened on.
 // Everything happens in the browser (lib/pdf.ts): the file never leaves the device.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent as RPointerEvent } from 'react'
-import { ArrowLeft, ArrowRight, Download, FilePlus2, FileText, FileUp, RotateCw, Signature, StickyNote, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Download, FilePlus2, FileText, FileUp, Maximize2, RotateCw, Signature, StickyNote, Trash2, X } from 'lucide-react'
 import type { Draft } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
@@ -18,6 +18,7 @@ import { Sheet, useCloseSheet } from '../../ui/Sheet'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
 import { DocsNav } from '../Docs'
 import { forget } from '../draft/Board'
+import { Viewer } from '../../dialogs/Viewer'
 
 const THUMB = 360
 const INK = '#1d2b6e'
@@ -47,6 +48,8 @@ export default function Pdf({ from }: { from?: string }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [signing, setSigning] = useState<string | null>(null)
+  /** The page number the large view opens at; 0 while it is closed */
+  const [viewing, setViewing] = useState(0)
   const [dragKey, setDragKey] = useState<string | null>(null)
   const ghost = useRef<HTMLDivElement>(null)
   const pick = useRef<HTMLInputElement>(null)
@@ -365,7 +368,7 @@ export default function Pdf({ from }: { from?: string }) {
                 <button type="button" className="btn btn--ghost btn--sm" onClick={() => setSel(new Set())}>Сонголт арилгах</button>
               </div>
             ) : (
-              <p className="pbar__hint">Хуудсыг чирж байрыг нь солино. Олон хуудсыг сонгоод хамтад нь эргүүлж, зөөж болно.</p>
+              <p className="pbar__hint">Хуудсыг чирж байрыг нь солино. Олон хуудсыг сонгоод хамтад нь эргүүлж, зөөж болно. Хуудсыг хоёр товшиж томруулж харна.</p>
             )}
           </div>
           <ol className="pdf-grid" aria-label="Хуудас">
@@ -373,7 +376,7 @@ export default function Pdf({ from }: { from?: string }) {
               <PageTile key={p.key} p={p} n={i + 1} thumb={thumbs.get(p.key)} selected={sel.has(p.key)} away={p.key === dragKey}
                 from={many ? sources.current.get(p.src)?.name : undefined}
                 onToggle={() => toggle(p.key)} onTurn={() => turn(new Set([p.key]))} onSign={() => setSigning(p.key)} onRemove={() => remove(new Set([p.key]))}
-                onDrag={e => startDrag(e, p.key)} />
+                onView={() => setViewing(i + 1)} onDrag={e => startDrag(e, p.key)} />
             ))}
           </ol>
         </>
@@ -384,6 +387,11 @@ export default function Pdf({ from }: { from?: string }) {
           <div className="ppage__sheet"><Sheetlet p={dragged} thumb={thumbs.get(dragged.key)} /></div>
         </div>
       )}
+      {/* The file as it is now, turned, moved and signed, page by page and as large as wanted */}
+      {viewing > 0 && (
+        <Viewer name={fileName} sub={`${pages.length} хуудас`} start={viewing} onClose={() => setViewing(0)}
+          load={async () => (await build(pages)) ?? undefined} />
+      )}
       {signPage && sources.current.get(signPage.src) && (
         <SignSheet page={signPage} src={sources.current.get(signPage.src)!} onClose={() => setSigning(null)}
           onSave={sign => setPages(ps => ps.map(p => (p.key === signPage.key ? { ...p, sign } : p)))} />
@@ -392,13 +400,14 @@ export default function Pdf({ from }: { from?: string }) {
   )
 }
 
-function PageTile({ p, n, thumb, selected, away, from, onToggle, onTurn, onSign, onRemove, onDrag }: {
+function PageTile({ p, n, thumb, selected, away, from, onToggle, onTurn, onSign, onRemove, onView, onDrag }: {
   p: Page; n: number; thumb?: string; selected: boolean; away: boolean; from?: string
-  onToggle: () => void; onTurn: () => void; onSign: () => void; onRemove: () => void; onDrag: (e: RPointerEvent<HTMLElement>) => void
+  onToggle: () => void; onTurn: () => void; onSign: () => void; onRemove: () => void; onView: () => void; onDrag: (e: RPointerEvent<HTMLElement>) => void
 }) {
   return (
     <li className={`ppage${selected ? ' is-sel' : ''}${away ? ' is-away' : ''}`} data-page={p.key}>
-      <div className="ppage__sheet" onPointerDown={onDrag} onClick={onToggle}>
+      {/* A click picks the page; a double click (two clicks, so the pick stays as it was) opens it large */}
+      <div className="ppage__sheet" onPointerDown={onDrag} onClick={onToggle} onDoubleClick={onView}>
         <Sheetlet p={p} thumb={thumb} />
       </div>
       <div className="ppage__foot">
@@ -406,6 +415,7 @@ function PageTile({ p, n, thumb, selected, away, from, onToggle, onTurn, onSign,
           <input type="checkbox" checked={selected} onChange={onToggle} />
           <span className="tnum">{n}<span className="sr-only">-р хуудсыг сонгох</span></span>
         </label>
+        <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсыг томруулж харах`} title="Томруулж харах" onClick={onView}><Maximize2 className="ico" /></button>
         <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсыг эргүүлэх`} title="Эргүүлэх" onClick={onTurn}><RotateCw className="ico" /></button>
         <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсанд гарын үсэг зурах`} title="Гарын үсэг" onClick={onSign}><Signature className="ico" /></button>
         <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсыг устгах`} title="Устгах" onClick={onRemove}><Trash2 className="ico" /></button>

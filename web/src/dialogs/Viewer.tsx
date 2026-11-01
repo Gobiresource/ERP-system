@@ -31,10 +31,13 @@ export function EditPdf({ from }: { from: string }) {
   return <Tool icon={FilePen} label="PDF засах" onClick={() => { closeSheet(); go('docs', `pdf-${from}`) }} />
 }
 
-export function Viewer({ name, sub, load, tools }: { name: string; sub?: string; load: () => Promise<Blob | undefined>; tools?: ReactNode }) {
+/** `start`: the page to open at; `onClose`: for a viewer opened by a page itself rather than as the app's window */
+export function Viewer({ name, sub, load, tools, start, onClose = close }: {
+  name: string; sub?: string; load: () => Promise<Blob | undefined>; tools?: ReactNode; start?: number; onClose?: () => void
+}) {
   return (
-    <Sheet kind="full" label={name} onClose={close} closeButton={false}>
-      <Body name={name} sub={sub} load={load} tools={tools} />
+    <Sheet kind="full" label={name} onClose={onClose} closeButton={false}>
+      <Body name={name} sub={sub} load={load} tools={tools} start={start} />
     </Sheet>
   )
 }
@@ -56,7 +59,7 @@ export function FileSheet({ file, pdf }: { file: BoardFile; pdf?: string }) {
 
 interface Shown { url: string; ratio: number }
 
-function Body({ name, sub, load, tools }: { name: string; sub?: string; load: () => Promise<Blob | undefined>; tools?: ReactNode }) {
+function Body({ name, sub, load, tools, start }: { name: string; sub?: string; load: () => Promise<Blob | undefined>; tools?: ReactNode; start?: number }) {
   const closeSheet = useCloseSheet()
   const body = useRef<HTMLDivElement>(null)
   /** A PDF's pages: null until drawn */
@@ -117,6 +120,15 @@ function Body({ name, sub, load, tools }: { name: string; sub?: string; load: ()
     // The file is read once, when the viewer opens (a demo document gets its file while it is read)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Opened at a page: there as soon as the pages have their places, before they are drawn
+  const started = useRef(false)
+  useLayoutEffect(() => {
+    const kid = start && start > 1 && pages ? body.current?.querySelectorAll<HTMLElement>('.fview__page')[start - 1] : undefined
+    if (started.current || !kid) return
+    started.current = true
+    body.current!.scrollTop = kid.offsetTop - 12
+  }, [pages, start])
 
   // Zooming keeps the middle of the screen where it was
   const zoomTo = (next: number) => {
