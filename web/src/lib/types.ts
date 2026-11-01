@@ -435,7 +435,8 @@ export interface ContractEvent {
   id: Id
   by: Id
   at: string // ISO
-  kind: 'start' | 'send' | 'approve' | 'return' | 'register' | 'deliver' | 'cancel' | 'ask' | 'opinion' | 'note'
+  /** word: saved its Word file (a trial, docs/decisions.md 2026-11-01) */
+  kind: 'start' | 'send' | 'approve' | 'return' | 'register' | 'deliver' | 'cancel' | 'ask' | 'opinion' | 'note' | 'word'
   /** Approve: the part of the review, or the stage that was passed */
   role?: ProcessRole
   /** Send, return: where it went */
@@ -471,6 +472,8 @@ export interface Contract {
   regDate?: string // YYYY-MM-DD
   /** The signed and stamped copy */
   scan?: BoardFile
+  /** Its Word file (a trial beside the text above): the file in the browser's file store, who saved it last */
+  word?: { file: Id; by: Id; at: string }
   created: string // ISO
   updated: string // ISO
 }

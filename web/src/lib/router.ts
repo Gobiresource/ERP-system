@@ -11,7 +11,8 @@ export function parse(hash: string): Route {
   // Human resources: #hr, #hr-employees, #hr-structure, #hr-new, #hr-<employee>, #hr-<employee>-edit, #hr-attendance,
   // #hr-attendance-<employee> (or -t<Timely worker number>)
   if (h.startsWith('hr-')) return { page: 'hr', id: h.slice(3) }
-  // Бичиг хэрэг: #docs, #docs-folder-<company>, #docs-folder-<company>-<kind>, #docs-requests, #docs-pdf, #docs-pdf-<board>-<card>
+  // Бичиг хэрэг: #docs, #docs-folder-<company>, #docs-folder-<company>-<kind>, #docs-requests, #docs-contract-<contract>,
+  // #docs-word-<contract>, #docs-pdf, #docs-pdf-<board>-<card>
   // (the PDF tool was at #draft-pdf before)
   if (h.startsWith('docs-')) return { page: 'docs', id: h.slice(5) }
   if (h === 'draft-pdf' || h.startsWith('draft-pdf-')) return { page: 'docs', id: h.slice(6) }

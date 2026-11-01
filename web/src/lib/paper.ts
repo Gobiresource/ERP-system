@@ -157,20 +157,21 @@ export async function docBlob(d: Doc): Promise<Blob | undefined> {
   return blob
 }
 
-/** A contract's paper copy as it reads now: its number once registered, both sides to sign at the end */
-export function contractPdf(c: Contract) {
+/** A contract's paper copy as it reads now (its PDF and its Word file): its number once registered, both sides to sign at the end */
+export function contractPaper(c: Contract) {
   const s = getState()
   const company = companyName(c.company)
   const head = s.people.find(p => p.id === rolesOf(s, c.company).director)
-  return paperPdf({
+  return {
     company,
     title: c.title,
     date: dateDots(c.regDate ? parse(c.regDate) : new Date()),
     number: `№ ${c.number ?? '________'}`,
     lines: [`${CONTRACT_KIND[c.kind]}. Талууд: ${company}, ${c.party}.`, ...contractLines(c)],
     signers: [`${company}   ________________   ${head ? short(head) : ''}`, `${c.party}   ________________`],
-  })
+  }
 }
+export const contractPdf = (c: Contract) => paperPdf(contractPaper(c))
 
 export async function downloadDoc(d: Doc) {
   const blob = await docBlob(d).catch(() => undefined)

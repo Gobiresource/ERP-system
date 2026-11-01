@@ -60,6 +60,8 @@
   --scrim: rgb(20 24 50 / .16);
   /* Behind a file looked at over the whole screen (dialogs/Viewer.tsx) */
   --view-bg: #d9dde7;
+  /* Under the pages of a Word file, as in Word (screens/docs/WordEditor.tsx) */
+  --word-desk: #e6e8ee;
   /* A contract's sheet of paper, and what a version added or took out (screens/docs/Contract.tsx) */
   --paper: #ffffff;
   --paper-ink: #1b1d26;
@@ -136,6 +138,7 @@
   --well: rgb(150 150 175 / .16);
   --scrim: rgb(0 0 0 / .4);
   --view-bg: #121317;
+  --word-desk: #24262e;
   --paper: #1c1d24;
   --paper-ink: #ececf2;
   --paper-mute: #a6a8b6;

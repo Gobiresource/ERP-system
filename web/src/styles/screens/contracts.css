@@ -139,6 +139,16 @@
 .ctlog__form textarea:focus { outline: 2.5px solid var(--accent-ink); outline-offset: 0; }
 .ctlog__form .btn { justify-self: end; }
 
+/* The Word file (screens/docs/Word.tsx, WordEditor.tsx): the editor's own toolbar and pages on a desk of their own.
+   The toolbar stays on top while the pages scroll under it; it is the editor's light one in both themes, like its pages. */
+.wdoc { display: grid; min-width: 0; border-radius: 16px; background: var(--word-desk); box-shadow: 0 0 0 1px var(--sep); overflow: clip; }
+.wdoc__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 14px; background: var(--glass-solid); border-bottom: 1px solid var(--sep); }
+.wdoc__mode { min-width: 0; font-size: 13.5px; color: var(--text-2); }
+.wdoc__tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.wdoc__bar { position: sticky; top: 86px; z-index: 3; min-width: 0; background: #fff; border-bottom: 1px solid rgb(0 0 0 / .1); }
+.wdoc__doc { min-width: 0; padding: 20px 0 40px; overflow-x: auto; }
+.wdoc__wait { padding: 24px; font-size: 14px; color: var(--text-2); }
+
 @media (width <= 1100px) {
   .ctgrid { grid-template-columns: minmax(0, 1fr); }
   /* Progress above the paper, versions and history below */

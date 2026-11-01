@@ -2,7 +2,7 @@
 // (the user's wish, 2026-10-29). Each person's edits are kept as their version, and any version shows what it changed.
 // Beside it: where the contract is, what the person can do now, its versions and its history.
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type TextareaHTMLAttributes } from 'react'
-import { Check, ChevronLeft, FileText, MessageSquareQuote, Plus, Send, Stamp, Trash2, Truck, Undo2, X } from 'lucide-react'
+import { Check, ChevronLeft, FileText, FileType, MessageSquareQuote, Plus, Send, Stamp, Trash2, Truck, Undo2, X } from 'lucide-react'
 import '../../styles/screens/contracts.css'
 import type { Clause, Contract, ContractEvent, Id, ProcessRole } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
@@ -49,7 +49,12 @@ export default function ContractPage({ id }: { id: string }) {
       <PageHead
         title={c.title}
         sub={`${CONTRACT_KIND[c.kind]}, ${c.party}${c.amount ? `, ${num(c.amount)} ₮` : ''}`}
-        actions={<button type="button" className="btn btn--glass" onClick={() => open({ kind: 'contractPdf', id: c.id })}><FileText className="ico" />PDF-ээр харах</button>}
+        actions={(
+          <>
+            <a className="btn btn--glass" href={`#docs-word-${c.id}`}><FileType className="ico" />{canEdit(c, roles, who) ? 'Word-оор засах' : 'Word-оор харах'}</a>
+            <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'contractPdf', id: c.id })}><FileText className="ico" />PDF-ээр харах</button>
+          </>
+        )}
       />
       {accessOf(s, s.me, c.company).admin && <ActAs />}
       <div className="ctgrid" data-enter>
@@ -365,6 +370,7 @@ function what(e: ContractEvent, people: { id: Id; given: string; family: string 
     case 'ask': return `санал хүссэн: ${(e.people ?? []).map(id => name(people, id)).join(', ')}`
     case 'opinion': return 'санал өгсөн'
     case 'note': return 'тэмдэглэл бичсэн'
+    case 'word': return 'Word файлыг зассан'
   }
 }
 

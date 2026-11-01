@@ -497,7 +497,7 @@ export const actions = {
       if (!canEdit(c, rolesOf(s, c.company), who)) return c
       const at = new Date().toISOString()
       const last = c.versions.at(-1)
-      const step = c.events.filter(e => e.kind !== 'note' && e.kind !== 'opinion' && e.kind !== 'ask').at(-1)
+      const step = c.events.filter(e => e.kind !== 'note' && e.kind !== 'opinion' && e.kind !== 'ask' && e.kind !== 'word').at(-1)
       const same = last && last.by === who && (!step || step.at < last.at)
       return { ...c, clauses, updated: at, versions: same ? [...c.versions.slice(0, -1), { ...last, at, clauses }] : [...c.versions, { id: uid('cv'), by: who, at, clauses }] }
     })
@@ -563,6 +563,16 @@ export const actions = {
       if (c.stage !== 'draft' || c.owner !== who || !people.length) return c
       const at = new Date().toISOString()
       return { ...c, asked: [...c.asked.filter(a => !people.includes(a.to)), ...people.map(to => ({ to }))], events: [...c.events, { id: uid('ce'), by: who, at, kind: 'ask', people, text: text || undefined }], updated: at }
+    })
+  },
+  /** Notes a saved Word file (put in the file store first) of someone who may edit the text now; one history line per person */
+  saveContractWord(id: Id, who: Id, file: Id) {
+    patchContract(id, (c, s) => {
+      if (!canEdit(c, rolesOf(s, c.company), who)) return c
+      const at = new Date().toISOString()
+      const last = c.events.at(-1)
+      const events = last?.kind === 'word' && last.by === who ? [...c.events.slice(0, -1), { ...last, at }] : [...c.events, { id: uid('ce'), by: who, at, kind: 'word' as const }]
+      return { ...c, word: { file, by: who, at }, events, updated: at }
     })
   },
   /** Anyone may write a note; from someone who was asked, it is their opinion */
