@@ -92,7 +92,8 @@ export default function Scans() {
         <section className="card glass" data-enter>
           {s.scans.length
             ? <Empty icon={<FileText className="ico" />} title={view === 'ready' ? 'Бэлэн баримт алга' : 'Шалгах баримт алга'} text="Бусад баримтыг «Бүгд» хэсгээс харна уу." />
-            : <Empty icon={<FileText className="ico" />} title="Хавтаслах баримт алга" text="Скан файлаа дээрх хэсэгт оруулна уу." />}
+            // A phone cannot drag files: there the drop zone above says to pick them
+            : <Empty icon={<FileText className="ico" />} title="Хавтаслах баримт алга"><p className="empty__text sdrop__drag">Скан хийсэн файлаа дээрх хэсэгт чирж тавина уу.</p></Empty>}
         </section>
       )}
     </div>

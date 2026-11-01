@@ -25,7 +25,7 @@ export type Dialog =
   | { kind: 'request'; id: Id; office?: boolean }
   | { kind: 'newChat' }
   | { kind: 'chatGroup'; id: Id }
-  | { kind: 'file'; file: BoardFile }
+  | { kind: 'file'; file: BoardFile; pdf?: string }
   | { kind: 'readers'; id: Id }
   | { kind: 'newContract' }
   | { kind: 'contractReason'; id: Id; step: 'return' | 'cancel' }

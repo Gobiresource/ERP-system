@@ -308,14 +308,14 @@ function RequestBody({ id, office: asked }: { id: string; office?: boolean }) {
         <div><dt>Юунд ашиглах</dt><dd><span>{r.purpose}</span></dd></div>
         <div><dt>Хаана өгөх</dt><dd><span>{r.where || 'Бичээгүй'}</span></dd></div>
         <div><dt>Хэлбэр</dt><dd><span>{r.paper ? `Цаасаар, ${r.copies} хувь` : 'Цахимаар, PDF'}</span></dd></div>
-        <div><dt>Хэзээ хэрэгтэй</dt><dd><span className="tnum">{dateDots(new Date(`${r.need}T00:00`))}, {dueLabel(r.need)}</span></dd></div>
+        <div><dt>Хэзээ хэрэгтэй</dt><dd><span className="tnum">{dateDots(new Date(`${r.need}T00:00`))}{/^\d/.test(dueLabel(r.need)) ? '' : `, ${dueLabel(r.need)}`}</span></dd></div>
       </dl>
       {r.note && <p className="rq__note">{r.note}</p>}
 
       {doc && (
         <button type="button" className="rq__doc" onClick={() => open({ kind: 'doc', id: doc.id })}>
           <DocTile kind={doc.kind} />
-          <span><b>{doc.name}</b><small>Бичиг баримт нээх</small></span>
+          <span><b>{doc.name}</b><small>Бичиг баримт харах</small></span>
         </button>
       )}
       {r.status === 'ready' && !office && <p className="rq__ready">Бэлэн боллоо. Ирж авах газар: {last.note}.</p>}

@@ -64,10 +64,10 @@ function load(): State | null {
     if (s.people.some((p: Person) => !p.account)) s = { ...s, people: demoAccounts(s) }
     // Saved before Бичиг хэрэг had rights of its own
     if (s.people.some((p: Person) => p.account && Object.values(p.account.access).some(a => !('docs' in a)))) s = { ...s, people: withDocRights(s) }
-    // Saved while filed scans went to everyone: they stay with the office until it shares them. Scans filed since have
-    // 'ds' ids, so one the office has since shared with everyone stays shared.
+    // Saved while filed scans went to everyone: they go to the office once, then stay as the office shares them (the flag
+    // is saved with them). Scans filed since have 'ds' ids, so one the office shared with everyone in v32 stays shared.
     const everyone = (d: Doc) => !!d.paper && d.to === 'all' && !d.id.startsWith('ds')
-    if (s.docs.some(everyone)) s = { ...s, docs: s.docs.map((d: Doc) => (everyone(d) ? { ...d, to: [] } : d)) }
+    if (!s.scansKept) s = { ...s, scansKept: true, docs: s.docs.map((d: Doc) => (everyone(d) ? { ...d, to: [] } : d)) }
     // Saved when notices and focus sessions belonged to no one: they were Б.Болд's
     if (s.notices.some((n: { to?: Id }) => !n.to) || s.focusLog.some((f: { who?: Id }) => !f.who)) {
       s = { ...s, notices: s.notices.map((n: object) => ({ to: 'u1', ...n })), focusLog: s.focusLog.map((f: object) => ({ who: 'u1', ...f })) }
@@ -176,13 +176,13 @@ const loginFree = (login: string, who?: Id) => !!loginKey(login) && !state.peopl
 export const actions = {
   switchCompany: (company: Id) => set(s => ({ ...s, company })),
   /**
-   * A new ХХК, with its folder in Бичиг хэрэг. I work in it from the start, so it is in my company menu. Only whoever sets
-   * the system up adds one.
+   * A new ХХК, with its folder in Бичиг хэрэг. I work in it from the start, so it is in my company menu, and hold its
+   * contract roles (Үүрэг тохируулах) as its only person. Only whoever sets the system up adds one.
    */
   addCompany(c: Pick<Company, 'name' | 'hue'>) {
     if (!sysadmin()) return null
     const company: Company = { ...c, id: uid('c'), code: companyMark(c.name) }
-    set(s => ({ ...s, companies: [...s.companies, company], docTypes: [...s.docTypes, ...docTypesFor(company.id)], people: s.people.map(p => (p.id === s.me ? { ...p, companies: [...p.companies, company.id] } : p)) }))
+    set(s => ({ ...s, companies: [...s.companies, company], docTypes: [...s.docTypes, ...docTypesFor(company.id)], people: s.people.map(p => (p.id === s.me ? { ...p, companies: [...p.companies, company.id] } : p)), roles: { ...s.roles, [company.id]: { finance: s.me, legal: s.me, clerk: s.me, director: s.me } } }))
     return company
   },
   /** Its name and folder colour, by an admin of the ХХК */

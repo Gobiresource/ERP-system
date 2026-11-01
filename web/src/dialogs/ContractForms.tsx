@@ -219,7 +219,7 @@ export function ProcessRoles() {
   const s = useApp()
   const company = s.companies.find(c => c.id === s.company)
   const people = sorted(s.people.filter(p => p.companies.includes(s.company)))
-  // A new ХХК borrows the first one's people, who may not work in it: each role starts at someone listed, as shown
+  // A ХХК added before v33 borrows the first one's people, who may not work in it: each role starts at someone listed, as shown
   const [f, setF] = useState(() => {
     const r = rolesOf(s, s.company)
     return Object.fromEntries(ROLES.map(k => [k, people.some(p => p.id === r[k]) ? r[k] : people[0]?.id])) as Record<ProcessRole, Id>

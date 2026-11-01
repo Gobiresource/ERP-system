@@ -39,12 +39,15 @@ export function Viewer({ name, sub, load, tools }: { name: string; sub?: string;
   )
 }
 
-/** A file from Зурвас or a board: look at it, open a PDF in the PDF tool, save it */
-export function FileSheet({ file }: { file: BoardFile }) {
+/**
+ * A file from Зурвас or a board: look at it, open a PDF in the PDF tool, save it. A board names its card (`pdf`, as
+ * <board>-<card>), since a copied card holds the same file.
+ */
+export function FileSheet({ file, pdf }: { file: BoardFile; pdf?: string }) {
   return (
     <Viewer name={file.name} sub={fileSize(file.size)} load={() => getFile(file.id)} tools={
       <>
-        {isPdfName(file) && <EditPdf from={`file-${file.id}`} />}
+        {isPdfName(file) && <EditPdf from={pdf ?? `file-${file.id}`} />}
         <Tool icon={Download} label="Татах" onClick={() => getFile(file.id).then(b => b && saveBlob(file.name, b))} />
       </>
     } />

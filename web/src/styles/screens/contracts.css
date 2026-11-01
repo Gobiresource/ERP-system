@@ -106,7 +106,7 @@
 .ctsteps li:not(.is-past):not(.is-now) .ctsteps__text b { color: var(--text-2); font-weight: 500; }
 .ctsteps__text small { font-size: 12.5px; color: var(--text-2); }
 .ctsteps__text small.is-ok { color: var(--ok-ink); }
-.ctsteps.is-off { opacity: .6; }
+.ctsteps.is-off .ctsteps__dot { opacity: .6; }
 .ctact { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--sep); }
 .ctact > .btn--accent { width: 100%; }
 .ctact__row { display: flex; flex-wrap: wrap; gap: 8px; }

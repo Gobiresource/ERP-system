@@ -31,7 +31,7 @@ export const CONTRACT_KIND: Record<ContractType, string> = {
 }
 export const CONTRACT_KINDS = Object.keys(CONTRACT_KIND) as ContractType[]
 
-/** A company's people for the process; a company set up later borrows the first one's until changed */
+/** A company's people for the process; a ХХК added before v33 (with none saved) borrows the first one's until changed */
 export const rolesOf = (s: Pick<State, 'roles'>, company: Id) => s.roles[company] ?? Object.values(s.roles)[0]
 
 /** Who decides now: the writer while drafting; in review, finance and the lawyer who have not agreed yet; then the office or the director */

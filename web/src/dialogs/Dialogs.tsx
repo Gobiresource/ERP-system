@@ -40,7 +40,7 @@ export function Dialogs() {
     case 'request': return <RequestSheet key={dialog.id} id={dialog.id} office={dialog.office} />
     case 'newChat': return <NewChat />
     case 'chatGroup': return <ChatGroup key={dialog.id} id={dialog.id} />
-    case 'file': return <FileSheet key={dialog.file.id} file={dialog.file} />
+    case 'file': return <FileSheet key={dialog.file.id} file={dialog.file} pdf={dialog.pdf} />
     case 'readers': return <Readers key={dialog.id} id={dialog.id} />
     case 'newContract': return <NewContract />
     case 'contractReason': return <ContractReason key={dialog.id + dialog.step} id={dialog.id} step={dialog.step} />

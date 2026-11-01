@@ -599,6 +599,8 @@ export interface State {
   scans: ScanItem[]
   /** All AI readings of scans so far, in US dollars */
   aiSpent: number
+  /** Scans filed for everyone before v32 went to the office once (K65); the office may share them with everyone again */
+  scansKept?: true
   /** The Timely company each ХХК's attendance comes from, when picked by hand (names that differ) */
   timely: Record<Id, number>
   settings: Settings

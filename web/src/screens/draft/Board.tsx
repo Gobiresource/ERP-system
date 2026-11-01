@@ -636,7 +636,7 @@ function Desk({ d }: { d: Draft }) {
       {selected && (
         <SelDock label={`${KIND[selected.kind]}: үйлдэл`}>
           {EDITABLE.includes(selected.kind) && <DockBtn icon={Pencil} label="Засах" onClick={() => openCard(selected)} />}
-          {(isPdf(selected) || selected.kind === 'image') && selected.file && <DockBtn icon={Eye} label="Харах" onClick={() => open({ kind: 'file', file: selected.file! })} />}
+          {(isPdf(selected) || selected.kind === 'image') && selected.file && <DockBtn icon={Eye} label="Харах" onClick={() => open({ kind: 'file', file: selected.file!, pdf: `${d.id}-${selected.id}` })} />}
           {isPdf(selected) && <DockBtn icon={Pencil} label="PDF засах" onClick={() => openCard(selected)} />}
           {selected.kind === 'file' && <DockBtn icon={Download} label="Татах" onClick={() => download(selected)} />}
           {COLOURED.includes(selected.kind) && (

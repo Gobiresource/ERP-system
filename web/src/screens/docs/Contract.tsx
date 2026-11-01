@@ -241,7 +241,7 @@ function Status({ c, who }: { c: Contract; who: Id }) {
           <li key={st} className={mark(i)} aria-current={mark(i) === 'is-now' ? 'step' : undefined}>
             <span className="ctsteps__dot" aria-hidden="true">{mark(i) === 'is-past' && <Check className="ico" />}</span>
             <span className="ctsteps__text">
-              <b>{STAGE[st].label}{mark(i) === 'is-past' && <span className="sr-only">, дууссан</span>}</b>
+              <b>{STAGE[st].label}{mark(i) === 'is-past' && st !== 'done' && <span className="sr-only">, дууссан</span>}</b>
               {st === 'draft' && <small>{name(s.people, c.owner)}, хариуцсан ажилтан</small>}
               {st === 'review' && REVIEW.map(r => (
                 <small key={r} className={c.agreed.includes(r) ? 'is-ok' : undefined}>
@@ -285,7 +285,7 @@ function Actions({ c, who }: { c: Contract; who: Id }) {
     return (
       <div className="ctact">
         <button type="button" className="btn btn--accent" onClick={() => step('send')}><Send className="ico" />{c.resume ? 'Засаад илгээх' : 'Хянуулахаар илгээх'}</button>
-        <p className="ctact__hint">{c.resume ? `${to.join(', ')} руу шууд очно. Өмнө нь зөвшөөрсөн хүн дахин хянахгүй.` : 'Санхүүгийн захирал, хуульч хоёр зэрэг хянана.'}</p>
+        <p className="ctact__hint">{c.resume ? `Шууд очно: ${to.join(', ')}. Өмнө нь зөвшөөрсөн хүн дахин хянахгүй.` : 'Санхүүгийн захирал, хуульч хоёр зэрэг хянана.'}</p>
         <div className="ctact__more">
           <button type="button" className="btn btn--glass btn--sm" onClick={() => open({ kind: 'contractAsk', id: c.id })}><MessageSquareQuote className="ico" />Санал хүсэх</button>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => open({ kind: 'contractReason', id: c.id, step: 'cancel' })}>Цуцлах</button>

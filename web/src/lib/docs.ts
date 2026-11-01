@@ -16,10 +16,13 @@ export const REQ_STATUS: Record<ReqStatus, string> = { sent: 'Илгээсэн',
 /** The steps a request goes through: on paper it waits to be collected, a file is sent straight away */
 export const stepsOf = (r: Pick<DocRequest, 'paper'>): ReqStatus[] => (r.paper ? ['sent', 'working', 'ready', 'done'] : ['sent', 'working', 'done'])
 export const isOpen = (r: DocRequest) => r.status !== 'done' && r.status !== 'declined'
-/** Whose a document is, as "Хэнд: Б.Болд, Ц.Номин"; empty when it is for everyone */
+/**
+ * Whose a document is, as "Хэнд: Б.Болд, Ц.Номин"; empty when it is for everyone. A filed scan nobody was chosen for is
+ * seen only by the office (and those who see every document) until it shares it.
+ */
 export function sharedWith(d: Doc, people: Person[]) {
-  const names = d.to === 'all' ? '' : people.filter(p => d.to.includes(p.id)).map(short).join(', ')
-  return names && `Хэнд: ${names}`
+  if (d.to === 'all') return ''
+  return `Хэнд: ${people.filter(p => d.to.includes(p.id)).map(short).join(', ') || 'зөвхөн бичиг хэрэг'}`
 }
 
 /** What employees most often ask the office for */
