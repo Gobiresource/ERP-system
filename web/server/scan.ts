@@ -1,9 +1,7 @@
 // Scanned papers → what they are. The office uploads scans in Бичиг хэрэг; the browser sends a few pages as pictures,
 // and this asks a vision model through OpenRouter which of our ХХК the paper belongs to, what kind it is, its title,
 // number, date, other side and sum (docs/decisions.md, 2026-10-30). A stack scanned into one file is split first: small
-// pictures of its pages, and AI says where each paper begins and which pages are blank. For PDF засах it also reads a
-// page's lines with where each sits, so a line can be covered and written anew (2026-11-01). The key stays here, never in
-// the browser.
+// pictures of its pages, and AI says where each paper begins and which pages are blank. The key stays here, never in the browser.
 // Only endpoints that keep nothing are used (provider.zdr), and none that may collect the data for training.
 // Web-standard Request and Response only, so the same code runs on Node (main.ts), Cloudflare Workers or Deno.
 import type { ContractType, DocKind, ScanReading } from '../src/lib/types.ts'
@@ -31,12 +29,9 @@ const MAX_SMALL = 1_500_000
  * split a stack (`task: 'split'`): the pictures are pages `first`, `first + 1`…; with `context`, the first of them is
  * the last page of the part before, shown only to tell whether the next one goes on with it.
  */
-export interface ScanRequest { task?: 'read' | 'split' | 'lines'; pages: string[]; name: string; companies: { id: string; name: string }[]; first?: number; context?: boolean }
+export interface ScanRequest { task?: 'read' | 'split'; pages: string[]; name: string; companies: { id: string; name: string }[]; first?: number; context?: boolean }
 export interface ScanResponse { reading: ScanReading; model: string; cost: number | null }
 export interface SplitResponse { starts: number[]; blank: number[]; model: string; cost: number | null }
-/** A printed line of a page and where it sits, as fractions of the picture */
-export interface Line { text: string; x: number; y: number; w: number; h: number }
-export interface LinesResponse { lines: Line[]; model: string; cost: number | null }
 
 const text = (description: string) => ({ type: 'string', description })
 const maybe = (description: string) => ({ type: ['string', 'null'], description })
@@ -70,33 +65,6 @@ const SPLIT_SCHEMA = {
     blank: { type: 'array', items: { type: 'integer' }, description: 'Page numbers that are blank' },
   },
 }
-
-const LINES_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['lines'],
-  properties: {
-    lines: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['text', 'box'],
-        properties: {
-          text: text('The line exactly as printed'),
-          box: { type: 'array', items: { type: 'integer' }, description: '[ymin, xmin, ymax, xmax] of the line on a 0–1000 scale of the picture' },
-        },
-      },
-    },
-  },
-}
-
-// For editing a page's text on the page itself (PDF засах, 2026-11-01): where each line is, so it can be covered and written anew
-const LINES_PROMPT = `This picture is one page of an office paper of a Mongolian company, mostly in Cyrillic Mongolian. Read every printed line of text.
-- One entry per printed line, top to bottom: not per word, not per paragraph. Cells of a table that stand in separate columns are separate entries.
-- text: the line exactly as printed, letter for letter (Ө, Ү, №, ₮ included). Do not translate, correct or complete it.
-- box: [ymin, xmin, ymax, xmax] tightly around the line's letters, on a 0–1000 scale of the picture.
-- Leave out stamps, signatures, handwriting, logos and QR codes.`
 
 const SPLIT_PROMPT = `These pictures are pages of a stack of office papers of a Mongolian company, scanned together in order. Tell where each paper begins.
 - A page begins a new paper when it has its own heading (ГЭРЭЭ, ТУШААЛ, ШИЙДВЭР, АЛБАН БИЧИГ, a letterhead with a new number and date) or its page numbering starts again at 1.
@@ -146,15 +114,13 @@ export async function handleScan(req: Request, env: ScanEnv): Promise<Response> 
   }
   if (!body || typeof body !== 'object') return json({ error: 'Хүсэлт буруу байна.' }, 400)
   const split = body.task === 'split'
-  const lines = body.task === 'lines'
-  const pages = Array.isArray(body.pages) ? body.pages.slice(0, split ? MAX_SPLIT : lines ? 1 : MAX_PAGES) : []
+  const pages = Array.isArray(body.pages) ? body.pages.slice(0, split ? MAX_SPLIT : MAX_PAGES) : []
   if (!pages.length || pages.some(p => typeof p !== 'string' || p.length > (split ? MAX_SMALL : MAX_PAGE) || !/^data:image\/(jpeg|png|webp);base64,/.test(p))) {
     return json({ error: 'Хуудасны зургийг уншиж чадсангүй.' }, 400)
   }
   const companies = (Array.isArray(body.companies) ? body.companies : []).filter(c => typeof c?.id === 'string' && typeof c?.name === 'string').slice(0, 50)
   try {
     if (split) return json(await splitStack(env.OPENROUTER_API_KEY, models, pages, Math.max(1, Math.floor(Number(body.first) || 1)), body.context === true))
-    if (lines) return json(await readLines(env.OPENROUTER_API_KEY, models, pages[0]))
     return json(await read(env.OPENROUTER_API_KEY, models, pages, companies, String(body.name ?? '').slice(0, 200)))
   } catch (e) {
     // Our words and OpenRouter's refusals are plain Errors; a runtime's own (a timeout, the network, an answer that is not JSON) are English
@@ -178,24 +144,6 @@ async function splitStack(key: string, models: string[], pages: string[], first:
   return { ...tidySplit(r.raw, context ? first + 1 : first, first + pages.length - 1), model: r.model, cost: r.cost }
 }
 
-async function readLines(key: string, models: string[], page: string): Promise<LinesResponse> {
-  const r = await ask(key, models, LINES_PROMPT, [{ type: 'image_url', image_url: { url: page } }], 'page_lines', LINES_SCHEMA, 8000)
-  return { lines: tidyLines(r.raw), model: r.model, cost: r.cost }
-}
-
-/** Lines with text and a box inside the picture, as fractions; at most 300 */
-export function tidyLines(raw: Record<string, unknown>): Line[] {
-  const out: Line[] = []
-  for (const l of Array.isArray(raw.lines) ? raw.lines : []) {
-    const text = typeof l?.text === 'string' ? l.text.replace(/\s+/g, ' ').trim().slice(0, 300) : ''
-    const b = Array.isArray(l?.box) && l.box.length === 4 && l.box.every((n: unknown) => typeof n === 'number' && Number.isFinite(n)) ? (l.box as number[]).map(n => Math.min(1000, Math.max(0, n)) / 1000) : null
-    if (!text || !b || b[2] <= b[0] || b[3] <= b[1]) continue
-    out.push({ text, x: b[1], y: b[0], w: b[3] - b[1], h: b[2] - b[0] })
-    if (out.length === 300) break
-  }
-  return out
-}
-
 /** Page numbers from `lo` to `hi` only, once each, in order */
 export function tidySplit(raw: Record<string, unknown>, lo: number, hi: number) {
   const pick = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).filter((n): n is number => Number.isInteger(n) && n >= lo && n <= hi))].sort((a, b) => a - b)
@@ -203,14 +151,14 @@ export function tidySplit(raw: Record<string, unknown>, lo: number, hi: number) 
 }
 
 /** One question to a vision model, answered in the shape of `schema` */
-async function ask(key: string, models: string[], system: string, user: unknown[], name: string, schema: object, tokens = 2000) {
+async function ask(key: string, models: string[], system: string, user: unknown[], name: string, schema: object) {
   const body = JSON.stringify({
     models,
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
     response_format: { type: 'json_schema', json_schema: { name, strict: true, schema } },
     provider: { zdr: true, data_collection: 'deny', require_parameters: true },
     reasoning: { effort: 'low' },
-    max_tokens: tokens,
+    max_tokens: 2000,
   })
   // Once more after a short wait when OpenRouter is busy or a provider fails
   for (let attempt = 0; ; attempt++) {

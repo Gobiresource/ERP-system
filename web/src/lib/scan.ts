@@ -259,12 +259,6 @@ async function ask(body: object, wait: number) {
   return j
 }
 
-/** A page's printed lines with where each sits (fractions of the picture), to edit its text in PDF засах */
-export async function readLines(page: string): Promise<{ text: string; x: number; y: number; w: number; h: number }[]> {
-  const j = await ask({ task: 'lines', pages: [page], name: '', companies: [] }, 120_000)
-  return Array.isArray(j.lines) ? j.lines : []
-}
-
 async function read(it: ScanItem) {
   actions.setScan(it.id, { state: 'reading', error: undefined })
   const blob = await getFile(it.file.id)

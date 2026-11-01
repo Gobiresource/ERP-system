@@ -1,8 +1,8 @@
-// PDF tool: join files, turn, reorder and delete pages, write on them (text, notes, highlights, changing printed text,
-// PdfWrite.tsx), sign, then save to the device, onto a board or back into the document it was opened on.
+// PDF tool: join files, turn, reorder and delete pages, sign, then save to the device, onto a board or back into the
+// document it was opened on.
 // Everything happens in the browser (lib/pdf.ts): the file never leaves the device.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent as RPointerEvent } from 'react'
-import { ArrowLeft, ArrowRight, Download, FilePlus2, FileText, FileUp, Maximize2, PenLine, RotateCw, Signature, StickyNote, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Download, FilePlus2, FileText, FileUp, Maximize2, RotateCw, Signature, StickyNote, Trash2, X } from 'lucide-react'
 import type { Draft } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
@@ -19,7 +19,6 @@ import { Menu, MenuItem, usePopover } from '../../ui/Popover'
 import { DocsNav } from '../Docs'
 import { forget } from '../draft/Board'
 import { Viewer } from '../../dialogs/Viewer'
-import { MarksLayer, WriteSheet } from './PdfWrite'
 
 const THUMB = 360
 const INK = '#1d2b6e'
@@ -49,7 +48,6 @@ export default function Pdf({ from }: { from?: string }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [signing, setSigning] = useState<string | null>(null)
-  const [writing, setWriting] = useState<string | null>(null)
   /** The page number the large view opens at; 0 while it is closed */
   const [viewing, setViewing] = useState(0)
   const [dragKey, setDragKey] = useState<string | null>(null)
@@ -292,7 +290,6 @@ export default function Pdf({ from }: { from?: string }) {
     openFiles(e.dataTransfer.files)
   }
   const signPage = pages.find(p => p.key === signing)
-  const writePage = pages.find(p => p.key === writing)
   const dragged = pages.find(p => p.key === dragKey)
   const many = sources.current.size > 1
 
@@ -301,7 +298,7 @@ export default function Pdf({ from }: { from?: string }) {
       <DocsNav at="pdf" />
       <PageHead
         title="PDF засах"
-        sub={card && board ? `${card.file!.name}, ${board.name} самбараас` : doc ? `${doc.name}, Бичиг хэргээс` : sentIn ? `${sent!.name}, Зурваснаас` : 'Файл нэгтгэх, хуудас эргүүлэх, зөөх, устгах, хуудсан дээр бичих, текст засах, гарын үсэг зурах.'}
+        sub={card && board ? `${card.file!.name}, ${board.name} самбараас` : doc ? `${doc.name}, Бичиг хэргээс` : sentIn ? `${sent!.name}, Зурваснаас` : 'Файл нэгтгэх, хуудас эргүүлэх, зөөх, устгах, гарын үсэг зурах. Файл төхөөрөмжөөс гарахгүй.'}
         actions={pages.length > 0 && (
           <>
             {card && board && <a className="btn btn--glass" href={`#draft-${board.id}`}><ArrowLeft className="ico" />Самбар руу буцах</a>}
@@ -379,7 +376,7 @@ export default function Pdf({ from }: { from?: string }) {
               <PageTile key={p.key} p={p} n={i + 1} thumb={thumbs.get(p.key)} selected={sel.has(p.key)} away={p.key === dragKey}
                 from={many ? sources.current.get(p.src)?.name : undefined}
                 onToggle={() => toggle(p.key)} onTurn={() => turn(new Set([p.key]))} onSign={() => setSigning(p.key)} onRemove={() => remove(new Set([p.key]))}
-                onView={() => setViewing(i + 1)} onWrite={() => setWriting(p.key)} onDrag={e => startDrag(e, p.key)} />
+                onView={() => setViewing(i + 1)} onDrag={e => startDrag(e, p.key)} />
             ))}
           </ol>
         </>
@@ -395,10 +392,6 @@ export default function Pdf({ from }: { from?: string }) {
         <Viewer name={fileName} sub={`${pages.length} хуудас`} start={viewing} onClose={() => setViewing(0)}
           load={async () => (await build(pages)) ?? undefined} />
       )}
-      {writePage && sources.current.get(writePage.src) && (
-        <WriteSheet page={writePage} src={sources.current.get(writePage.src)!} n={pages.indexOf(writePage) + 1} onClose={() => setWriting(null)}
-          onSave={marks => setPages(ps => ps.map(p => (p.key === writePage.key ? { ...p, marks } : p)))} />
-      )}
       {signPage && sources.current.get(signPage.src) && (
         <SignSheet page={signPage} src={sources.current.get(signPage.src)!} onClose={() => setSigning(null)}
           onSave={sign => setPages(ps => ps.map(p => (p.key === signPage.key ? { ...p, sign } : p)))} />
@@ -407,10 +400,9 @@ export default function Pdf({ from }: { from?: string }) {
   )
 }
 
-function PageTile({ p, n, thumb, selected, away, from, onToggle, onTurn, onSign, onRemove, onView, onWrite, onDrag }: {
+function PageTile({ p, n, thumb, selected, away, from, onToggle, onTurn, onSign, onRemove, onView, onDrag }: {
   p: Page; n: number; thumb?: string; selected: boolean; away: boolean; from?: string
-  onToggle: () => void; onTurn: () => void; onSign: () => void; onRemove: () => void; onView: () => void; onWrite: () => void
-  onDrag: (e: RPointerEvent<HTMLElement>) => void
+  onToggle: () => void; onTurn: () => void; onSign: () => void; onRemove: () => void; onView: () => void; onDrag: (e: RPointerEvent<HTMLElement>) => void
 }) {
   return (
     <li className={`ppage${selected ? ' is-sel' : ''}${away ? ' is-away' : ''}`} data-page={p.key}>
@@ -425,7 +417,6 @@ function PageTile({ p, n, thumb, selected, away, from, onToggle, onTurn, onSign,
         </label>
         <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсыг томруулж харах`} title="Томруулж харах" onClick={onView}><Maximize2 className="ico" /></button>
         <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсыг эргүүлэх`} title="Эргүүлэх" onClick={onTurn}><RotateCw className="ico" /></button>
-        <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсанд бичих`} title="Бичих" onClick={onWrite}><PenLine className="ico" /></button>
         <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсанд гарын үсэг зурах`} title="Гарын үсэг" onClick={onSign}><Signature className="ico" /></button>
         <button type="button" className="ibtn ibtn--sm" aria-label={`${n}-р хуудсыг устгах`} title="Устгах" onClick={onRemove}><Trash2 className="ico" /></button>
       </div>
@@ -444,7 +435,6 @@ function Sheetlet({ p, thumb }: { p: Page; thumb?: string }) {
       <div className={`player${p.turn % 180 ? ' is-side' : ''}`} style={{ rotate: `${p.turn}deg` }}>
         {thumb ? <img src={thumb} alt="" draggable={false} /> : <span className="player__wait" />}
       </div>
-      <MarksLayer p={p} />
       {p.sign && (
         <div className={`player${ink! % 180 ? ' is-side' : ''}`} style={{ rotate: `${ink}deg` }}>
           <img className="player__ink" src={p.sign.png} alt="Гарын үсэг" draggable={false}

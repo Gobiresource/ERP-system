@@ -32,79 +32,6 @@ export interface Page {
   w: number
   h: number
   sign?: Sign
-  /** What was written on it, placed while the page was turned by `turn` (as a signature) */
-  marks?: { turn: number; list: Mark[] }
-}
-
-/**
- * Something written on a page: text, a yellow note, a highlight over what is there, or printed text covered in white and
- * written anew (`edit`; `min` is the box of what it covers). x, y, w and h are fractions of the page as it looked when
- * written on; `size` is the letters' size as a fraction of the page's width.
- */
-export interface Mark {
-  id: string
-  kind: 'text' | 'note' | 'mark' | 'edit'
-  x: number
-  y: number
-  w: number
-  h: number
-  text?: string
-  size?: number
-  min?: { w: number; h: number }
-}
-
-/** Times New Roman, the company's font, or its metric twin where it is missing */
-export const MARK_FONT = '"Times New Roman", "Liberation Serif", Tinos, serif'
-/** Line height and the room around a text, in letter sizes; tight for a covered line, so it does not reach the next one */
-export const markLook = (kind: Mark['kind']) => (kind === 'edit' ? { line: 1.12, pad: 0.06 } : { line: 1.25, pad: 0.3 })
-export const NOTE_BG = '#fff3a8'
-const MARK_INK = '#1b1d26'
-
-let ruler: CanvasRenderingContext2D | null = null
-/** The box a text needs, as fractions of a page `ar` times as wide as it is tall: lines as typed, nothing wraps */
-export function markBox(text: string, size: number, ar: number, kind: Mark['kind'] = 'text') {
-  ruler ??= document.createElement('canvas').getContext('2d')!
-  const { line, pad } = markLook(kind)
-  const px = size * 1000
-  ruler.font = `${px}px ${MARK_FONT}`
-  const lines = text.split('\n')
-  const w = Math.max(...lines.map(l => ruler!.measureText(l || ' ').width)) + 2 * pad * px
-  const h = lines.length * px * line + 2 * pad * px
-  return { w: w / 1000, h: (h / 1000) * ar }
-}
-
-/** A text, a note or a covered line drawn onto a page picture W by H pixels, where it sits */
-function paintMark(x: CanvasRenderingContext2D, m: Mark, W: number, H: number) {
-  const left = m.x * W
-  const top = m.y * H
-  if (m.kind === 'mark') {
-    x.save()
-    x.globalCompositeOperation = 'multiply'
-    x.fillStyle = 'rgb(255 214 41 / .4)'
-    x.fillRect(left, top, m.w * W, m.h * H)
-    x.restore()
-    return
-  }
-  if (m.kind !== 'text') {
-    x.fillStyle = m.kind === 'note' ? NOTE_BG : '#fff'
-    x.fillRect(left, top, m.w * W, m.h * H)
-  }
-  const { line, pad } = markLook(m.kind)
-  const px = (m.size ?? 0.02) * W
-  x.font = `${px}px ${MARK_FONT}`
-  x.fillStyle = MARK_INK
-  x.textBaseline = 'top'
-  // As on screen: each line in a box `line` high, the letters in its middle
-  ;(m.text ?? '').split('\n').forEach((l, i) => x.fillText(l, left + pad * px, top + pad * px + i * px * line + ((line - 1) / 2) * px))
-}
-
-/** A text or a note alone, as a PNG for the file */
-function drawMark(m: Mark, W: number, H: number) {
-  const c = document.createElement('canvas')
-  c.width = Math.max(1, Math.ceil(m.w * W))
-  c.height = Math.max(1, Math.ceil(m.h * H))
-  paintMark(c.getContext('2d')!, { ...m, x: 0, y: 0 }, W, H)
-  return c.toDataURL('image/png')
 }
 
 /**
@@ -212,28 +139,9 @@ export async function buildPdf(pages: Page[], sources: Map<string, Source>) {
     copied.set(id, new Map(wanted.map((index, i) => [index, list[i]])))
   }
   for (const p of pages) {
-    if (p.marks?.list.some(m => m.kind === 'edit')) {
-      await flatPage(out, lib, p, sources.get(p.src)!)
-      continue
-    }
     const page = copied.get(p.src)!.get(p.index)!
     page.setRotation(lib.degrees((p.rot + p.turn) % 360))
     out.addPage(page)
-    if (p.marks?.list.length) {
-      // As a signature: placed on the page as it looked then, turned with it since. Texts go in as pictures, so any
-      // letters (Ө, Ү) show as they did on screen; highlights as see-through yellow
-      const box = page.getCropBox()
-      const r = (p.rot + p.marks.turn) % 360
-      const side = r === 90 || r === 270
-      const DW = side ? box.height : box.width
-      const DH = side ? box.width : box.height
-      for (const m of p.marks.list) {
-        const at = signSpot({ x: m.x, y: m.y, w: m.w, ratio: (m.h * DH) / (m.w * DW) }, r, box.width, box.height)
-        const place = { x: box.x + at.x, y: box.y + at.y, width: at.w, height: at.h, rotate: lib.degrees(r) }
-        if (m.kind === 'mark') page.drawRectangle({ ...place, color: lib.rgb(1, 0.84, 0.16), opacity: 0.4, blendMode: lib.BlendMode.Multiply })
-        else page.drawImage(await out.embedPng(drawMark(m, DW * 3, DH * 3)), place)
-      }
-    }
     if (p.sign) {
       const box = page.getCropBox()
       const r = (p.rot + p.sign.turn) % 360
@@ -246,36 +154,10 @@ export async function buildPdf(pages: Page[], sources: Map<string, Source>) {
 }
 
 /**
- * A page with printed text covered and written anew, as one picture of it with everything written on it: what was
- * covered is gone from the file, not only hidden under white. About 290 dpi on A4; the signature stays a picture on top.
- */
-async function flatPage(out: PDFDocument, lib: typeof import('pdf-lib'), p: Page, src: Source) {
-  const t = p.marks!.turn
-  const canvas = await drawPage(src, p.index, 2400, t)
-  const x = canvas.getContext('2d')!
-  for (const m of p.marks!.list) paintMark(x, m, canvas.width, canvas.height)
-  const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/jpeg', 0.9))
-  if (!blob) throw new Error('canvas')
-  const jpg = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()))
-  // The new page is the old one as it looked when written on; the user's turns since then go on top
-  const side = (p.rot + t) % 180 !== 0
-  const W = side ? p.h : p.w
-  const H = side ? p.w : p.h
-  const page = out.addPage([W, H])
-  page.drawImage(jpg, { x: 0, y: 0, width: W, height: H })
-  page.setRotation(lib.degrees((p.turn - t + 360) % 360))
-  if (p.sign) {
-    const r = (p.sign.turn - t + 360) % 360
-    const at = signSpot(p.sign, r, W, H)
-    page.drawImage(await out.embedPng(p.sign.png), { x: at.x, y: at.y, width: at.w, height: at.h, rotate: lib.degrees(r) })
-  }
-}
-
-/**
  * Where to draw a signature: the page's points (origin bottom left) of the picture's own bottom-left corner, for a page
  * shown turned by r degrees clockwise. The picture is then drawn turned by r the other way, so it looks upright.
  */
-export function signSpot(s: Pick<Sign, 'x' | 'y' | 'w' | 'ratio'>, r: number, W: number, H: number) {
+export function signSpot(s: Sign, r: number, W: number, H: number) {
   const side = r === 90 || r === 270
   const DW = side ? H : W
   const DH = side ? W : H
