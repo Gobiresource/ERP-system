@@ -69,7 +69,7 @@ function BoardTile({ d }: { d: Draft }) {
         <span className="btile__name">{d.name}</span>
         <span className="btile__meta">{ago(d.updated)} зассан</span>
       </a>
-      <button ref={pop.anchor} type="button" className="ibtn ibtn--sm ibtn--glass btile__more" aria-label={`${d.name}, үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
+      <button ref={pop.anchor} type="button" className="ibtn ibtn--sm ibtn--glass btile__more" aria-label={`${d.name}: нэмэлт үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
         <Ellipsis className="ico" />
       </button>
       <Menu state={pop} label={d.name}>

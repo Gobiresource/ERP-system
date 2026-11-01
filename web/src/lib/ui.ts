@@ -131,12 +131,15 @@ export function resetDemo() {
 
 let noteId = 0
 let noteTimer = 0
-/** Shows a short message in the island. With undo, it stays 10 s (our rule), and as long as the pointer or focus is on it. */
+/**
+ * Shows a short message in the island. With undo, it stays 10 s (our rule), and as long as a mouse points at its Буцаах
+ * or focus is on it. A tap leaves :hover behind on touch screens, so there it does not count.
+ */
 export function toast(text: string, opts: { kind?: Note['kind']; undo?: () => void } = {}) {
   clearTimeout(noteTimer)
   set({ note: { id: ++noteId, kind: opts.kind ?? 'ok', text, undo: opts.undo } })
   const hide = () => {
-    if (document.querySelector('.island:hover, .island:focus-within')) noteTimer = window.setTimeout(hide, 1000)
+    if (document.querySelector(matchMedia('(hover: hover)').matches ? '.island:hover, .island:focus-within' : '.island:focus-within')) noteTimer = window.setTimeout(hide, 1000)
     else set({ note: null })
   }
   noteTimer = window.setTimeout(hide, opts.undo ? 10000 : 3200)

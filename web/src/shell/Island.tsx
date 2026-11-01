@@ -140,7 +140,7 @@ export function Island() {
               </div>
               <div className="island__ctrls">
                 <button type="button" className="island__btn island__btn--fold" onClick={() => setIslandOpen(false)} aria-label="Хураах"><ChevronUp className="ico" /></button>
-                <button type="button" className="island__btn" onClick={focus.addFive}><Plus className="ico" />5 мин</button>
+                <button type="button" className="island__btn" onClick={focus.addFive} aria-label="5 минут нэмэх"><Plus className="ico" />5 мин</button>
                 <button type="button" className="island__btn island__btn--round" onClick={paused ? focus.resume : focus.pause} aria-label={paused ? 'Үргэлжлүүлэх' : 'Түр зогсоох'}>
                   {paused ? <Play className="ico" /> : <Pause className="ico" />}
                 </button>

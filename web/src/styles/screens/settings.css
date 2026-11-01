@@ -127,9 +127,13 @@ label.cell__text { cursor: pointer; }
   .cell:has(.cell__input) .cell__main { display: grid; gap: 2px; padding: 10px 0 6px; }
   :is(.cell:has(.set-theme) .cell__ctl, .cell:has(.set-glass) .cell__ctl), .set-theme, .set-glass { width: 100%; }
   .set-theme .seg__btn, .set-glass .seg__btn { flex: 1; }
+  /* Three labels with icons fit the row: at 13px padding «Автомат» stuck out of the card */
+  .set-theme .seg__btn { min-width: 0; padding: 0 8px; gap: 4px; }
   .cell--block .wps, .cell--block .sws { margin-left: -42px; }
   .sws { justify-content: space-between; gap: 6px 4px; }
 }
+/* Narrower still (a small phone, or 400% zoom) only the words fit */
+@media (width < 360px) { .set-theme .seg__btn .ico { display: none; } }
 @media (pointer: coarse) {
   .stepper__btn { width: 46px; height: 46px; }
   .cell__input { min-height: 44px; }

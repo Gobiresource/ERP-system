@@ -218,7 +218,7 @@ function Profile() {
       <InlineField id="pf-given" icon={User} hue="blue" label="Нэр" value={me.given} onSave={v => save({ given: v })} validate={v => (v ? null : 'Нэрээ бичнэ үү.')} />
       <InlineField id="pf-family" icon={User} hue="indigo" label="Эцэг/эхийн нэр" value={me.family} onSave={v => save({ family: v })} validate={v => (v ? null : 'Эцэг/эхийн нэрээ бичнэ үү.')} />
       <InlineField id="pf-email" icon={Mail} hue="purple" label="Имэйл" type="email" value={me.email} onSave={v => save({ email: v })}
-        validate={v => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'Имэйл хаяг буруу байна.')} />
+        validate={v => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : 'Имэйл хаягаа зөв бичнэ үү, жишээ нь bold@example.mn.')} />
       <InlineField id="pf-role" icon={BadgeCheck} hue="teal" label="Албан тушаал" value={me.role} onSave={v => save({ role: v })} validate={v => (v ? null : 'Албан тушаалаа бичнэ үү.')} />
     </Group>
   )
@@ -375,6 +375,9 @@ function Data() {
   const s = useApp()
   const sc = scoped(s)
   const [confirm, setConfirm] = useState(false)
+  // Closing the question takes its focused button away: focus goes back to the button that asked it
+  const opener = useRef<HTMLButtonElement>(null)
+  const shut = () => { setConfirm(false); opener.current?.focus() }
   const exportTasks = () => {
     const rows: (string | number)[][] = [['Нэр', 'Төсөл', 'Хариуцагч', 'Төлөв', 'Ач холбогдол', 'Дуусах өдөр', 'Төлөвлөсөн цаг', 'Үүсгэсэн', 'Дууссан']]
     for (const t of sc.tasks) {
@@ -397,7 +400,7 @@ function Data() {
       <div className="cell cell--link">
         <Icon icon={RotateCcw} hue="danger" />
         <div className="cell__main">
-          <button type="button" className="cell__btn cell__btn--danger" aria-expanded={confirm} onClick={() => setConfirm(true)}>
+          <button type="button" ref={opener} className="cell__btn cell__btn--danger" aria-expanded={confirm} onClick={() => setConfirm(true)}>
             <span className="cell__text"><b>Жишээ өгөгдлийг сэргээх</b><small>Анхны жишээ өгөгдөл рүү буцна</small></span>
             <ChevronRight className="ico cell__chev" />
           </button>
@@ -407,8 +410,8 @@ function Data() {
         <div className="confirm" role="alertdialog" aria-labelledby="reset-q">
           <p id="reset-q">Энд хийсэн бүх өөрчлөлт арилж, жишээ өгөгдөл анхны байдалдаа орно. Үргэлжлүүлэх үү?</p>
           <div>
-            <button type="button" className="btn btn--glass btn--sm" onClick={() => setConfirm(false)} autoFocus>Болих</button>
-            <button type="button" className="btn btn--danger btn--sm" onClick={() => { setConfirm(false); resetDemo() }}>Сэргээх</button>
+            <button type="button" className="btn btn--glass btn--sm" onClick={shut} autoFocus>Болих</button>
+            <button type="button" className="btn btn--danger btn--sm" onClick={() => { shut(); resetDemo() }}>Сэргээх</button>
           </div>
         </div>
       )}

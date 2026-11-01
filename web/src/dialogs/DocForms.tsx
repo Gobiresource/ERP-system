@@ -306,7 +306,7 @@ function RequestBody({ id, office: asked }: { id: string; office?: boolean }) {
 
       <dl className="meta">
         <div><dt>Юунд ашиглах</dt><dd><span>{r.purpose}</span></dd></div>
-        <div><dt>Хаана өгөх</dt><dd><span>{r.where || 'Бичээгүй'}</span></dd></div>
+        <div><dt>Хаана өгөх</dt><dd><span>{r.where || 'Бөглөөгүй'}</span></dd></div>
         <div><dt>Хэлбэр</dt><dd><span>{r.paper ? `Цаасаар, ${r.copies} хувь` : 'Цахимаар, PDF'}</span></dd></div>
         <div><dt>Хэзээ хэрэгтэй</dt><dd><span className="tnum">{dateDots(new Date(`${r.need}T00:00`))}{/^\d/.test(dueLabel(r.need)) ? '' : `, ${dueLabel(r.need)}`}</span></dd></div>
       </dl>

@@ -82,7 +82,7 @@ export default function EmployeeForm({ id }: { id?: string }) {
       case 'cPhone':
         return /^\d{8}$/.test(phoneDigits(val)) ? '' : 'Утасны дугаарыг 8 оронтой тоогоор бичнэ үү, жишээ нь 99112233.'
       case 'email':
-        return EMAIL.test(val) ? '' : 'Имэйл хаяг буруу байна. Жишээ нь: bold@example.mn'
+        return EMAIL.test(val) ? '' : 'Имэйл хаягийг зөв бичнэ үү, жишээ нь bold@example.mn.'
       case 'code':
         return hr.all.some(e => e.id !== id && e.code === val) ? 'Энэ кодтой ажилтан бүртгэлтэй байна.' : ''
       case 'probationEnd':

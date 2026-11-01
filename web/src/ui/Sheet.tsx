@@ -26,12 +26,39 @@ export function Sheet({ kind = 'modal', label, onClose, children, wide, closeBut
 
   useLayoutEffect(() => {
     const d = ref.current!
+    // When the focused control goes away (Болих closes an inline confirmation, a step swaps its buttons), focus would fall
+    // to <body>. It stays in the part drawn anew where the control was: on the latest control focused before that is
+    // there again, found by its name (Болих brings back the Устгах that opened it), or else on that part's first control
+    // (the next step's button), or else on the window's first one
+    const names: string[] = []
+    let last: Element | null = null
+    const nameOf = (el: Element) => el.tagName + (el.id || el.getAttribute('aria-label') || el.textContent)
+    const onFocus = (e: FocusEvent) => { last = e.target as Element; if (names.push(nameOf(last)) > 20) names.shift() }
+    const lost = new MutationObserver(records => {
+      if (closing.current || !last || last.isConnected || document.activeElement !== document.body) return
+      const where = records.find(r => [...r.removedNodes].some(n => n.contains(last)))?.target ?? d
+      const all = [...d.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex]')]
+      const here = all.filter(el => where.contains(el))
+      for (let i = names.length - 1; i >= 0 && document.activeElement === document.body; i--) here.find(el => nameOf(el) === names[i])?.focus()
+      for (const el of [...here, ...all]) if (document.activeElement === document.body) el.focus()
+    })
+    d.addEventListener('focusin', onFocus)
+    lost.observe(d, { childList: true, subtree: true })
     if (!d.open) d.showModal()
     d.querySelector<HTMLElement>('[data-autofocus]')?.focus()
     if (kind === 'full') enter([d], { opacity: 0 }, { duration: 0.25, ease: 'power2.out' })
     else if (phone()) enter([d], { transform: 'translateY(100%)' }, { duration: 0.5, ease: 'power3.out' })
     else if (kind === 'drawer') enter([d], { opacity: 0, transform: 'translateX(60px)' }, { duration: 0.5, ease: 'power3.out' })
     else enter([d], { opacity: 0, transform: 'scale(.92)' }, { duration: 0.5, ease: 'back.out(1.6)' })
+    return () => {
+      d.removeEventListener('focusin', onFocus)
+      lost.disconnect()
+      // Closed, and the control that opened it is gone (the task was deleted, or moved to another column): the page title,
+      // as after a page change, rather than <body>
+      requestAnimationFrame(() => {
+        if (document.activeElement === document.body) (document.getElementById('page-title') ?? document.getElementById('main'))?.focus({ preventScroll: true })
+      })
+    }
   }, [kind])
 
   const requestClose = () => {

@@ -59,6 +59,24 @@ function load(): State | null {
     if (!s.scans) s = { ...s, scans: [], aiSpent: 0 }
     // Saved before Ирц existed
     if (!s.timely) s = { ...s, timely: {} }
+    // Saved by v29–v31, whose example accounts took the e-mail's name as typed: a login with capitals could never sign in,
+    // and two people could share one. Each is kept as sign-in reads it, with a number when that is taken (as demoAccounts
+    // does now); a login that already works stays as it is.
+    const good = (p: Person, i: number) => !p.account || (p.account.login === loginKey(p.account.login) && s.people.findIndex((x: Person) => x.account?.login === p.account!.login) === i)
+    if (!s.people.every(good)) {
+      const taken = new Set(s.people.filter(good).map((p: Person) => p.account?.login))
+      s = {
+        ...s,
+        people: s.people.map((p: Person, i: number) => {
+          if (good(p, i)) return p
+          const name = loginKey(p.account!.login)
+          let login = name
+          for (let n = 2; taken.has(login); n++) login = `${name}${n}`
+          taken.add(login)
+          return { ...p, account: { ...p.account!, login } }
+        }),
+      }
+    }
     // Saved before anyone signed in, or by v29–v31 from data older than Гэрээ (then only the lawyer and the clerk had
     // accounts): the example accounts for whoever has none
     if (s.people.some((p: Person) => !p.account)) s = { ...s, people: demoAccounts(s) }

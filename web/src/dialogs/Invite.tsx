@@ -31,7 +31,7 @@ export function Invite() {
     if (!f.given.trim()) e['inv-given'] = 'Нэрийг бичнэ үү.'
     if (!f.family.trim()) e['inv-family'] = 'Эцэг/эхийн нэрийг бичнэ үү.'
     if (!f.email.trim()) e['inv-email'] = 'Имэйл хаягийг бичнэ үү.'
-    else if (!EMAIL.test(f.email.trim())) e['inv-email'] = 'Имэйл хаяг буруу байна. Жишээ нь: bold@example.mn'
+    else if (!EMAIL.test(f.email.trim())) e['inv-email'] = 'Имэйл хаягийг зөв бичнэ үү, жишээ нь bold@example.mn.'
     if (!login) e['inv-login'] = 'Нэвтрэх нэрийг бичнэ үү.'
     else if (!LOGIN.test(login)) e['inv-login'] = 'Нэвтрэх нэр латин үсэг, тоотой, 3-аас 32 тэмдэгт байх ёстой.'
     else if (getState().people.some(p => p.account?.login === login)) e['inv-login'] = 'Энэ нэвтрэх нэр өөр хүнд бүртгэлтэй байна.'

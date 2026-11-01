@@ -123,6 +123,10 @@
 .island__btn--fold { margin-right: auto; padding: 0; width: 44px; justify-content: center; background: rgb(255 255 255 / .1); }
 .island__btn--round .ico { width: 18px; height: 18px; }
 .island[data-mode="hidden"] .island__body { pointer-events: none; }
+/* A message lets clicks and taps through to the buttons under it (a page's top buttons on wide screens, the toolbar on
+   phones), all but its Буцаах */
+.island[data-mode="note"] .island__body { pointer-events: none; }
+.island[data-mode="note"] .island__undo { pointer-events: auto; }
 .island__btn:hover { background: rgb(255 255 255 / .24); }
 .island__btn--round { display: grid; place-items: center; width: 44px; padding: 0; background: rgb(255 179 64 / .24); color: #ffb340; }
 .island__btn--stop { background: rgb(255 69 58 / .24); color: #ff6961; }
@@ -209,7 +213,9 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
 .finder__group { padding: 10px 12px 6px; font: 650 12.5px/1 var(--font); color: var(--text-3); }
 .finder__opt { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 16px; cursor: pointer; }
 .finder__opt[aria-selected="true"] { background: var(--accent); color: #fff; }
-.finder__opt[aria-selected="true"] small, .finder__opt[aria-selected="true"] .lead { color: rgb(255 255 255 / .82); }
+/* White in full on the accent: .82 white fell below 4.5:1 (3.7:1 in dark) */
+.finder__opt[aria-selected="true"] small { color: #fff; }
+.finder__opt[aria-selected="true"] .lead { color: rgb(255 255 255 / .82); }
 .finder__opt[aria-selected="true"] .lead { background: rgb(255 255 255 / .18); }
 .finder__opt > span:nth-child(2) { flex: 1; min-width: 0; }
 .finder__opt b { display: block; font-weight: 560; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -217,6 +223,8 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
 .finder__opt .go { opacity: 0; }
 .finder__opt[aria-selected="true"] .go { opacity: 1; }
 .finder__opt mark { background: rgb(255 255 255 / .28); }
+/* On the selected row a white tint made the accent lighter under white letters (3:1); a dark one keeps them readable */
+.finder__opt[aria-selected="true"] mark { background: rgb(0 0 0 / .22); }
 .finder__empty { padding: 26px 12px; text-align: center; color: var(--text-2); }
 
 /* Keyboard shortcuts list */
@@ -236,6 +244,9 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
   .head:not(:has(.head__stats)) { grid-template-areas: "lead lead" "actions actions"; }
   .head:not(:has(.head__stats)) .head__actions { justify-content: flex-start; }
   .head__lead { min-height: 60px; padding-right: calc(var(--tools-w, 340px) + 28px + var(--isl-w, 0px)); }
+  /* The section tabs share that row too: the same room, and they scroll sideways when the docked timer takes it */
+  .subnav { margin: -4px calc(var(--tools-w, 340px) + 28px + var(--isl-w, 0px)) 14px -4px; padding: 4px; overflow-x: auto; scrollbar-width: none; }
+  .subnav::-webkit-scrollbar { display: none; }
 }
 
 /* Tablets: icon-only side menu, company shown in the toolbar */

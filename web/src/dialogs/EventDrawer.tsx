@@ -56,7 +56,7 @@ function Body({ id }: { id: string }) {
         </div>
         <div>
           <dt>Байршил</dt>
-          <dd><MapPin className="ico" /><span>{e.where || 'Заагаагүй'}</span></dd>
+          <dd><MapPin className="ico" /><span>{e.where || 'Бөглөөгүй'}</span></dd>
         </div>
         <div>
           <dt>Төсөл</dt>

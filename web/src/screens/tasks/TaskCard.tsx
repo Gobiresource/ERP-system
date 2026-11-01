@@ -68,7 +68,7 @@ export const TaskCard = memo(function TaskCard({ task: t, project: p, people, re
         <Prio prio={t.prio} />
         {menu && (
           <>
-            <button ref={pop.anchor} type="button" className="tk-card__more" aria-label={`${t.title}: үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
+            <button ref={pop.anchor} type="button" className="tk-card__more" aria-label={`${t.title}: нэмэлт үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
               <Ellipsis className="ico" />
             </button>
             <Menu state={pop} label="Ажлын үйлдэл">

@@ -68,7 +68,7 @@ function DeptCard({ d }: { d: Department }) {
           </div>
         </div>
         {edit && (
-          <button ref={pop.anchor} type="button" className="ibtn ibtn--sm" aria-label={`${d.name}: үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
+          <button ref={pop.anchor} type="button" className="ibtn ibtn--sm" aria-label={`${d.name}: нэмэлт үйлдэл`} aria-haspopup="menu" aria-expanded={pop.open} onClick={pop.toggle}>
             <Ellipsis className="ico" />
           </button>
         )}

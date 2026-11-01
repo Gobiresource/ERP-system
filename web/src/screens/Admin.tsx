@@ -219,7 +219,7 @@ function User({ id }: { id: string }) {
                     aria-invalid={loginError ? true : undefined} aria-describedby={loginError ? 'adm-login-error' : undefined} onKeyDown={e => e.key === 'Enter' && rename()} />
                   <button type="button" className="btn btn--glass" onClick={rename}>Хадгалах</button>
                 </span>
-                {loginError && <span className="field__error" id="adm-login-error">{loginError}</span>}
+                {loginError && <span className="field__error" id="adm-login-error" role="alert">{loginError}</span>}
               </div>
               <div className="adm-acts">
                 <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'password', id })}><KeyRound className="ico" />Нууц үг шинэчлэх</button>

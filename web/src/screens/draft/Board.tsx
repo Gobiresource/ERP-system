@@ -893,7 +893,7 @@ function LinkEdit({ c, edit, warn, onDone }: { c: DraftCard; edit: RefObject<Edi
         <input ref={url} className="dedit dedit--field" defaultValue={c.url} placeholder="erp.mn" inputMode="url" autoComplete="off" autoFocus
           aria-invalid={bad || undefined} aria-describedby={bad ? `${c.id}-bad` : undefined} onKeyDown={onEnter} onInput={() => setBad(false)} />
       </label>
-      {bad && <p className="field__error" id={`${c.id}-bad`}>Хаягаа шалгана уу. Жишээ нь: erp.mn</p>}
+      {bad && <p className="field__error" id={`${c.id}-bad`} role="alert">Хаягаа шалгана уу. Жишээ нь: erp.mn</p>}
       <label className="dfield">
         <span>Нэр (заавал биш)</span>
         <input ref={text} className="dedit dedit--field" defaultValue={c.text} autoComplete="off" onKeyDown={onEnter} />
