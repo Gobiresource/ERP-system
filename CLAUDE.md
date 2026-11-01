@@ -76,6 +76,38 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
 - **Сүлжээ.** 2026-10-29-нд хэрэглэгч бүрэн хандалт өгсөн. Хязгаарлавал эдгээр хаяг нээлттэй байх ёстой: antigravity.google, antigravity-cli-auto-updater-974169037036.us-central1.run.app, storage.googleapis.com, oauth2.googleapis.com, accounts.google.com, www.googleapis.com, cloudcode-pa.googleapis.com, aicode.googleapis.com, generativelanguage.googleapis.com, play.googleapis.com.
 - **Ажиллахгүй бол** (нэвтрэх код байхгүй гэх мэт) Gemini-гүйгээр үргэлжлүүлж, хянуулах текстээ `docs/decisions.md`-д тэмдэглэж үлдээнэ.
 
+## ChatGPT (Codex CLI)
+
+Хэрэглэгч ChatGPT-г холбохыг хүссэн (2026-11-01). OpenAI-д ерөнхий зориулалттай "ChatGPT CLI" байхгүй. Албан ёсны терминалын програм нь Codex CLI (`codex`). Энэ нь хэрэглэгчийн ChatGPT бүртгэлээр нэвтэрдэг, API түлхүүр хэрэггүй. Шалгасан зүйлс `docs/decisions.md`-д бий. Gemini-ийн **Хэлбэр**, **Шалгах**, **Нууцлал** дүрэм энд ч үйлчилнэ.
+
+- **Суулгах.** Container шинэ бүрт суулгана (`S` = scratchpad хавтас):
+  ```bash
+  npm install --prefix $S/codex --ignore-scripts @openai/codex   # ~440 MB, програм нь $S/codex/node_modules/.bin/codex
+  ```
+  Анх ажиллуулахаас өмнө `~/.codex/config.toml`-д доорхийг бичнэ. Энэ нь мэдээлэл илгээх, түүх хадгалах, файл засах, вэб хайлтыг хаана. `codex exec --strict-config` мэдэхгүй түлхүүрийг алдаа гэж гаргадаг.
+  ```toml
+  cli_auth_credentials_store = "file"
+  check_for_update_on_startup = false
+  sandbox_mode = "read-only"
+  approval_policy = "never"
+  web_search = "disabled"
+  analytics.enabled = false
+  feedback.enabled = false
+  history.persistence = "none"
+  otel.metrics_exporter = "none"
+  ```
+- **Нэвтрэх.** Хэрэглэгч ChatGPT-ийн Settings → Security-д «Device code authorization»-ийг асаасан байх ёстой. Код 15 минутад хүчингүй болдог. Тиймээс хэрэглэгч бэлэн гэж хэлсний дараа эхлүүлнэ.
+  ```bash
+  mkdir -p $S/codex-run && cd $S/codex-run && $S/codex/node_modules/.bin/codex login --device-auth > $S/codex-login.log 2>&1   # run_in_background
+  ```
+  - Логт гарсан холбоос (https://auth.openai.com/codex/device), кодыг хэрэглэгчид явуулна. Хэрэглэгч кодоо оруулмагц програм өөрөө дуусна. `codex login status`-аар шалгана.
+  - Токен `~/.codex/auth.json`-д хадгалагдана. Түүнийг хэвлэхгүй, repo-д хийхгүй.
+- **Ашиглах.** Нэвтрэлт хүлээгдэж байна (2026-11-01), доорх тушаалыг туршаагүй. Хоосон `$S/codex-run`-аас ажиллуулна. Анхдагч загвар нь `gpt-6.1-sol`.
+  ```bash
+  cd $S/codex-run && $S/codex/node_modules/.bin/codex exec --skip-git-repo-check --ephemeral -o $S/prompts/batchN.out "$(cat $S/prompts/batchN.txt)" < /dev/null
+  ```
+- **Сүлжээ.** registry.npmjs.org, auth.openai.com, chatgpt.com, api.openai.com нээлттэй байх ёстой.
+
 ## Instagram reel үзэх арга
 
 Хэрэглэгч reel явуулбал:
