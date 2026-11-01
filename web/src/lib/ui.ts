@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react'
 import type { BoardFile, Id, Task, CalEvent } from './types'
 import { actions, getState, takeSaved } from './store'
 import { go } from './router'
+import { seed } from './seed'
 
 export type Dialog =
   | { kind: 'task'; id: Id }
@@ -123,9 +124,9 @@ addEventListener('storage', e => {
 
 /** Puts back the demo data. Someone who is not in it (added later) is signed out. */
 export function resetDemo() {
-  const undo = actions.reset()
-  if (!getState().people.some(p => p.id === ui.session)) return signOut()
-  toast('Жишээ өгөгдөл сэргээгдлээ.', { undo })
+  // Someone added later is not in it: it would leave them out, signed out and with no way back, so it is not done
+  if (!seed().people.some(p => p.id === ui.session)) return toast('Таны бүртгэл жишээ өгөгдөлд байхгүй тул сэргээх боломжгүй.', { kind: 'warn' })
+  toast('Жишээ өгөгдөл сэргээгдлээ.', { undo: actions.reset() })
 }
 
 let noteId = 0

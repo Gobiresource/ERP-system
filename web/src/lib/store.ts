@@ -59,8 +59,9 @@ function load(): State | null {
     if (!s.scans) s = { ...s, scans: [], aiSpent: 0 }
     // Saved before Ирц existed
     if (!s.timely) s = { ...s, timely: {} }
-    // Saved before anyone signed in: the example accounts
-    if (!s.people.some((p: Person) => p.account)) s = { ...s, people: demoAccounts(s) }
+    // Saved before anyone signed in, or by v29–v31 from data older than Гэрээ (then only the lawyer and the clerk had
+    // accounts): the example accounts for whoever has none
+    if (s.people.some((p: Person) => !p.account)) s = { ...s, people: demoAccounts(s) }
     // Saved before Бичиг хэрэг had rights of its own
     if (s.people.some((p: Person) => p.account && Object.values(p.account.access).some(a => !('docs' in a)))) s = { ...s, people: withDocRights(s) }
     // Saved while filed scans went to everyone: they stay with the office until it shares them. Scans filed since have

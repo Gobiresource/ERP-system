@@ -69,9 +69,12 @@ export function Island() {
     const el = body.current!
     const from = last.current
     last.current = mode
-    // Keyboard focus follows the timer: into the open panel, and back to the pill when the panel folds
-    if (from !== mode && mode === 'full') inner.current?.querySelector('button')?.focus()
-    if (from === 'full' && mode === 'compact' && (!document.activeElement || document.activeElement === document.body)) inner.current?.focus()
+    // Keyboard focus follows the timer: into the panel when it is opened (not when a message ends over it), back to the
+    // pill when it folds, and to the page when the session ends; only when the focus was on the timer or lost
+    const lost = !document.activeElement || document.activeElement === document.body
+    if (from !== mode && mode === 'full' && (from === 'compact' || lost)) inner.current?.querySelector('button')?.focus()
+    if (from === 'full' && mode === 'compact' && lost) inner.current?.focus()
+    if (from === 'full' && (mode === 'hidden' || mode === 'note') && lost) document.getElementById('main')?.focus({ preventScroll: true })
     const target = size(mode)
     if (reduced()) {
       gsap.set(el, { ...target, opacity: mode === 'hidden' ? 0 : 1, scale: 1 })
