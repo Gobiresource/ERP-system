@@ -102,10 +102,11 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
   ```
   - Логт гарсан холбоос (https://auth.openai.com/codex/device), кодыг хэрэглэгчид явуулна. Хэрэглэгч кодоо оруулмагц програм өөрөө дуусна. `codex login status`-аар шалгана.
   - Токен `~/.codex/auth.json`-д хадгалагдана. Түүнийг хэвлэхгүй, repo-д хийхгүй.
-- **Ашиглах.** Нэвтрэлт хүлээгдэж байна (2026-11-01), доорх тушаалыг туршаагүй. Хоосон `$S/codex-run`-аас ажиллуулна. Анхдагч загвар нь `gpt-6.1-sol`.
+- **Ашиглах.** Хоосон `$S/codex-run`-аас ажиллуулна. Prompt-ын эхэнд "Do NOT run any commands. Do not read or write any files." гэж бичнэ. Хариу `-o` файлд гарна. 3 мөрийн туршилт 14–17 секунд болсон (2026-11-01).
   ```bash
   cd $S/codex-run && $S/codex/node_modules/.bin/codex exec --skip-git-repo-check --ephemeral -o $S/prompts/batchN.out "$(cat $S/prompts/batchN.txt)" < /dev/null
   ```
+- **Загвар.** Анхдагч нь `gpt-6.1-sol`. Бүртгэлд байгаа загваруудыг `codex debug models` харуулна. Өөр загварыг `-m`-ээр, бодох түвшнийг `-c model_reasoning_effort='"medium"'`-ээр сонгоно.
 - **Сүлжээ.** registry.npmjs.org, auth.openai.com, chatgpt.com, api.openai.com нээлттэй байх ёстой.
 
 ## Instagram reel үзэх арга
