@@ -256,10 +256,11 @@ function Status({ person, month, r, who, writing, send }: { person: Id; month: s
         </div>
       )}
       <ol className="ctsteps">
-        {steps.map(x => (
+        {steps.map((x, i) => (
           <li key={x.label} className={x.past ? 'is-past' : x.now ? 'is-now' : ''} aria-current={!x.past && x.now ? 'step' : undefined}>
             <span className="ctsteps__dot" aria-hidden="true">{x.past && <Check className="ico" />}</span>
-            <span className="ctsteps__text"><b>{x.label}{x.past && <span className="sr-only">, дууссан</span>}</b>{x.sub && <small>{x.sub}</small>}</span>
+            {/* The last step is itself "Дууссан": no second one after it, as on the contract page */}
+            <span className="ctsteps__text"><b>{x.label}{x.past && i < steps.length - 1 && <span className="sr-only">, дууссан</span>}</b>{x.sub && <small>{x.sub}</small>}</span>
           </li>
         ))}
       </ol>
