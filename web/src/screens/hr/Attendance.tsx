@@ -229,7 +229,7 @@ function Waiting({ a }: { a: Att }) {
   }
   return (
     <section className="card glass" data-enter>
-      <Empty icon={<UserRound className="ico" />} title="Ирцийн мэдээлэл байхгүй" text="Timely холбогдсоны дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана." />
+      <Empty icon={<UserRound className="ico" />} title="Ирцийн мэдээлэл алга" text="Timely холбогдсоны дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана." />
     </section>
   )
 }
@@ -459,7 +459,7 @@ export function AttendanceOne({ id }: { id: string }) {
   }, [worker, linkId, a.month, a.demo, again])
 
   const name = outside ? 'Ажилтны ирц' : row ? (row.e ? short(row.e) : tname(row.t)) : ours ? short(ours) : 'Ажилтны ирц'
-  const back = <a className="ibtn ibtn--glass head__back" href="#hr-attendance" aria-label="Ирц руу буцах"><ChevronLeft className="ico" /></a>
+  const back = <a className="ibtn ibtn--glass head__back" href="#hr-attendance" aria-label="Ирц рүү буцах"><ChevronLeft className="ico" /></a>
   const p = row ? pctOf(row.t) : null
   const avg = days ? avgIn(days) : null
 
@@ -486,7 +486,7 @@ export function AttendanceOne({ id }: { id: string }) {
       ) : !row ? (
         <section className="card glass" data-enter>
           <Empty icon={<UserRound className="ico" />} title="Энэ ажилтан Timely-д олдсонгүй"
-            text={ours ? `Timely-д ${ours.regNo} регистрийн дугаартай ажилтан алга. Дугаарыг хоёр системд шалгана уу.` : 'Ажилтан бүртгэлээс хасагдсан эсвэл өөр ХХК-д байж магадгүй.'}>
+            text={ours ? `Timely-д ${ours.regNo} регистрийн дугаартай ажилтан байхгүй. Дугаарыг хоёр системд шалгана уу.` : 'Ажилтан бүртгэлээс хасагдсан эсвэл өөр ХХК-д байж магадгүй.'}>
             <a className="btn btn--glass" href="#hr-attendance">Бүх ажилтны ирц харах</a>
           </Empty>
         </section>

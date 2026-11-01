@@ -262,6 +262,8 @@ export interface Employee {
   hue: Hue
   /** Шууд удирдлага (an employee) when not the head of the department; 'none' for the top, who gives no monthly report */
   manager?: Id | 'none'
+  /** On a day the status changed, the status the day began with: a second change that day replaces the first (store.ts) */
+  dayStart?: { date: string; status: EmpStatus }
 }
 
 // Drafts (Ноорог): free boards where an employee pins notes, checklists, pictures, links and files.

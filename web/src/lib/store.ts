@@ -330,22 +330,24 @@ export const actions = {
       const user = s.employees.find(e => e.id === id)?.user
       const same = user ? { given: patch.given, family: patch.family, email: patch.email } : {}
       const keep = Object.fromEntries(Object.entries(same).filter(([, v]) => v !== undefined))
-      const history = (e: Employee): Employee['moves'] => {
+      const history = (e: Employee): Pick<Employee, 'moves' | 'dayStart'> => {
         const { hired, status } = patch
         const day = today()
         let moves = hired && hired !== e.hired ? e.moves.map(m => (m.kind === 'hired' ? { ...m, date: hired } : m)).sort((a, b) => b.date.localeCompare(a.date)) : e.moves
-        if (!status || status === e.status) return moves
+        if (!status || status === e.status) return { moves }
         // Left, on leave and on childcare leave have a line of the same name; coming back from them is 'back'
         const away = (st: string) => (['left', 'leave', 'childcare'] as const).find(k => k === st)
-        // Changed again the same day: the earlier change was a slip, so its line goes
-        const slip = moves[0]?.date === day && moves[0].kind === away(e.status)
-        if (slip) moves = moves.slice(1)
-        const kind = away(status) ?? (slip ? undefined : e.status === 'probation' ? 'confirmed' : away(e.status) && 'back')
-        return kind ? [{ id: uid('m'), date: day, kind }, ...moves] : moves
+        const line = (from: Employee['status'], to: Employee['status']) => (from === to ? undefined : away(to) ?? (from === 'probation' ? 'confirmed' : away(from) && 'back'))
+        // Changed again the same day: the earlier change was a slip, so its line goes and the change counts from the status the day began with
+        const began = e.dayStart?.date === day ? e.dayStart.status : e.status
+        const slip = moves.findIndex(m => m.date === day && m.kind === line(began, e.status))
+        if (slip >= 0) moves = moves.filter((_, i) => i !== slip)
+        const kind = line(began, status)
+        return { moves: kind ? [{ id: uid('m'), date: day, kind }, ...moves] : moves, dayStart: { date: day, status: began } }
       }
       return {
         ...s,
-        employees: s.employees.map(e => (e.id === id ? { ...e, ...patch, moves: history(e) } : user && e.user === user ? { ...e, ...keep } : e)),
+        employees: s.employees.map(e => (e.id === id ? { ...e, ...patch, ...history(e) } : user && e.user === user ? { ...e, ...keep } : e)),
         people: user ? s.people.map(p => (p.id === user ? { ...p, ...keep } : p)) : s.people,
       }
     }),

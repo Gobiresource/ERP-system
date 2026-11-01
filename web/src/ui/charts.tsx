@@ -224,8 +224,9 @@ export function Bars({ values, labels, hi, tone = 'accent', label, unit, names =
             {v !== null && v > 0 && <i className="bars__bar" style={{ height: `${(v / max) * 100}%`, ['--bar' as string]: stroke(tone) }} />}
           </span>
           <span className="bars__lab" aria-hidden="true">{labels[i]}</span>
+          {/* Shifted by the column's place, as in Columns, so the first and last days stay on a phone screen */}
           {hover === i && v !== null && (
-            <span className="chart__tip bars__tip" role="status"><b>{names[i]}</b><span>{label}<strong>{v} {unit}</strong></span></span>
+            <span className="chart__tip bars__tip" role="status" style={{ transform: `translateX(-${((i + 0.5) / values.length) * 100}%)` }}><b>{names[i]}</b><span>{label}<strong>{v} {unit}</strong></span></span>
           )}
         </div>
       ))}

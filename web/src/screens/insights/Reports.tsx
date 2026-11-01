@@ -11,7 +11,7 @@ import { open } from '../../lib/ui'
 import { go } from '../../lib/router'
 import { usePageEnter } from '../../lib/motion'
 import { downloadCsv } from '../../lib/insights'
-import { STATE_PILL, dueName, empOf, findReport, isLate, kpiOf, managerOf, monthKey, monthName, ofMonth, prevMonth, readable, reportTodo, seesAll, stateOf, total, writers, type RowState } from '../../lib/reports'
+import { STATE_PILL, dueName, findReport, isLate, kpiOf, managerOf, monthKey, monthName, ofMonth, prevMonth, readable, recordOf, reportTodo, seesAll, stateOf, total, writers, type RowState } from '../../lib/reports'
 import { collator, dateDots, short, today } from '../../lib/format'
 import { accessOf } from '../../lib/access'
 import { PageHead } from '../../ui/PageHead'
@@ -49,8 +49,9 @@ export default function Reports() {
   const team = readable(s, s.company, who, month)
   const todo = reportTodo(s, s.company, who, cur)
   const rules = kpiOf(s, s.company)
-  // A manager or the director looks at people in one month, themselves among them; anyone else at their own months
-  const byPeople = all || team.some(p => p !== who)
+  // A manager or the director looks at people in one month, themselves among them; anyone else at their own months.
+  // Any of the three months counts, so the reports sent to a manager stay listed after their writer left or moved.
+  const byPeople = all || months.some(m => readable(s, s.company, who, m).some(p => p !== who))
   const rows = byPeople ? sortPeople(s, team).map(p => ({ person: p, month })) : months.filter(m => readable(s, s.company, who, m).includes(who)).map(m => ({ person: who, month: m }))
   const reps = rows.map(x => ({ ...x, r: findReport(s, s.company, x.person, x.month) }))
   const sent = reps.filter(x => x.r && x.r.status !== 'draft').length
@@ -59,16 +60,18 @@ export default function Reports() {
   const avg = scored.length ? Math.round(scored.reduce((n, x) => n + total(x.r!.scores!), 0) / scored.length) : 0
 
   const exportCsv = () => {
-    // A scored report keeps the criteria and weights it was scored on; the rules now are for the ones still to score
-    const crits = [...new Map([...rules.criteria, ...reps.flatMap(x => x.r?.scores ?? [])].map(c => [c.id, c])).values()]
+    // A scored report keeps the criteria and weights it was scored on, so each weight of a criterion gets its own column;
+    // the rules now are for the ones still to score
+    const used = reps.flatMap(x => x.r?.scores ?? [])
+    const crits = [...new Map((used.length ? used : rules.criteria).map(c => [`${c.id}:${c.weight}`, c])).values()]
     const head = ['Код', 'Ажилтан', 'Хэлтэс', 'Албан тушаал', 'Шууд удирдлага', 'Төлөв', 'Илгээсэн огноо', 'Хоцорч илгээсэн', ...crits.map(c => `${c.name} (${c.weight}%)`), 'Оноо', 'Үнэлгээ', 'Урамшуулал, %', 'Санал, зөвлөмж']
     downloadCsv(`sariin-tailan-${month}-${today()}.csv`, [head, ...reps.map(({ person, r }) => {
-      const e = empOf(s, s.company, person)
+      const e = recordOf(s, s.company, person)
       const m = s.people.find(p => p.id === (r?.manager ?? managerOf(s, s.company, person)))
       return [
         e?.code ?? '', name(s, person), s.departments.find(d => d.id === e?.dept)?.name ?? '', s.positions.find(x => x.id === e?.position)?.name ?? '', m ? short(m) : '',
         STATE_PILL[stateOf(r, month)], r?.sent ? dateDots(new Date(r.sent)) : '', r && isLate(r) ? 'Тийм' : '',
-        ...crits.map(c => r?.scores?.find(x => x.id === c.id)?.points ?? ''),
+        ...crits.map(c => r?.scores?.find(x => x.id === c.id && x.weight === c.weight)?.points ?? ''),
         r?.scores ? total(r.scores) : '', r?.band?.name ?? '', r?.band?.bonus ?? '', r?.comment ?? '',
       ]
     })])
@@ -158,7 +161,7 @@ const name = (s: State, id: Id) => {
 
 /** By department, then by name */
 function sortPeople(s: State, list: Id[]) {
-  const dept = (p: Id) => s.departments.find(d => d.id === empOf(s, s.company, p)?.dept)?.name ?? ''
+  const dept = (p: Id) => s.departments.find(d => d.id === recordOf(s, s.company, p)?.dept)?.name ?? ''
   const given = (p: Id) => s.people.find(x => x.id === p)?.given ?? ''
   return [...list].sort((a, b) => collator.compare(dept(a), dept(b)) || collator.compare(given(a), given(b)))
 }
@@ -171,7 +174,7 @@ export function ReportPill({ st }: { st: RowState }) {
 function Row({ person, month, r, byPeople, all }: { person: Id; month: string; r?: MonthReport; byPeople: boolean; all: boolean }) {
   const s = useApp()
   const p = s.people.find(x => x.id === person)
-  const e = empOf(s, s.company, person)
+  const e = recordOf(s, s.company, person)
   const m = s.people.find(x => x.id === (r?.manager ?? managerOf(s, s.company, person)))
   const st = stateOf(r, month)
   return (

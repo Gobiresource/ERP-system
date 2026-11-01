@@ -9,7 +9,7 @@ import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
 import { cid } from '../../lib/draft'
-import { POINTS, bandOf, blankReport, dueName, empOf, factsOf, findReport, fromSystem, isLate, kpiOf, managerOf, mayScore, nextMonth, ofMonth, prevMonth, seesAll, stateOf, total, writers } from '../../lib/reports'
+import { POINTS, bandOf, blankReport, dueName, factsOf, findReport, fromSystem, isLate, kpiOf, managerOf, mayScore, nextMonth, ofMonth, prevMonth, recordOf, seesAll, stateOf, total, writers } from '../../lib/reports'
 import { ago, monthTitle, parse, short } from '../../lib/format'
 import { accessOf } from '../../lib/access'
 import { PageHead } from '../../ui/PageHead'
@@ -47,7 +47,7 @@ export default function ReportPage({ id }: { id: string }) {
       </div>
     )
   }
-  const e = empOf(s, s.company, person)
+  const e = recordOf(s, s.company, person)
   const position = s.positions.find(x => x.id === e?.position)?.name
   const writing = who === person && (!r || r.status === 'draft' || r.status === 'returned') && writers(s, s.company, month).includes(person)
   return (
@@ -257,9 +257,9 @@ function Status({ person, month, r, who, writing, send }: { person: Id; month: s
       )}
       <ol className="ctsteps">
         {steps.map(x => (
-          <li key={x.label} className={x.past ? 'is-past' : x.now ? 'is-now' : ''}>
+          <li key={x.label} className={x.past ? 'is-past' : x.now ? 'is-now' : ''} aria-current={!x.past && x.now ? 'step' : undefined}>
             <span className="ctsteps__dot" aria-hidden="true">{x.past && <Check className="ico" />}</span>
-            <span className="ctsteps__text"><b>{x.label}</b>{x.sub && <small>{x.sub}</small>}</span>
+            <span className="ctsteps__text"><b>{x.label}{x.past && <span className="sr-only">, дууссан</span>}</b>{x.sub && <small>{x.sub}</small>}</span>
           </li>
         ))}
       </ol>

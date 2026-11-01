@@ -64,6 +64,8 @@ export const isLate = (r: MonthReport) => !!r.sent && ymd(new Date(r.sent)) > du
 type Org = Pick<State, 'employees' | 'departments' | 'roles'>
 /** A person's HR record in a ХХК while they work there */
 export const empOf = (s: Pick<State, 'employees'>, company: Id, person: Id) => s.employees.find(e => e.company === company && e.user === person && current(e))
+/** The same, or the record of someone who left: their reports keep the code, department and position */
+export const recordOf = (s: Pick<State, 'employees'>, company: Id, person: Id) => empOf(s, company, person) ?? s.employees.find(e => e.company === company && e.user === person)
 
 /** Шууд удирдлага of an HR record: the one set on it, else the head of its department, else the director. 'none' for the top. */
 export function bossOf(s: Org, e: Employee): Employee | 'none' | undefined {

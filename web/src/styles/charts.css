@@ -45,7 +45,7 @@
 .bars__col:not(.is-hi) .bars__bar { background: linear-gradient(180deg, rgb(255 255 255 / .62), rgb(255 255 255 / .34)), var(--bar); }
 [data-mode="dark"] .bars__col:not(.is-hi) .bars__bar { background: linear-gradient(180deg, rgb(0 0 0 / .1), rgb(0 0 0 / .32)), var(--bar); }
 .bars__lab { font-size: 12px; font-weight: 560; text-align: center; color: var(--text-2); }
-.bars__tip { top: auto; bottom: calc(100% - 20px); left: 50%; min-width: 150px; transform: translateX(-50%); }
+.bars__tip { top: auto; bottom: calc(100% - 20px); left: 50%; min-width: 150px; }
 
 /* Donut */
 .donut { position: relative; flex: none; width: clamp(140px, 10vw, 172px); aspect-ratio: 1; }
