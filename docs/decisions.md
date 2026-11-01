@@ -2305,7 +2305,7 @@ Pane-ийн "Нүүр" дэлгэцийг дагаж хийсэн загвар. 
 - Телеметр: ашиглалтын хэмжүүрийг анхдагчаар OpenAI-ийн Statsig руу илгээдэг. `analytics.enabled = false`, `otel.metrics_exporter = "none"`-оор унтраасан. Мөн `/feedback`-ийн илгээлт, ярианы түүх хадгалахыг унтраасан ([тохиргооны лавлах](https://learn.chatgpt.com/docs/config-file/config-reference)).
 - Энэ нь файл засаж, тушаал ажиллуулдаг агент. Тиймээс зөвхөн уншдаг горимд, вэб хайлтгүй, хоосон хавтаснаас ажиллуулна.
 - Нэвтрэх: cloud орчинд хөтөч байхгүй тул device code аргаар нэвтэрнэ. Хэрэглэгч үүнийг ChatGPT-ийн Settings → Security-д асаана ([OpenAI-ийн заавар](https://learn.chatgpt.com/docs/auth)). Токен container дотор `~/.codex/auth.json`-д хадгалагдаж, container-той хамт устана.
-- Өгөгдөл: эх сурвалжуудын хэлснээр OpenAI Business, Enterprise, API-ийн мэдээллийг анхдагчаар сургалтад ашигладаггүй. Хувийн (Plus, Pro) бүртгэлийн мэдээллийг ашиглаж магадгүй. Тиймээс ChatGPT-ийн Settings → Data controls → «Improve the model for everyone»-ийг унтраахыг зөвлөсөн. Зөвхөн дэлгэцийн текст, жишээ өгөгдөл илгээнэ.
+- Өгөгдөл: эх сурвалжуудын хэлснээр OpenAI Business, Enterprise, API-ийн мэдээллийг анхдагчаар сургалтад ашигладаггүй. Хувийн (Plus, Pro) бүртгэлийн мэдээллийг ашиглаж магадгүй. Тиймээс ChatGPT-ийн Settings → Data controls → «Improve the model for everyone»-ийг унтраахыг зөвлөсөн. Хэрэглэгч "Болсон" гэж хариулсан. Үүнийг унтраасан гэж ойлгосон. Ямар ч байсан зөвхөн дэлгэцийн текст, жишээ өгөгдөл илгээнэ.
 - Загвар: CLI-ийн анхдагч нь `gpt-6.1-sol`. Бүртгэлд мөн `gpt-6-astra`, `gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` байна (`codex debug models`).
 
 **Явц.**
