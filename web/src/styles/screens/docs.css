@@ -174,6 +174,46 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 .splace__ink img { display: block; width: 100%; height: 100%; pointer-events: none; }
 .splace__size input { width: 100%; accent-color: var(--accent); }
 
+/* Writing on a page (screens/docs/PdfWrite.tsx). A mark's letters are a fraction of its page's width: the page, or the
+   layer over a tile, is a container. Paper colours in both themes, as the page is paper. */
+.pmarks { container-type: size; pointer-events: none; }
+.pmark {
+  position: absolute; box-sizing: border-box; overflow: hidden; white-space: pre; color: #1b1d26;
+  font-family: "Times New Roman", "Liberation Serif", Tinos, serif; font-size: calc(var(--s) * 100cqw); line-height: 1.25; padding: .3em;
+}
+.pmark--note { background: #fff3a8; box-shadow: 0 1px 2px rgb(0 0 0 / .18); }
+.pmark--mark { padding: 0; background: rgb(255 214 41 / .4); mix-blend-mode: multiply; }
+.pmark--edit { background: #fff; line-height: 1.12; padding: .06em; }
+.pwrite { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 10px; }
+/* The tools stay in view while a tall page scrolls under them in the window */
+.pwrite__head { position: sticky; top: 0; z-index: 2; display: grid; gap: 8px; margin: 0 -22px; padding: 10px 22px; background: var(--glass-solid); }
+@media (width <= 760px) {
+  .pwrite__head { margin: 0 -18px; padding: 10px 18px; }
+  /* The four tools two by two, so they fit a phone */
+  .pwrite__tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; border-radius: 22px; }
+}
+.pwrite__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.pwrite__hint { font-size: 13.5px; }
+.wpage {
+  position: relative; container-type: inline-size; width: min(100%, 680px); aspect-ratio: var(--ar); margin: 0 auto;
+  border-radius: 4px; background: #fff; box-shadow: 0 1px 3px rgb(20 20 50 / .2), 0 10px 24px -12px rgb(20 20 50 / .4); touch-action: none; user-select: none;
+}
+.wpage.is-text, .wpage.is-note { cursor: text; }
+.wpage.is-mark, .wpage.is-edit { cursor: crosshair; }
+.wpage__img, .wpage > .player__wait { display: block; width: 100%; height: 100%; border-radius: 4px; pointer-events: none; }
+.wmark { cursor: grab; outline: 1px dashed rgb(29 43 110 / .45); outline-offset: 1px; }
+.wmark.is-sel { outline: 2px solid var(--accent-ink); }
+.wmark:focus-visible { outline: 2.5px solid var(--accent-ink); outline-offset: 2px; }
+.wmark__input {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; border: 0; padding: inherit; overflow: hidden; resize: none;
+  background: transparent; color: inherit; font: inherit; line-height: inherit; white-space: pre; outline: none; cursor: text;
+}
+.wmark__grip { position: absolute; right: -6px; bottom: -6px; width: 12px; height: 12px; border-radius: 3px; background: var(--accent-ink); box-shadow: 0 0 0 2px #fff; cursor: nwse-resize; touch-action: none; }
+/* Lines AI read, to click and change */
+.wline { position: absolute; padding: 0; border: 0; border-radius: 2px; background: rgb(29 99 230 / .07); outline: 1px dashed rgb(29 99 230 / .55); cursor: pointer; }
+@media (hover: hover) { .wline:hover { background: rgb(29 99 230 / .16); outline-style: solid; } }
+.wline:focus-visible { outline: 2.5px solid var(--accent-ink); }
+
 @media (width <= 760px) {
   .pdf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
   .pbar__tools .btn { flex: 1 1 auto; }
