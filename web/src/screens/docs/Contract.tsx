@@ -285,7 +285,7 @@ function Actions({ c, who }: { c: Contract; who: Id }) {
     return (
       <div className="ctact">
         <button type="button" className="btn btn--accent" onClick={() => step('send')}><Send className="ico" />{c.resume ? 'Засаад илгээх' : 'Хянуулахаар илгээх'}</button>
-        <p className="ctact__hint">{c.resume ? `Шууд очно: ${to.join(', ')}. Өмнө нь зөвшөөрсөн хүн дахин хянахгүй.` : 'Санхүүгийн захирал, хуульч хоёр зэрэг хянана.'}</p>
+        <p className="ctact__hint">{c.resume ? `Дараагийн хянагч: ${to.join(', ')}. Өмнө нь зөвшөөрсөн хүн дахин хянахгүй.` : 'Санхүүгийн захирал, хуульч хоёр зэрэг хянана.'}</p>
         <div className="ctact__more">
           <button type="button" className="btn btn--glass btn--sm" onClick={() => open({ kind: 'contractAsk', id: c.id })}><MessageSquareQuote className="ico" />Санал хүсэх</button>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => open({ kind: 'contractReason', id: c.id, step: 'cancel' })}>Цуцлах</button>
