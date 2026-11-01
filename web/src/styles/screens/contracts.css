@@ -147,6 +147,9 @@
 .wdoc__tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .wdoc__bar { position: sticky; top: 86px; z-index: 3; min-width: 0; background: #fff; border-bottom: 1px solid rgb(0 0 0 / .1); }
 .wdoc__doc { min-width: 0; padding: 20px 0 40px; overflow-x: auto; }
+/* The page in the middle of the desk, with the comments column beside it when there is one (as Word shifts the page for
+   it); "safe" keeps the page's left edge in view when the two do not fit */
+.wdoc__doc .superdoc { justify-content: safe center; }
 .wdoc__wait { padding: 24px; font-size: 14px; color: var(--text-2); }
 
 @media (width <= 1100px) {
