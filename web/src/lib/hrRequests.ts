@@ -1,37 +1,42 @@
-// Хүсэлт: ээлжийн амралт, илүү цаг, шинэ ажилтан авах (docs/decisions.md, 2026-11-01). Each kind's steps, who acts at a
+// Хүсэлт: ээлжийн амралт, илүү цаг, шинэ ажилтан авах (docs/decisions.md, 2026-11-01), худалдан авах (2026-11-02). Each kind's steps, who acts at a
 // step, the words for where a request stands, a leave's work days, the order a signed leave becomes, and the demo
 // requests. Requests to the office for a document stay in lib/docs.ts; the «Хүсэлт» page lists both.
-import type { Doc, HireRequest, HrRequest, HrRequestKind, HrStep, Id, LeaveRequest, Move, OvertimeRequest, State } from './types'
+import type { Doc, HireRequest, HrRequest, HrRequestKind, HrStep, Id, LeaveRequest, Move, OvertimeRequest, PurchaseItem, PurchaseRequest, State } from './types'
 import { accessOf } from './access'
 import { rolesOf } from './contracts'
 import { empOf, managerOf } from './reports'
 import { addDays, parse, short, today, ymd } from './format'
 import { dots } from './hr'
 
-export const HR_KIND: Record<HrRequestKind, string> = { leave: 'Ээлжийн амралт', overtime: 'Илүү цаг', hire: 'Шинэ ажилтан авах' }
-export const STEPS: Record<HrRequestKind, HrStep[]> = { leave: ['manager', 'director', 'hr'], overtime: ['manager', 'finance'], hire: ['hr', 'finance', 'director'] }
+export const HR_KIND: Record<HrRequestKind, string> = { leave: 'Ээлжийн амралт', overtime: 'Илүү цаг', hire: 'Шинэ ажилтан авах', purchase: 'Худалдан авах' }
+/** A purchase: the director approves, then it is on the supply officer's list until they buy it (the user's flow, 2026-11-02) */
+export const STEPS: Record<HrRequestKind, HrStep[]> = { leave: ['manager', 'director', 'hr'], overtime: ['manager', 'finance'], hire: ['hr', 'finance', 'director'], purchase: ['director', 'supply'] }
 /** Who acts at the step, in the list of steps */
-export const STEP_WHO: Record<HrStep, string> = { manager: 'Шууд удирдлага', hr: 'Хүний нөөц', finance: 'Санхүү', director: 'Гүйцэтгэх захирал' }
+export const STEP_WHO: Record<HrStep, string> = { manager: 'Шууд удирдлага', hr: 'Хүний нөөц', finance: 'Санхүү', director: 'Гүйцэтгэх захирал', supply: 'Хангамжийн ажилтан' }
 /** What the step's person does: their button, and the request's label in their list */
 const DO: Record<HrRequestKind, Partial<Record<HrStep, string>>> = {
   leave: { manager: 'Батлах', director: 'Гарын үсэг зурах', hr: 'Timely-д бүртгэх' },
   overtime: { manager: 'Батлах', finance: 'Шийдвэрлэх' },
   hire: { hr: 'Батлах', finance: 'Батлах', director: 'Батлах' },
+  // The supply officer's list says what to do; their button says what was done (RequestForms Decide)
+  purchase: { director: 'Батлах', supply: 'Худалдан авах' },
 }
 /** "{who} хянаж буй" (Gemini 38) */
-const PILL_WHO: Record<HrStep, string> = { manager: 'Шууд удирдлага', hr: 'Хүний нөөц', finance: 'Санхүү', director: 'Захирал' }
+const PILL_WHO: Record<HrStep, string> = { manager: 'Шууд удирдлага', hr: 'Хүний нөөц', finance: 'Санхүү', director: 'Захирал', supply: 'Хангамж' }
 
 /** What the step's person will do, in the list of steps */
 export const WILL: Record<HrRequestKind, Partial<Record<HrStep, string>>> = {
   leave: { manager: 'Батална', director: 'Тушаалд гарын үсэг зурна', hr: 'Timely-д бүртгэнэ' },
   overtime: { manager: 'Батална', finance: 'Ажилласны дараа хөлс эсвэл нөхөн амралт олгохыг шийднэ' },
   hire: { hr: 'Орон тоог шалгана', finance: 'Цалингийн төсвийг шалгана', director: 'Батална' },
+  purchase: { director: 'Батална', supply: 'Худалдан авч тэмдэглэнэ' },
 }
 /** What the step's person did; finance's decision on overtime says itself */
 export const DID: Record<HrRequestKind, Partial<Record<HrStep, string>>> = {
   leave: { manager: 'Баталсан', director: 'Гарын үсэг зурсан', hr: 'Timely-д бүртгэсэн' },
   overtime: { manager: 'Баталсан' },
   hire: { hr: 'Баталсан', finance: 'Баталсан', director: 'Баталсан' },
+  purchase: { director: 'Баталсан', supply: 'Худалдан авсан' },
 }
 
 export const stepOf = (r: HrRequest) => STEPS[r.kind][r.step]
@@ -42,8 +47,9 @@ export const ORDER_NAME = 'Ээлжийн амралт олгох тухай'
 export function pillOf(r: HrRequest): { text: string; tone: 'wait' | 'ok' | 'bad' | 'off' } {
   if (r.status === 'returned') return { text: 'Буцаасан', tone: 'bad' }
   if (r.status === 'canceled') return { text: 'Цуцлагдсан', tone: 'off' }
-  if (r.status === 'done') return { text: r.kind === 'overtime' ? (r.pay === 'rest' ? 'Нөхөн амралт' : 'Илүү цагийн хөлс') : 'Батлагдсан', tone: 'ok' }
+  if (r.status === 'done') return { text: r.kind === 'overtime' ? (r.pay === 'rest' ? 'Нөхөн амралт' : 'Илүү цагийн хөлс') : r.kind === 'purchase' ? 'Худалдан авсан' : 'Батлагдсан', tone: 'ok' }
   const step = stepOf(r)
+  if (step === 'supply') return { text: 'Худалдан авч буй', tone: 'wait' }
   if (r.kind === 'overtime' && step === 'finance' && r.date > today()) return { text: 'Шууд удирдлага баталсан', tone: 'wait' }
   if (r.kind === 'leave' && step === 'hr') return { text: 'Хүний нөөц бүртгэж буй', tone: 'wait' }
   return { text: `${PILL_WHO[step]} хянаж буй`, tone: 'wait' }
@@ -73,8 +79,12 @@ export const mayReturn = (s: State, r: HrRequest, who: Id) => mayAct(s, r, who) 
 export const mayCancel = (r: HrRequest, who: Id) => r.by === who && (r.status === 'open' || r.status === 'returned') && !(r.kind === 'leave' && r.order)
 /** Waits for the person: their turn, or their own request sent back to them */
 export const waitsFor = (s: State, r: HrRequest, who: Id) => mayAct(s, r, who) || (r.status === 'returned' && r.by === who)
-/** Takes part: the asker, or whoever acts at one of its steps. They may open it. */
-export const involves = (s: State, r: HrRequest, who: Id) => r.by === who || STEPS[r.kind].some(st => actorsOf(s, r, st).includes(who))
+/**
+ * Takes part: the asker, or whoever acts at one of its steps. They may open it. A purchase reaches the supply officer only
+ * once the director has approved it (the user's flow, 2026-11-02).
+ */
+export const involves = (s: State, r: HrRequest, who: Id) => r.by === who
+  || STEPS[r.kind].some((st, i) => actorsOf(s, r, st).includes(who) && !(st === 'supply' && i > r.step && r.status !== 'done'))
 /** Where it starts: past the manager's step for someone with no one above them */
 export const firstStep = (kind: HrRequestKind, manager?: Id) => (STEPS[kind][0] === 'manager' && !manager ? 1 : 0)
 
@@ -103,6 +113,12 @@ export function awayByDay(s: Pick<State, 'hrRequests'>, company: Id) {
     for (let d = parse(r.from); ymd(d) <= r.to; d = addDays(d, 1)) m.set(ymd(d), [...(m.get(ymd(d)) ?? []), r.by])
   }
   return m
+}
+
+/** What a purchase comes to by the prices given; null when no line has a price */
+export function totalOf(items: PurchaseItem[]) {
+  const priced = items.filter(x => x.price !== undefined)
+  return priced.length ? priced.reduce((n, x) => n + x.qty * x.price!, 0) : null
 }
 
 /** "4 цаг 45 мин", "4 цаг" */
@@ -135,8 +151,32 @@ export const withMove = (moves: Move[], m: Move) => [...moves, m].sort((a, b) =>
 /**
  * The demo's requests in Говь Ресурс: a leave and an overtime waiting for the manager, a leave for the director to sign,
  * a hiring request at the director after HR and finance, an overtime for finance to decide, one decided, a leave sent
- * back, and a leave done with its order in Бичиг хэрэг and in the employee's history.
+ * back, a leave done with its order in Бичиг хэрэг and in the employee's history, and the purchases above.
  */
+/** The demo's purchases in Говь Ресурс: one at the director, one on the supply officer's list (С.Батзориг), one bought */
+export function seedPurchases(now: Date): PurchaseRequest[] {
+  const ago = (h: number) => new Date(now.getTime() - h * 36e5).toISOString()
+  const day = (n: number) => ymd(addDays(now, n))
+  const make = (r: Omit<PurchaseRequest, 'kind' | 'company'>): PurchaseRequest => ({ ...r, kind: 'purchase', company: 'c1' })
+  return [
+    make({
+      id: 'hq9', by: 'u14', status: 'open', step: 0, need: day(10), project: 'p1', purpose: 'Шинэ агуулахын интернэт сүлжээнд.',
+      items: [{ name: 'Сүлжээний свич, 24 порт', qty: 1, unit: 'ширхэг', price: 1_250_000 }, { name: 'UTP кабель Cat6, 305 м', qty: 2, unit: 'хайрцаг', price: 185_000 }],
+      history: [{ what: 'sent', by: 'u14', at: ago(5) }],
+    }),
+    make({
+      id: 'hq10', by: 'u7', status: 'open', step: 1, need: day(3), purpose: 'Борлуулалтын албаны өдөр тутмын хэрэглээнд.',
+      items: [{ name: 'A4 цаас', qty: 10, unit: 'боодол', price: 16_000 }, { name: 'Принтерийн хор, HP 85A', qty: 2, unit: 'ширхэг', price: 95_000 }],
+      history: [{ what: 'sent', by: 'u7', at: ago(28) }, { what: 'approved', by: 'u1', at: ago(20), step: 'director' }],
+    }),
+    make({
+      id: 'hq11', by: 'u9', status: 'done', step: 1, need: day(-5), purpose: 'Барилгын материалын үзэсгэлэнд оролцоход.', paid: 640_000,
+      items: [{ name: 'Баннер, 2×1 м', qty: 2, unit: 'ширхэг', price: 180_000 }, { name: 'Танилцуулга хуудас', qty: 500, unit: 'ширхэг', price: 600 }],
+      history: [{ what: 'sent', by: 'u9', at: ago(9 * 24) }, { what: 'approved', by: 'u1', at: ago(8 * 24), step: 'director' }, { what: 'approved', by: 'u10', at: ago(6 * 24), step: 'supply' }],
+    }),
+  ]
+}
+
 export function seedHrRequests(now: Date, s: State): Pick<State, 'hrRequests' | 'docs' | 'employees'> {
   const c = 'c1'
   const ago = (h: number) => new Date(now.getTime() - h * 36e5).toISOString()
@@ -210,6 +250,7 @@ export function seedHrRequests(now: Date, s: State): Pick<State, 'hrRequests' | 
       ],
     }),
     done,
+    ...seedPurchases(now),
   ]
   const order: Doc = { id: 'dc-order1', company: c, name: ORDER_NAME, kind: 'order', text: orderLines(s, done), to: ['u12'], by: 'u1', added: done.history[2].at }
   const e = empOf(s, c, 'u12')

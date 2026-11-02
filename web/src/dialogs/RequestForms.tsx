@@ -1,17 +1,17 @@
-// Хүсэлт windows: what to ask for, the forms for ээлжийн амралт, илүү цаг and шинэ ажилтан авах (also to fix one sent
-// back), and one request with its steps and what the person whose turn it is does (lib/hrRequests.ts, screens/Requests.tsx).
+// Хүсэлт windows: what to ask for, the forms for ээлжийн амралт, илүү цаг, шинэ ажилтан авах and худалдан авах (also to fix
+// one sent back), and one request with its steps and what the person whose turn it is does (lib/hrRequests.ts, screens/Requests.tsx).
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronRight, FileText } from 'lucide-react'
+import { ChevronRight, FileText, Plus, X } from 'lucide-react'
 import '../styles/screens/docs.css'
-import type { Employee, HireRequest, HrRequest, HrRequestKind, Id, LeaveRequest, OvertimeRequest, TimelyCompany, TimelyEmployee } from '../lib/types'
+import type { Employee, HireRequest, HrRequest, HrRequestKind, Id, LeaveRequest, OvertimeRequest, PurchaseItem, PurchaseRequest, TimelyCompany, TimelyEmployee } from '../lib/types'
 import { actions, getState, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
-import { DID, HR_KIND, STEPS, STEP_WHO, WILL, actorsOf, doOf, doneAt, firstStep, hoursText, involves, mayAct, mayCancel, mayReturn, spanMinutes, stepOf, workDays } from '../lib/hrRequests'
+import { DID, HR_KIND, STEPS, STEP_WHO, WILL, actorsOf, doOf, doneAt, firstStep, hoursText, involves, mayAct, mayCancel, mayReturn, spanMinutes, stepOf, totalOf, workDays } from '../lib/hrRequests'
 import { linkOf, loadDays, loadMonth, rowOf, sampleFor, timelyState } from '../lib/attendance'
 import { empOf, managerOf } from '../lib/reports'
 import { rolesOf } from '../lib/contracts'
 import { current, dots, hrScoped } from '../lib/hr'
-import { collator, dateDots, hm, parse, short, today, weekday, ymd } from '../lib/format'
+import { addDaysYmd, collator, dateDots, hm, num, parse, short, today, weekday, ymd } from '../lib/format'
 import { docView } from '../lib/access'
 import { Sheet } from '../ui/Sheet'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
@@ -32,6 +32,7 @@ const PICK: { type: HrRequestKind | 'doc'; title: string; text: string }[] = [
   { type: 'leave', title: 'Ээлжийн амралт', text: 'Шууд удирдлага батална. Тушаал гарна.' },
   { type: 'overtime', title: 'Илүү цаг', text: 'Ажиллахаас өмнө хүснэ. Шууд удирдлага батална, санхүү шийднэ.' },
   { type: 'hire', title: 'Шинэ ажилтан авах', text: 'Хүний нөөц, санхүү, захирал батална.' },
+  { type: 'purchase', title: 'Худалдан авах', text: 'Захирал батална. Хангамжийн ажилтан худалдан авна.' },
   { type: 'doc', title: 'Бичиг баримт', text: 'Тодорхойлолт гэх мэтийг бичиг хэргээс хүснэ.' },
 ]
 
@@ -113,7 +114,7 @@ function useWorked(r: OvertimeRequest | undefined, e?: Employee): Worked {
 /** The steps a new request will go through, with their people */
 function Plan({ kind, company, who }: { kind: HrRequestKind; company: Id; who: Id }) {
   const s = useApp()
-  const manager = kind === 'hire' ? undefined : managerOf(s, company, who)
+  const manager = STEPS[kind].includes('manager') ? managerOf(s, company, who) : undefined
   const steps = STEPS[kind].slice(firstStep(kind, manager))
   return (
     <section className="field field--wide" aria-labelledby="rq-plan">
@@ -131,10 +132,10 @@ function Plan({ kind, company, who }: { kind: HrRequestKind; company: Id; who: I
 function firstSays(kind: HrRequestKind, company: Id, who: Id) {
   if (kind === 'hire') return 'Хүний нөөц, санхүү, захирал батална'
   const s = getState()
-  const manager = managerOf(s, company, who)
+  const manager = STEPS[kind].includes('manager') ? managerOf(s, company, who) : undefined
   const step = STEPS[kind][firstStep(kind, manager)]
   const names = actorsOf(s, { company, manager }, step).map(nameOf).join(', ') || STEP_WHO[step]
-  return `${names} ${step === 'director' ? 'гарын үсэг зурна' : step === 'finance' ? 'шийднэ' : 'батална'}`
+  return `${names} ${step === 'director' && kind === 'leave' ? 'гарын үсэг зурна' : step === 'finance' ? 'шийднэ' : 'батална'}`
 }
 
 /** A request sent back says why at the top of the form that fixes it */
@@ -148,6 +149,7 @@ export function HrRequestForm({ type, id }: { type: HrRequestKind; id?: Id }) {
   const old = useApp().hrRequests.find(r => r.id === id && r.kind === type)
   if (type === 'leave') return <LeaveForm old={old as LeaveRequest | undefined} />
   if (type === 'overtime') return <OvertimeForm old={old as OvertimeRequest | undefined} />
+  if (type === 'purchase') return <PurchaseForm old={old as PurchaseRequest | undefined} />
   return <HireForm old={old as HireRequest | undefined} />
 }
 
@@ -382,6 +384,130 @@ function HireForm({ old }: { old?: HireRequest }) {
   )
 }
 
+/** "640,000", "640 000" or "640000" typed: the number, or NaN */
+const amount = (t: string) => Number(t.replace(/[\s,]/g, ''))
+type Line = { name: string; qty: string; unit: string; price: string }
+const LINE: Line = { name: '', qty: '1', unit: 'ширхэг', price: '' }
+const UNITS = ['ширхэг', 'хайрцаг', 'боодол', 'багц', 'кг', 'литр', 'метр']
+
+/** Худалдан авах: what to buy, line by line, what for and by when; the director approves, the supply officer buys it */
+function PurchaseForm({ old }: { old?: PurchaseRequest }) {
+  const s = useApp()
+  const who = useActor()
+  const company = old?.company ?? s.company
+  const projects = s.projects.filter(p => p.company === company && p.status !== 'done')
+  const [lines, setLines] = useState<Line[]>(() => (old ? old.items.map(x => ({ name: x.name, qty: String(x.qty), unit: x.unit, price: x.price === undefined ? '' : String(x.price) })) : [{ ...LINE }]))
+  const { f, setF, errors, setErrors, drop } = useFormState({ purpose: old?.purpose ?? '', need: old?.need ?? addDaysYmd(today(), 7), project: old?.project ?? '' })
+  const setLine = (i: number, k: keyof Line, v: string) => {
+    setLines(ls => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)))
+    drop('pq-items')
+  }
+  // The lines with a name are what is asked; a line left empty is not
+  const items: PurchaseItem[] = lines.filter(l => l.name.trim()).map(l => ({ name: l.name.trim(), qty: amount(l.qty), unit: l.unit.trim() || 'ширхэг', price: l.price.trim() ? amount(l.price) : undefined }))
+  const sum = items.every(x => x.qty > 0 && (x.price === undefined || x.price >= 0)) ? totalOf(items) : null
+  const lineError = () => {
+    for (const [i, l] of lines.entries()) {
+      const n = i + 1
+      if (!l.name.trim() && (l.price.trim() || (l.qty.trim() && l.qty.trim() !== '1'))) return `${n}-р мөр: нэрийг бичнэ үү.`
+      if (!l.name.trim()) continue
+      if (!(amount(l.qty) > 0)) return `${n}-р мөр: тоо хэмжээг 0-ээс их тоогоор бичнэ үү.`
+      if (l.price.trim() && !(amount(l.price) >= 0)) return `${n}-р мөр: үнийг тоогоор бичнэ үү.`
+    }
+    return items.length ? '' : 'Худалдан авах зүйлээ бичнэ үү.'
+  }
+  const submit = () => {
+    const e: Errors = {}
+    const bad = lineError()
+    if (bad) e['pq-items'] = bad
+    if (!f.purpose.trim()) e['pq-purpose'] = 'Юунд ашиглахаа бичнэ үү.'
+    if (!f.need || f.need < today()) e['pq-need'] = 'Өнөөдөр эсвэл түүнээс хойших өдөр сонгоно уу.'
+    setErrors(e)
+    if (Object.keys(e).length) return false
+    return send({ kind: 'purchase', items, purpose: f.purpose.trim(), need: f.need, project: f.project || undefined }, who, old?.id)
+  }
+
+  return (
+    <FormSheet title="Худалдан авах" sub={firstSays('purchase', company, who)} submit="Илгээх" onSubmit={submit} onClose={close} errors={errors}>
+      <Back r={old} />
+      <fieldset className="field field--wide pq" aria-describedby={errors['pq-items'] ? 'pq-items-error' : undefined}>
+        <legend className="field__label">Худалдан авах зүйлс</legend>
+        <div className="pq__head" aria-hidden="true"><span>Нэр</span><span>Тоо хэмжээ</span><span>Нэгж</span><span>Нэгжийн үнэ, ₮</span><span /></div>
+        <div className="pq__rows">
+          {lines.map((l, i) => (
+            <div className="pq__row" key={i}>
+              <label className="pq__cell">
+                <span className="pq__lab">Нэр</span>
+                <input id={i === 0 ? 'pq-items' : undefined} aria-label={`${i + 1}-р мөр: нэр`} value={l.name} onChange={e => setLine(i, 'name', e.target.value)} aria-invalid={errors['pq-items'] ? true : undefined} data-autofocus={i === 0 || undefined} />
+              </label>
+              <label className="pq__cell">
+                <span className="pq__lab">Тоо хэмжээ</span>
+                <input inputMode="decimal" aria-label={`${i + 1}-р мөр: тоо хэмжээ`} value={l.qty} onChange={e => setLine(i, 'qty', e.target.value)} />
+              </label>
+              <label className="pq__cell">
+                <span className="pq__lab">Нэгж</span>
+                <input list="pq-units" aria-label={`${i + 1}-р мөр: нэгж`} value={l.unit} onChange={e => setLine(i, 'unit', e.target.value)} />
+              </label>
+              <label className="pq__cell">
+                <span className="pq__lab">Нэгжийн үнэ, ₮</span>
+                <input inputMode="numeric" aria-label={`${i + 1}-р мөр: нэгжийн үнэ, ₮ (заавал биш)`} value={l.price} onChange={e => setLine(i, 'price', e.target.value)} />
+              </label>
+              <button type="button" className="ibtn pq__del" aria-label={`${i + 1}-р мөрийг хасах`} disabled={lines.length === 1}
+                onClick={() => { setLines(ls => ls.filter((_, j) => j !== i)); drop('pq-items') }}><X className="ico" /></button>
+            </div>
+          ))}
+        </div>
+        <datalist id="pq-units">{UNITS.map(u => <option key={u} value={u} />)}</datalist>
+        <div className="pq__foot">
+          <button type="button" className="btn btn--glass btn--sm" onClick={() => setLines(ls => [...ls, { ...LINE }])}><Plus className="ico" />Мөр нэмэх</button>
+          {sum !== null && <span className="pq__sum">Нийт: <b className="tnum">{num(sum)} ₮</b></span>}
+        </div>
+        <span className="field__hint">Үнийг мэдэхгүй бол хоосон үлдээнэ үү.</span>
+        {errors['pq-items'] && <span className="field__error" id="pq-items-error">{errors['pq-items']}</span>}
+      </fieldset>
+      <Field id="pq-purpose" label="Юунд ашиглах" error={errors['pq-purpose']} wide>
+        <textarea {...fieldAria('pq-purpose', errors['pq-purpose'])} value={f.purpose} onChange={e => { setF({ ...f, purpose: e.target.value }); drop('pq-purpose') }} />
+      </Field>
+      <Field id="pq-need" label="Хэзээ хэрэгтэй" error={errors['pq-need']}>
+        <input type="date" {...fieldAria('pq-need', errors['pq-need'])} value={f.need} min={today()} onChange={e => { setF({ ...f, need: e.target.value }); drop('pq-need') }} />
+      </Field>
+      <Field id="pq-project" label="Төсөл" optional>
+        <select {...fieldAria('pq-project')} value={f.project} onChange={e => setF({ ...f, project: e.target.value })}>
+          <option value="">Төсөлгүй</option>
+          {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </Field>
+      <Plan kind="purchase" company={company} who={who} />
+    </FormSheet>
+  )
+}
+
+/** The lines of a purchase with their sums, and what was paid once bought */
+function PurchaseItems({ r }: { r: PurchaseRequest }) {
+  const sum = totalOf(r.items)
+  /** A price not written: a dash, said as such */
+  const none = <><span aria-hidden="true">—</span><span className="sr-only">Үнэ бичээгүй</span></>
+  return (
+    <div className="pq-list">
+      <table className="pq-table">
+        <caption className="sr-only">Худалдан авах зүйлс</caption>
+        <thead><tr><th scope="col">Нэр</th><th scope="col" className="num">Тоо хэмжээ</th><th scope="col" className="num pq-one">Нэгжийн үнэ</th><th scope="col" className="num">Дүн</th></tr></thead>
+        <tbody>
+          {r.items.map((x, i) => (
+            <tr key={i}>
+              <td>{x.name}</td>
+              <td className="num tnum">{x.qty.toLocaleString('en-US', { maximumFractionDigits: 2 })} {x.unit}</td>
+              <td className="num tnum pq-one">{x.price === undefined ? none : `${num(x.price)} ₮`}</td>
+              <td className="num tnum">{x.price === undefined ? none : `${num(x.qty * x.price)} ₮`}</td>
+            </tr>
+          ))}
+        </tbody>
+        {sum !== null && <tfoot><tr><th scope="row" colSpan={3}>Нийт</th><td className="num tnum">{num(sum)} ₮</td></tr></tfoot>}
+      </table>
+      {r.paid !== undefined && <p className="pq-paid">Төлсөн: <b className="tnum">{num(r.paid)} ₮</b></p>}
+    </div>
+  )
+}
+
 /** One request: what it asks, its steps so far, and what the person whose turn it is, or who asked, can do */
 export function HrRequestSheet({ id }: { id: Id }) {
   return (
@@ -447,6 +573,16 @@ function HrRequestBody({ id }: { id: Id }) {
           <Quota position={r.position} />
         </>
       )}
+      {r.kind === 'purchase' && (
+        <>
+          <Meta items={[
+            ['Юунд ашиглах', r.purpose, true],
+            ['Хэзээ хэрэгтэй', <span className="tnum">{dots(r.need)}</span>],
+            ['Төсөл', s.projects.find(x => x.id === r.project)?.name ?? 'Төсөлгүй'],
+          ]} />
+          <PurchaseItems r={r} />
+        </>
+      )}
       {r.kind === 'leave' && r.status === 'open' && <LeaveContext r={r} e={e} />}
       {r.kind === 'overtime' && r.date <= today() && <WorkedCard r={r} e={e} />}
 
@@ -460,7 +596,8 @@ function HrRequestBody({ id }: { id: Id }) {
           const returned = ev?.what === 'returned' && r.status === 'returned' && i === r.step
           const now = r.status === 'open' && i === r.step
           const names = done || returned ? nameOf(ev!.by) : actorsOf(s, r, st).map(nameOf).join(', ')
-          const did = r.kind === 'overtime' && st === 'finance' && r.pay ? `${r.pay === 'rest' ? 'Нөхөн амралт' : 'Илүү цагийн хөлс'}, ${hoursText(r.minutes ?? 0)}` : DID[r.kind][st]
+          const did = r.kind === 'overtime' && st === 'finance' && r.pay ? `${r.pay === 'rest' ? 'Нөхөн амралт' : 'Илүү цагийн хөлс'}, ${hoursText(r.minutes ?? 0)}`
+            : r.kind === 'purchase' && st === 'supply' && r.paid !== undefined ? `${DID.purchase.supply}, ${num(r.paid)} ₮` : DID[r.kind][st]
           return (
             <li key={st} className={done ? 'is-done' : returned ? 'is-back' : now ? 'is-now' : ''}>
               <b>{STEP_WHO[st]}{names && ` · ${names}`}</b>
@@ -538,18 +675,20 @@ function hintOf(r: HrRequest) {
   const step = stepOf(r)
   const director = nameOf(rolesOf(getState(), r.company)?.director)
   if (r.kind === 'leave') {
-    if (step === 'manager') return `Батлавал тушаал автоматаар үүснэ. Гарын үсэг зурах хүн: ${director || STEP_WHO.director}.`
+    if (step === 'manager') return `Баталбал тушаал автоматаар үүснэ. Гарын үсэг зурах хүн: ${director || STEP_WHO.director}.`
     if (step === 'director') return 'Гарын үсэг зурмагц тушаал Бичиг хэрэгт хадгалагдаж, ажилтны ажлын түүхэнд орно. Дараа нь хүний нөөц Timely-д бүртгэнэ.'
     return 'Амралтыг Timely-д бүртгээд «Timely-д бүртгэх» товчийг дарна уу.'
   }
-  if (r.kind === 'overtime') return step === 'manager' ? 'Батлавал ажилтан тухайн өдөр илүү цаг ажиллана. Ажилласны дараа санхүү шийднэ.' : 'Тооцох цагийг Timely-ийн ирцээр бөглөсөн. Шаардлагатай бол засна уу.'
-  return step === 'director' ? 'Батлавал хүний нөөц сонгон шалгаруулалт эхлүүлнэ.' : step === 'hr' ? 'Батлавал санхүү цалингийн төсвийг шалгана.' : 'Батлавал захирал шийднэ.'
+  if (r.kind === 'overtime') return step === 'manager' ? 'Баталбал ажилтан тухайн өдөр илүү цаг ажиллана. Ажилласны дараа санхүү шийднэ.' : 'Тооцох цагийг Timely-ийн ирцээр бөглөсөн. Шаардлагатай бол засна уу.'
+  if (r.kind === 'purchase') return step === 'director' ? 'Баталбал хүсэлт хангамжийн ажилтны жагсаалтад очно.' : 'Худалдан авсны дараа «Худалдан авсан» товчийг дарна уу.'
+  return step === 'director' ? 'Баталбал хүний нөөц сонгон шалгаруулалт эхлүүлнэ.' : step === 'hr' ? 'Баталбал санхүү цалингийн төсвийг шалгана.' : 'Баталбал захирал шийднэ.'
 }
 const DONE_TOAST = (r: HrRequest, pay: 'pay' | 'rest') => {
   const step = stepOf(r)
   if (r.kind === 'leave' && step === 'director') return 'Гарын үсэг зурлаа. Тушаал үүслээ.'
   if (r.kind === 'leave' && step === 'hr') return 'Timely-д бүртгэснийг тэмдэглэлээ.'
   if (r.kind === 'overtime' && step === 'finance') return pay === 'rest' ? 'Нөхөн амралт олгохоор шийдвэрлэлээ.' : 'Илүү цагийн хөлс олгохоор шийдвэрлэлээ.'
+  if (r.kind === 'purchase' && step === 'supply') return 'Худалдан авснаа тэмдэглэлээ.'
   return 'Хүсэлт батлагдлаа.'
 }
 
@@ -557,6 +696,9 @@ const DONE_TOAST = (r: HrRequest, pay: 'pay' | 'rest') => {
 function Decide({ r, who, e }: { r: HrRequest; who: Id; e?: Employee }) {
   const step = stepOf(r)
   const decides = r.kind === 'overtime' && step === 'finance'
+  /** The supply officer says a purchase is bought, with what was paid if they like */
+  const buys = r.kind === 'purchase' && step === 'supply'
+  const [paid, setPaid] = useState('')
   const ot = decides ? (r as OvertimeRequest) : undefined
   const worked = useWorked(ot, ot && e)
   const suggested = ot ? (worked && worked !== 'none' ? spanMinutes(worked.in, worked.out) : spanMinutes(ot.start, ot.end)) : 0
@@ -573,7 +715,9 @@ function Decide({ r, who, e }: { r: HrRequest; who: Id; e?: Employee }) {
     const m = Number(shown.m)
     const minutes = h * 60 + m
     if (decides && !(Number.isInteger(h) && Number.isInteger(m) && h >= 0 && h <= 24 && m >= 0 && m <= 59 && minutes > 0)) return setError('Тооцох цагаа бичнэ үү.')
-    if (!actions.approveHrRequest(r.id, who, { note: note.trim(), pay: decides ? pay : undefined, minutes: decides ? minutes : undefined })) return setError('Хадгалж чадсангүй. Хуудсыг дахин ачаалаад оролдоно уу.')
+    if (buys && paid.trim() && !(amount(paid) >= 0)) return setError('Төлсөн дүнг тоогоор бичнэ үү.')
+    const more = { note: note.trim(), pay: decides ? pay : undefined, minutes: decides ? minutes : undefined, paid: buys && paid.trim() ? amount(paid) : undefined }
+    if (!actions.approveHrRequest(r.id, who, more)) return setError('Хадгалж чадсангүй. Хуудсыг дахин ачаалаад оролдоно уу.')
     toast(DONE_TOAST(r, pay))
     close()
   }
@@ -624,14 +768,20 @@ function Decide({ r, who, e }: { r: HrRequest; who: Id; e?: Employee }) {
               </fieldset>
             </>
           )}
-          {r.kind === 'hire' && (
+          {buys && (
+            <div className="field">
+              <label className="field__label" htmlFor="rq-paid">Төлсөн дүн, ₮ (заавал биш)</label>
+              <input id="rq-paid" inputMode="numeric" value={paid} onChange={x => { setPaid(x.target.value); setError('') }} aria-invalid={error ? true : undefined} aria-describedby={error ? 'rq-error' : undefined} />
+            </div>
+          )}
+          {(r.kind === 'hire' || (r.kind === 'purchase' && step === 'director')) && (
             <div className="field">
               <label className="field__label" htmlFor="rq-note">Тайлбар (заавал биш)</label>
               <input id="rq-note" value={note} onChange={x => setNote(x.target.value)} />
             </div>
           )}
           <div className="rq__acts">
-            <button type="button" className="btn btn--accent" onClick={approve}>{doOf(r)}</button>
+            <button type="button" className="btn btn--accent" onClick={approve}>{buys ? DID.purchase.supply : doOf(r)}</button>
             {mayReturn(getState(), r, who) && <button type="button" className="btn btn--plain" onClick={() => { setText(''); setAct('return') }}>Буцаах</button>}
           </div>
         </>

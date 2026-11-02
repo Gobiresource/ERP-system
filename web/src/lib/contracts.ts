@@ -20,8 +20,11 @@ export const STAGE: Record<ContractStage, { label: string; pill: string; next?: 
   canceled: { label: 'Цуцалсан', pill: 'Цуцлагдсан' },
 }
 
-export const ROLE: Record<ProcessRole, string> = { finance: 'Санхүүгийн захирал', legal: 'Хуульч', clerk: 'Бичиг хэргийн ажилтан', director: 'Гүйцэтгэх захирал' }
-export const ROLES = Object.keys(ROLE) as ProcessRole[]
+export const ROLE: Record<ProcessRole, string> = { finance: 'Санхүүгийн захирал', legal: 'Хуульч', clerk: 'Бичиг хэргийн ажилтан', director: 'Гүйцэтгэх захирал', supply: 'Хангамжийн ажилтан' }
+/** A contract's people: they see the ХХК's contracts and get the registered copy */
+export const ROLES: ProcessRole[] = ['finance', 'legal', 'clerk', 'director']
+/** Everyone the process settings (Процессын үүрэг) name: the contract's people and the supply officer of purchase requests */
+export const ALL_ROLES = Object.keys(ROLE) as ProcessRole[]
 /** These two look at the contract at the same time */
 export const REVIEW: ProcessRole[] = ['finance', 'legal']
 export const REVIEW_PART: Record<'finance' | 'legal', string> = { finance: 'Санхүү', legal: 'Хууль' }
@@ -173,7 +176,7 @@ export const contractLines = (c: Pick<Contract, 'clauses'>) => c.clauses.flatMap
 /** Demo contracts of Говь Ресурс at every stage, and each company's people for the process */
 export function seedContracts(now: Date): Pick<State, 'contracts' | 'roles'> {
   const ago = (h: number) => new Date(now.getTime() - h * 36e5).toISOString()
-  const roles: Record<ProcessRole, Id> = { finance: 'u3', legal: 'u15', clerk: 'u16', director: 'u1' }
+  const roles: Record<ProcessRole, Id> = { finance: 'u3', legal: 'u15', clerk: 'u16', director: 'u1', supply: 'u10' }
   let n = 0
   const ev = (by: Id, h: number, kind: ContractEvent['kind'], more: Partial<ContractEvent> = {}): ContractEvent => ({ id: `ce${++n}`, by, at: ago(h), kind, ...more })
   const ver = (by: Id, h: number, clauses: Clause[]): ContractVersion => ({ id: `cv${++n}`, by, at: ago(h), clauses })

@@ -413,7 +413,8 @@ export interface Doc {
 
 export type ContractStage = 'draft' | 'review' | 'clerk' | 'director' | 'register' | 'deliver' | 'done' | 'canceled'
 /** Who decides at a stage, set for each company */
-export type ProcessRole = 'finance' | 'legal' | 'clerk' | 'director'
+/** The people a process needs in each ХХК: a contract's, and the supply officer who buys what a purchase request asks */
+export type ProcessRole = 'finance' | 'legal' | 'clerk' | 'director' | 'supply'
 export type ContractType = 'work' | 'sale' | 'service' | 'lease' | 'employment'
 
 /** A numbered part of the contract: its heading and what it says */
@@ -537,13 +538,13 @@ export interface DocRequest {
   doc?: Id
 }
 
-// Хүсэлт: ээлжийн амралт, илүү цаг, шинэ ажилтан авах (docs/decisions.md, 2026-11-01). Each kind goes through its own
+// Хүсэлт: ээлжийн амралт, илүү цаг, шинэ ажилтан авах (docs/decisions.md, 2026-11-01), худалдан авах (2026-11-02). Each kind goes through its own
 // steps (lib/hrRequests.ts); whoever's step it is approves it or sends it back with the reason, and the person who asked
 // fixes it and sends it again, from the first step.
 
-export type HrRequestKind = 'leave' | 'overtime' | 'hire'
-/** Who acts at a step: the asker's direct manager, anyone who keeps HR records, the finance director, the director */
-export type HrStep = 'manager' | 'hr' | 'finance' | 'director'
+export type HrRequestKind = 'leave' | 'overtime' | 'hire' | 'purchase'
+/** Who acts at a step: the asker's direct manager, anyone who keeps HR records, the finance director, the director, the supply officer */
+export type HrStep = 'manager' | 'hr' | 'finance' | 'director' | 'supply'
 export type HrRequestStatus = 'open' | 'returned' | 'done' | 'canceled'
 /** `step`: the step an approval or a sending back was made at */
 export interface HrRequestEvent { what: 'sent' | 'approved' | 'returned' | 'canceled'; by: Id; at: string; step?: HrStep; note?: string }
@@ -592,9 +593,23 @@ export interface HireRequest extends HrRequestBase {
   duties: string
   needs?: string
 }
-export type HrRequest = LeaveRequest | OvertimeRequest | HireRequest
+/** One thing to buy: how many of what unit, and the price of one when known */
+export interface PurchaseItem { name: string; qty: number; unit: string; price?: number }
+/** Худалдан авах: anyone asks; the director approves; it goes to the supply officer's list, who buys it and says so */
+export interface PurchaseRequest extends HrRequestBase {
+  kind: 'purchase'
+  items: PurchaseItem[]
+  /** What it is for */
+  purpose: string
+  /** By when it is needed, YYYY-MM-DD */
+  need: string
+  project?: Id
+  /** What the supply officer paid in all, when they wrote it down */
+  paid?: number
+}
+export type HrRequest = LeaveRequest | OvertimeRequest | HireRequest | PurchaseRequest
 /** What a form fills in: a request without its id, place, asker, progress and what its steps added */
-type DraftOf<T> = T extends unknown ? Omit<T, 'id' | 'company' | 'by' | 'status' | 'step' | 'manager' | 'history' | 'order' | 'pay' | 'minutes'> : never
+type DraftOf<T> = T extends unknown ? Omit<T, 'id' | 'company' | 'by' | 'status' | 'step' | 'manager' | 'history' | 'order' | 'pay' | 'minutes' | 'paid'> : never
 export type HrRequestDraft = DraftOf<HrRequest>
 
 // Сарын тайлан: by the last day of each month an employee writes what they did, their problems and ideas, and next month's

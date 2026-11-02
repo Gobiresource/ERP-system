@@ -386,3 +386,34 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 .fswatch input { position: absolute; opacity: 0; pointer-events: none; }
 .fswatch:has(input:checked) { box-shadow: 0 0 0 3px var(--glass-solid), 0 0 0 5.5px var(--text); }
 .fswatch:has(input:focus-visible) { outline: 2.5px solid var(--accent-ink); outline-offset: 6px; }
+
+/* Худалдан авах: the lines to buy in the form (a row each; on a phone a small card with its labels), and in the request */
+.pq__head, .pq__row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 100px 124px 36px; gap: 8px; align-items: center; }
+.pq__head { padding: 0 2px 6px; font-size: 12.5px; color: var(--text-2); }
+.pq__rows { display: grid; gap: 8px; }
+.pq__cell { display: grid; gap: 4px; min-width: 0; }
+.pq__lab { display: none; font-size: 12.5px; color: var(--text-2); }
+.pq__del { justify-self: center; color: var(--text-2); }
+.pq__del:disabled { opacity: .35; }
+.pq__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 2px; }
+.pq__sum { font-size: 14px; color: var(--text-2); }
+.pq__sum b { color: var(--text); font-weight: 650; }
+@media (max-width: 600px) {
+  .pq__head { display: none; }
+  /* The name and the remove button on top; amount, unit and price below, the price reaching under the button */
+  .pq__row { grid-template-columns: minmax(0, .8fr) minmax(0, 1.15fr) minmax(0, 1fr) 36px; align-items: end; padding: 10px; border-radius: 16px; background: var(--fill); }
+  .pq__row .pq__cell:first-child { grid-column: 1 / -2; }
+  .pq__row .pq__cell:nth-child(4) { grid-column: 3 / -1; }
+  .pq__row .pq__del { grid-column: 4; grid-row: 1; align-self: end; margin-bottom: 5px; }
+  .pq__lab { display: block; }
+  /* The request's lines: the price of one is in the sum */
+  .pq-table .pq-one { display: none; }
+}
+.pq-list { margin: 14px 0 4px; overflow-x: auto; }
+.pq-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pq-table th, .pq-table td { padding: 8px 6px; border-bottom: 1px solid var(--sep); text-align: left; vertical-align: top; }
+.pq-table thead th { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.pq-table .num { text-align: right; white-space: nowrap; }
+.pq-table tfoot th, .pq-table tfoot td { border-bottom: 0; font-weight: 650; color: var(--text); }
+.pq-paid { margin: 8px 6px 0; font-size: 14px; color: var(--text-2); }
+.pq-paid b { color: var(--text); font-weight: 650; }

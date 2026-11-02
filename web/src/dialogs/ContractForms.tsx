@@ -7,7 +7,7 @@ import type { BoardFile, Contract, ContractType, Id, ProcessRole } from '../lib/
 import { actions, getState, useApp } from '../lib/store'
 import { close, toast } from '../lib/ui'
 import { go } from '../lib/router'
-import { CONTRACT_KIND, CONTRACT_KINDS, ROLE, ROLES, nextNumber, rolesOf } from '../lib/contracts'
+import { ALL_ROLES, CONTRACT_KIND, CONTRACT_KINDS, ROLE, ROLES, nextNumber, rolesOf } from '../lib/contracts'
 import { contractPdf } from '../lib/paper'
 import { putFile, saveBlob } from '../lib/files'
 import { cid } from '../lib/draft'
@@ -214,7 +214,7 @@ export function ContractAsk({ id }: { id: Id }) {
   )
 }
 
-/** Each company's people for the process. In the user's system only an admin sets them (Тохиргоо → Процессын үүрэг). */
+/** Each company's people for contracts and purchases. In the user's system only an admin sets them (Тохиргоо → Процессын үүрэг). */
 export function ProcessRoles() {
   const s = useApp()
   const company = s.companies.find(c => c.id === s.company)
@@ -222,7 +222,7 @@ export function ProcessRoles() {
   // A ХХК added before v33 borrows the first one's people, who may not work in it: each role starts at someone listed, as shown
   const [f, setF] = useState(() => {
     const r = rolesOf(s, s.company)
-    return Object.fromEntries(ROLES.map(k => [k, people.some(p => p.id === r[k]) ? r[k] : people[0]?.id])) as Record<ProcessRole, Id>
+    return Object.fromEntries(ALL_ROLES.map(k => [k, people.some(p => p.id === r[k]) ? r[k] : people[0]?.id])) as Record<ProcessRole, Id>
   })
   const submit = () => {
     actions.setRoles(s.company, f)
@@ -230,8 +230,8 @@ export function ProcessRoles() {
     return true
   }
   return (
-    <FormSheet title="Процессын үүрэг" sub={`${company?.name}. Гэрээг хэн хянаж, хэн батлахыг тохируулна. Жинхэнэ системд зөвхөн админ өөрчилнө.`} submit="Хадгалах" onSubmit={submit} onClose={close} errors={{}}>
-      {ROLES.map(r => (
+    <FormSheet title="Процессын үүрэг" sub={`${company?.name}. Гэрээг хэн хянаж, хэн батлах, худалдан авалтыг хэн хийхийг тохируулна. Энэ тохиргоог зөвхөн админ өөрчилнө.`} submit="Хадгалах" onSubmit={submit} onClose={close} errors={{}}>
+      {ALL_ROLES.map(r => (
         <Field key={r} id={`pr-${r}`} label={ROLE[r]}>
           <select id={`pr-${r}`} value={f[r]} onChange={e => setF({ ...f, [r]: e.target.value })}>
             {people.map(p => <option key={p.id} value={p.id}>{short(p)}, {p.role}</option>)}

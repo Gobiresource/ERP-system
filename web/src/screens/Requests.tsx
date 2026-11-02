@@ -1,8 +1,8 @@
-// Хүсэлт: a person's requests and those that came to them (docs/decisions.md, 2026-11-01). Ээлжийн амралт, илүү цаг and
-// шинэ ажилтан авах go through their steps (lib/hrRequests.ts); a request for a document goes to the office (lib/docs.ts),
+// Хүсэлт: a person's requests and those that came to them (docs/decisions.md, 2026-11-01). Ээлжийн амралт, илүү цаг,
+// шинэ ажилтан авах and худалдан авах go through their steps (lib/hrRequests.ts); a request for a document goes to the office (lib/docs.ts),
 // whose people see every one of the ХХК among those that came. An admin may try each step as someone else, as in Гэрээ.
 import { useRef, useState } from 'react'
-import { Clock, FileDown, Inbox, Plus, Printer, Send, TreePalm, UserPlus } from 'lucide-react'
+import { Clock, FileDown, Inbox, Plus, Printer, Send, ShoppingCart, TreePalm, UserPlus, Users } from 'lucide-react'
 import '../styles/screens/docs.css'
 import '../styles/screens/contracts.css'
 import type { DocRequest, HrRequest, HrRequestKind, Id } from '../lib/types'
@@ -11,8 +11,8 @@ import { open } from '../lib/ui'
 import { usePageEnter } from '../lib/motion'
 import { isOpen } from '../lib/docs'
 import { accessOf, docView } from '../lib/access'
-import { HR_KIND, STEPS, actorsOf, doOf, hoursText, involves, mayAct, pillOf, spanMinutes, waitsFor } from '../lib/hrRequests'
-import { daysFromToday, dueLabel, parse, short, weekday } from '../lib/format'
+import { HR_KIND, STEPS, actorsOf, doOf, hoursText, involves, mayAct, pillOf, spanMinutes, totalOf, waitsFor } from '../lib/hrRequests'
+import { daysFromToday, dueLabel, num, parse, short, weekday } from '../lib/format'
 import { dots } from '../lib/hr'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
@@ -23,11 +23,11 @@ import { ActAs, useActor } from './docs/Contracts'
 type Tab = 'mine' | 'in'
 type Kind = HrRequestKind | 'doc'
 
-export const KIND_ICON: Record<HrRequestKind, typeof TreePalm> = { leave: TreePalm, overtime: Clock, hire: UserPlus }
-export const KIND_HUE = { leave: 'orange', overtime: 'blue', hire: 'green' } as const
+export const KIND_ICON: Record<HrRequestKind, typeof TreePalm> = { leave: TreePalm, overtime: Clock, hire: UserPlus, purchase: ShoppingCart }
+export const KIND_HUE = { leave: 'orange', overtime: 'blue', hire: 'green', purchase: 'purple' } as const
 const KINDS: { value: Kind | 'all'; label: string }[] = [
   { value: 'all', label: 'Бүгд' }, { value: 'leave', label: 'Ээлжийн амралт' }, { value: 'overtime', label: 'Илүү цаг' },
-  { value: 'hire', label: 'Ажилтан авах' }, { value: 'doc', label: 'Бичиг баримт' },
+  { value: 'hire', label: 'Ажилтан авах' }, { value: 'purchase', label: 'Худалдан авах' }, { value: 'doc', label: 'Бичиг баримт' },
 ]
 
 /** Requests waiting for the person in the current ХХК: their steps, their own sent back, and the office's new ones */
@@ -39,15 +39,21 @@ export function useRequestTodo() {
     + (keeps ? s.requests.filter(r => r.company === s.company && r.status === 'sent').length : 0)
 }
 
-/** "2026.11.16–11.20"; "2026.11.07, Бямба, 10:00–14:00"; the position */
+/** "2026.11.16–11.20"; "2026.11.07, Бямба, 10:00–14:00"; the position; what to buy */
 export function whatOf(r: HrRequest, positions: { id: Id; name: string }[]) {
   if (r.kind === 'leave') return `${dots(r.from)}–${r.to.slice(0, 4) === r.from.slice(0, 4) ? dots(r.to).slice(5) : dots(r.to)}`
   if (r.kind === 'overtime') return `${dots(r.date)}, ${weekday(parse(r.date))}, ${r.start}–${r.end}`
+  if (r.kind === 'purchase') return r.items.map(x => x.name).join(' · ')
   return positions.find(p => p.id === r.position)?.name ?? 'Албан тушаал'
 }
-/** "Ажлын 5 өдөр", "4 цаг", "1 хүн" */
-export const amountOf = (r: HrRequest) =>
-  r.kind === 'leave' ? `Ажлын ${r.days} өдөр` : r.kind === 'overtime' ? hoursText(r.minutes ?? spanMinutes(r.start, r.end)) : `${r.count} хүн`
+/** "Ажлын 5 өдөр", "4 цаг", "1 хүн"; a purchase's sum by its prices (what was paid, once bought), or how many things */
+export function amountOf(r: HrRequest) {
+  if (r.kind === 'leave') return `Ажлын ${r.days} өдөр`
+  if (r.kind === 'overtime') return hoursText(r.minutes ?? spanMinutes(r.start, r.end))
+  if (r.kind === 'hire') return `${r.count} хүн`
+  const sum = r.paid ?? totalOf(r.items)
+  return sum === null ? `${r.items.length} зүйл` : `${num(sum)} ₮`
+}
 
 /** A dot for being sent and one for each step, as for a document request */
 export function HrSteps({ r }: { r: HrRequest }) {
@@ -103,7 +109,7 @@ export default function Requests() {
     <div ref={ref} className="rpage">
       <PageHead
         title="Хүсэлт"
-        sub="Ээлжийн амралт, илүү цаг, шинэ ажилтан авах, бичиг баримтын хүсэлтээ гаргаж, явцыг нь харна."
+        sub="Ээлжийн амралт, илүү цаг, шинэ ажилтан авах, худалдан авах, бичиг баримтын хүсэлтээ гаргаж, явцыг нь харна."
         actions={<button type="button" className="btn btn--accent" onClick={() => open({ kind: 'newRequest' })}><Plus className="ico" />Хүсэлт гаргах</button>}
       />
       {rights.admin && <ActAs ids={people} />}
@@ -115,6 +121,8 @@ export default function Requests() {
           ]} />
         )}
         <div className="rkinds"><Seg small label="Хүсэлтийн төрөл" value={kind} onChange={setKind} options={KINDS} /></div>
+        {/* Who approves and who buys: the same settings as Гэрээ's */}
+        {rights.admin && <button type="button" className="btn btn--glass btn--sm" onClick={() => open({ kind: 'processRoles' })}><Users className="ico" />Үүрэг тохируулах</button>}
       </div>
       <section className="card glass rlist" aria-label={tab === 'mine' ? 'Миний хүсэлт' : 'Ирсэн хүсэлт'} data-enter>
         {list.length ? (
@@ -122,7 +130,7 @@ export default function Requests() {
         ) : all.length ? (
           <Empty icon={<Inbox className="ico" />} title="Энэ төрлийн хүсэлт алга" />
         ) : tab === 'mine' ? (
-          <Empty icon={<Send className="ico" />} title="Хүсэлт алга" text="Ээлжийн амралт, илүү цаг, шинэ ажилтан авах, бичиг баримтын хүсэлтээ эндээс гаргана." />
+          <Empty icon={<Send className="ico" />} title="Хүсэлт алга" text="Ээлжийн амралт, илүү цаг, шинэ ажилтан авах, худалдан авах, бичиг баримтын хүсэлтээ эндээс гаргана." />
         ) : (
           <Empty icon={<Inbox className="ico" />} title="Ирсэн хүсэлт алга" text="Таны батлах хүсэлт энд харагдана." />
         )}
@@ -137,6 +145,8 @@ function HrRow({ r, who, came }: { r: HrRequest; who: Id; came: boolean }) {
   const p = scoped(s).person(r.by) ?? s.people.find(x => x.id === r.by)
   const Icon = KIND_ICON[r.kind]
   const what = whatOf(r, s.positions)
+  // A purchase says by when it is needed, as a document request does
+  const need = r.kind === 'purchase' && (r.status === 'open' || r.status === 'returned') ? r.need : undefined
   return (
     <li>
       <button type="button" className="rrow" onClick={() => open({ kind: 'hrRequest', id: r.id })}>
@@ -146,7 +156,7 @@ function HrRow({ r, who, came }: { r: HrRequest; who: Id; came: boolean }) {
           <small>{came ? `${HR_KIND[r.kind]} · ${what}` : what}</small>
         </span>
         <span className="rrow__form tnum">{amountOf(r)}</span>
-        <span className="rrow__need" />
+        <span className={`rrow__need tnum${need && daysFromToday(need) < 0 ? ' is-late' : ''}`}>{need ? (daysFromToday(need) < 0 ? 'Хугацаа хэтэрсэн' : dueLabel(need)) : ''}</span>
         <span className="rrow__state"><HrSteps r={r} /><HrPill r={r} who={who} /></span>
       </button>
     </li>

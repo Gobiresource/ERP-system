@@ -10,7 +10,7 @@ import { bandOf, dueOf, empOf, findReport, kpiOf, managerOf, mayScore, nextMonth
 import { accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
 import { companyMark, today } from './format'
 import { docTypesFor } from './seedHr'
-import { STEPS, firstStep, leaveMove, mayAct, mayCancel, mayReturn, orderLines, ORDER_NAME, seedHrRequests, stepOf, withMove } from './hrRequests'
+import { STEPS, firstStep, leaveMove, mayAct, mayCancel, mayReturn, orderLines, ORDER_NAME, seedHrRequests, seedPurchases, stepOf, withMove } from './hrRequests'
 
 const KEY = 'erp:v1'
 
@@ -62,6 +62,13 @@ function load(): State | null {
     if (!s.timely) s = { ...s, timely: {} }
     // Saved before Хүсэлт had leave, overtime and hiring: their demo requests, the signed leave's order and its history line
     if (!s.hrRequests) s = { ...s, ...seedHrRequests(new Date(), s) }
+    // Saved before Хүсэлт had purchases: the supply officer (С.Батзориг where they work, else the director) and the demo ones
+    const roles = s.roles as Record<Id, Partial<Record<ProcessRole, Id>>>
+    if (Object.values(roles).some(r => !r.supply)) {
+      const supply = (c: Id, r: Partial<Record<ProcessRole, Id>>) => (s.people.some((p: Person) => p.id === 'u10' && p.companies.includes(c)) ? 'u10' : r.director)
+      s = { ...s, roles: Object.fromEntries(Object.entries(roles).map(([c, r]) => [c, { supply: supply(c, r), ...r }])) }
+    }
+    if (s.companies.some((c: { id: Id }) => c.id === 'c1') && !s.hrRequests.some((r: { id: Id }) => r.id === 'hq9')) s = { ...s, hrRequests: [...seedPurchases(new Date()), ...s.hrRequests] }
     // Saved by v29–v31, whose example accounts took the e-mail's name as typed: a login with capitals could never sign in,
     // and two people could share one. Each is kept as sign-in reads it, with a number when that is taken (as demoAccounts
     // does now); a login that already works stays as it is.
@@ -203,7 +210,7 @@ export const actions = {
   addCompany(c: Pick<Company, 'name' | 'hue'>) {
     if (!sysadmin()) return null
     const company: Company = { ...c, id: uid('c'), code: companyMark(c.name) }
-    set(s => ({ ...s, companies: [...s.companies, company], docTypes: [...s.docTypes, ...docTypesFor(company.id)], people: s.people.map(p => (p.id === s.me ? { ...p, companies: [...p.companies, company.id] } : p)), roles: { ...s.roles, [company.id]: { finance: s.me, legal: s.me, clerk: s.me, director: s.me } } }))
+    set(s => ({ ...s, companies: [...s.companies, company], docTypes: [...s.docTypes, ...docTypesFor(company.id)], people: s.people.map(p => (p.id === s.me ? { ...p, companies: [...p.companies, company.id] } : p)), roles: { ...s.roles, [company.id]: { finance: s.me, legal: s.me, clerk: s.me, director: s.me, supply: s.me } } }))
     return company
   },
   /** Its name and folder colour, by an admin of the ХХК */
@@ -717,7 +724,7 @@ export const actions = {
     const old = id ? state.hrRequests.find(r => r.id === id) : undefined
     if (id && (!old || old.by !== who || old.status !== 'returned' || old.kind !== d.kind)) return null
     const company = old?.company ?? state.company
-    const manager = d.kind === 'hire' ? undefined : managerOf(state, company, who)
+    const manager = STEPS[d.kind].includes('manager') ? managerOf(state, company, who) : undefined
     const at = new Date().toISOString()
     const r = { ...old, ...d, id: old?.id ?? uid('hq'), company, by: who, status: 'open', step: firstStep(d.kind, manager), manager, history: [...(old?.history ?? []), { what: 'sent', by: who, at }] } as HrRequest
     set(s => ({ ...s, hrRequests: old ? s.hrRequests.map(x => (x.id === r.id ? r : x)) : [r, ...s.hrRequests] }))
@@ -725,9 +732,10 @@ export const actions = {
   },
   /**
    * The person at the step agrees, and it goes on to the next step or is done. A leave signed by the director becomes its
-   * order in Бичиг хэрэг and a line in the employee's history; finance closes an overtime with how it is paid.
+   * order in Бичиг хэрэг and a line in the employee's history; finance closes an overtime with how it is paid; the supply
+   * officer closes a purchase, with what was paid when they write it.
    */
-  approveHrRequest(id: Id, who: Id, more: { note?: string; pay?: 'pay' | 'rest'; minutes?: number } = {}) {
+  approveHrRequest(id: Id, who: Id, more: { note?: string; pay?: 'pay' | 'rest'; minutes?: number; paid?: number } = {}) {
     const r = state.hrRequests.find(x => x.id === id)
     if (!r || !mayAct(state, r, who)) return false
     const step = stepOf(r)
@@ -737,6 +745,7 @@ export const actions = {
     const last = r.step === STEPS[r.kind].length - 1
     let next = { ...r, step: last ? r.step : r.step + 1, status: last ? 'done' : 'open', history: [...r.history, { what: 'approved', by: who, at, step, note: more.note || undefined }] } as HrRequest
     if (decides) next = { ...next, pay: more.pay, minutes: more.minutes } as HrRequest
+    if (next.kind === 'purchase' && step === 'supply' && more.paid !== undefined && Number.isFinite(more.paid) && more.paid >= 0) next = { ...next, paid: more.paid }
     let doc: Doc | undefined
     if (next.kind === 'leave' && step === 'director') {
       doc = { id: uid('dc'), company: r.company, name: ORDER_NAME, kind: 'order', text: orderLines(state, next), to: [r.by], by: who, added: at }

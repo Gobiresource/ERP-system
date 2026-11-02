@@ -9,7 +9,7 @@ import { useApp } from '../../lib/store'
 import { open, setActAs, useUi } from '../../lib/ui'
 import { go } from '../../lib/router'
 import { usePageEnter } from '../../lib/motion'
-import { FLOW, REVIEW, REVIEW_PART, ROLE, ROLES, STAGE, isClosed, rolesOf, todo } from '../../lib/contracts'
+import { ALL_ROLES, FLOW, REVIEW, REVIEW_PART, ROLE, ROLES, STAGE, isClosed, rolesOf, todo } from '../../lib/contracts'
 import { ago, num, short } from '../../lib/format'
 import { accessOf, docView } from '../../lib/access'
 import { PageHead } from '../../ui/PageHead'
@@ -135,7 +135,7 @@ export function ActAs({ ids: given }: { ids?: Id[] }) {
   const ids = given ?? [...new Set<Id>([s.me, ...ROLES.map(r => roles[r]), ...s.contracts.filter(c => c.company === s.company).flatMap(c => [c.owner, ...c.asked.map(a => a.to)])])]
   const label = (id: Id) => {
     const p = s.people.find(x => x.id === id)
-    const role = ROLES.find(r => roles[r] === id)
+    const role = ALL_ROLES.find(r => roles[r] === id)
     return p ? `${short(p)}, ${role ? ROLE[role] : p.role}${id === s.me ? ' (та)' : ''}` : id
   }
   return (
