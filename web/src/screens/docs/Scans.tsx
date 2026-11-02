@@ -108,7 +108,7 @@ function AiBar({ ai, samples, work }: { ai: AiState | null; samples: boolean; wo
     return (
       <p className="sbar is-on" role="status">
         {work ? <LoaderCircle className="ico spin" /> : <Sparkles className="ico" />}
-        <span><b>AI холбогдсон</b> ({ai.model}). Баримтыг хадгалахгүй, сургалтад ашиглахгүй.{work > 0 && ` Уншиж байна: ${work} баримт үлдлээ.`}</span>
+        <span><b>AI холбогдсон</b> ({ai.model}). Баримтыг сургалтад ашиглахгүй.{work > 0 && ` Уншиж байна: ${work} баримт үлдлээ.`}</span>
       </p>
     )
   }
