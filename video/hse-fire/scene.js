@@ -1,9 +1,10 @@
-// «Кемпэд гал гарвал» in 3D: the camp evacuation plan as a scale model (the plan printed on the floor, low walls),
-// fire and smoke as particles, a moving camera. window.seek(t) draws the frame at t seconds and keeps no state, so any
-// frame can be drawn again. All timing comes from voice.json (sentence and word times): a new recording re-times the
-// video by itself (it must still have 7 sentences).
+// «Кемпэд гал гарвал» in 3D: the camp evacuation plan as a scale model (the plan printed on the floor, low walls), the
+// company logo in the round pit in the yard, fire and smoke as particles, people with arms and legs. window.seek(t)
+// draws the frame at t seconds and keeps no state, so any frame can be drawn again. All timing comes from voice.json
+// (sentence and word times): a new recording re-times the video by itself (it must still have 7 sentences).
 //   plan-video.svg, plan-geom.json   written by docs/hse/evacuation/plan.py
 //   captions.json                    on-screen text by Gemini
+//   ../logo/logo.json                the company logo, traced from the picture
 import * as THREE from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
@@ -13,7 +14,8 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 
 const load = async (f, as = 'json') => (await fetch(f))[as]()
-const [geom, voice, caps, planSvg] = await Promise.all([load('./plan-geom.json'), load('./voice.json'), load('./captions.json'), load('./plan-video.svg', 'text')])
+const [geom, voice, caps, planSvg, LOGO] = await Promise.all([load('./plan-geom.json'), load('./voice.json'), load('./captions.json'),
+  load('./plan-video.svg', 'text'), load('../logo/logo.json')])
 
 export const FPS = 30
 const W = 1080, H = 1920
@@ -23,11 +25,12 @@ const TAIL = 2.8   // end card after the voice
 const V3 = THREE.Vector3
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v))
 const ease = u => (u = clamp(u), u < .5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2)
+const smooth = u => (u = clamp(u), u * u * (3 - 2 * u))
 const ramp = (t, a, d) => clamp((t - a) / d)                                   // 0 before a, 1 after a + d
 const lerp = (a, b, u) => a + (b - a) * u
 const rnd = i => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s) }
-const walk = u => {                                                             // steady walking pace, eased start and stop
-  const a = .12, v = 1 / (1 - a)
+const walk = (u, a = .12) => {                                                  // steady pace, eased start and stop
+  const v = 1 / (1 - a)
   u = clamp(u)
   return u < a ? v * u * u / (2 * a) : u > 1 - a ? 1 - v * (1 - u) ** 2 / (2 * a) : v * (u - a / 2)
 }
@@ -44,8 +47,8 @@ const at = (i, re) => (S[i].words.find(w => re.test(w.text.toLowerCase())) ?? S[
 const DURATION = S.at(-1).b + TAIL
 const T = {
   fire: S[0].a + 1.2, corridor: at(1, /коридорт/), press: at(1, /товч/), walk: S[2].a + 1.5, s3b: at(2, /коридор/),
-  signs: S[3].a, routes: S[4].a, out: S[5].a, call: at(5, /зуун|101/), s6b: at(5, /кэмп|кемп/), check: at(5, /бүртгүүл/),
-  ban: S[6].a + .1, end: S[6].b + .5,
+  signs: S[3].a, gate: at(3, /^гарц/), routes: S[4].a, out: S[5].a, call: at(5, /зуун|101/), s6b: at(5, /кэмп|кемп/),
+  check: at(5, /нэрээ/) - .1, ban: S[6].a + .1, end: S[6].b + .5,
 }
 
 // ---- world: plan page px / 100, x right, z down the plan, y up, the building centre at the origin -------------------
@@ -79,8 +82,17 @@ sun.shadow.bias = -0.0004
 sun.shadow.normalBias = 0.01
 scene.add(hemi, sun, sun.target)
 
-// ---- the plan on the floor ----------------------------------------------------------------------------------------
+// ---- the plan on the floor, with the round pit in the yard cut out (about 40 cm deep) -------------------------------
 const GROUND = '#E4E8EB'
+const PIT = V(473, 290), PIT_R = .65, PIT_D = .09
+const ground = (x0, z0, x1, z1, mat) => {                                      // a rectangle of ground, the pit left open
+  const s = new THREE.Shape([new THREE.Vector2(x0, -z1), new THREE.Vector2(x1, -z1), new THREE.Vector2(x1, -z0), new THREE.Vector2(x0, -z0)])
+  s.holes.push(new THREE.Path().absarc(PIT.x, -PIT.z, PIT_R, 0, Math.PI * 2, true))
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(s, 96).rotateX(-Math.PI / 2), mat)
+  m.receiveShadow = true
+  scene.add(m)
+  return m
+}
 {
   const x0 = 110, y0 = 80, x1 = 1476, y1 = 1015, k = 4                       // page area, texture pixels per page px
   const img = new Image()
@@ -94,37 +106,67 @@ const GROUND = '#E4E8EB'
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry((x1 - x0) / U, (y1 - y0) / U), new THREE.MeshLambertMaterial({ map: tex }))
-  floor.rotation.x = -Math.PI / 2
-  floor.position.set(((x0 + x1) / 2 - CX) / U, 0, ((y0 + y1) / 2 - CZ) / U)
-  floor.receiveShadow = true
-  scene.add(floor)
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.MeshLambertMaterial({ color: GROUND }))
-  ground.rotation.x = -Math.PI / 2
-  ground.position.y = -.003
-  ground.receiveShadow = true
-  scene.add(ground)
+  const [fx0, fz0, fx1, fz1] = [(x0 - CX) / U, (y0 - CZ) / U, (x1 - CX) / U, (y1 - CZ) / U]
+  const floor = ground(fx0, fz0, fx1, fz1, new THREE.MeshLambertMaterial({ map: tex }))
+  const pos = floor.geometry.attributes.position, uv = floor.geometry.attributes.uv
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) - fx0) / (fx1 - fx0), 1 - (pos.getZ(i) - fz0) / (fz1 - fz0))
+  ground(-70, -70, 70, 70, new THREE.MeshLambertMaterial({ color: GROUND })).position.y = -.003
+  // the pit: its side and bottom, and the company logo lying on the bottom
+  const side = new THREE.Mesh(new THREE.CylinderGeometry(PIT_R, PIT_R, PIT_D, 96, 1, true),
+    new THREE.MeshLambertMaterial({ color: 0xC9C2B8, side: THREE.BackSide, shadowSide: THREE.DoubleSide }))
+  side.position.copy(PIT).setY(-PIT_D / 2)
+  side.castShadow = side.receiveShadow = true
+  const bottom = new THREE.Mesh(new THREE.CircleGeometry(PIT_R, 96).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xBDB5AA }))
+  bottom.position.copy(PIT).setY(-PIT_D)
+  bottom.receiveShadow = true
+  scene.add(side, bottom)
+  const r = LOGO.tile.radius, tile = new THREE.Shape()                          // logo space: 1 x 1, y up, two round corners
+  tile.moveTo(r, 1); tile.lineTo(1, 1); tile.lineTo(1, r); tile.absarc(1 - r, r, r, 0, -Math.PI / 2, true)
+  tile.lineTo(0, 0); tile.lineTo(0, 1 - r); tile.absarc(r, 1 - r, r, Math.PI, Math.PI / 2, true)
+  const logo = new THREE.Group()
+  logo.add(new THREE.Mesh(new THREE.ExtrudeGeometry(tile, { depth: .05, bevelThickness: .012, bevelSize: .012, bevelSegments: 3, curveSegments: 24 })
+    .translate(-.5, -.5, 0), new THREE.MeshLambertMaterial({ color: LOGO.red })))
+  for (const band of LOGO.bands) {
+    logo.add(new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(band.map(([u, v]) => new THREE.Vector2(u, 1 - v))), { depth: .016, bevelEnabled: false })
+      .translate(-.5, -.5, .062), new THREE.MeshLambertMaterial({ color: 0xF6F3EE })))
+  }
+  logo.rotation.x = -Math.PI / 2                                                 // lying down, its top towards the north
+  logo.scale.setScalar(.8)
+  logo.position.copy(PIT).setY(-PIT_D + .002)
+  logo.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true })
+  scene.add(logo)
 }
 
 // ---- people's routes (photo px, as in plan.py). Walls get a doorway wherever a route crosses them. -------------------
-// The safe area outside the main exit (its real place is not known yet; drawn as a general area) and a spot there for
-// each person who walks to it.
+// The safe area outside the main exit (its real place is not known yet; drawn as a general area) has a spot for each
+// person. Most walk the green arrows to the main exit; the three who leave by the top left exit come round the
+// building out of sight and walk in from the west.
 const SAFE_XY = [515, 700]
-const SPOT_XY = Array.from({ length: 6 }, (_, i) => [SAFE_XY[0] + (i % 2 ? 26 : -26), SAFE_XY[1] - 43 + 43 * Math.floor(i / 2)])
+const WALK = 40                                                                 // photo px a second, a brisk walk
+const MAIN_OUT = [514, 556]                                                     // just outside the main exit
 const exitTL = [[181.5, 104], [181.5, 16], [181.5, -30]]
-const toMain = [[514, 442], [514, 556]]
 const yardL = [[204, 292], [300, 328], [420, 382], [504, 432]], yardR = [[650, 322], [600, 368], [545, 412], [522, 432]]
+const toMain = [[514, 442], MAIN_OUT]
+const polyLen = pts => pts.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1]), 0)
+const viaMain = (path, tOut) => ({ path, a: tOut - polyLen(path.slice(0, path.indexOf(MAIN_OUT) + 1)) / WALK, d: polyLen(path) / WALK })
 const ROUTES = [
-  { path: [[214, 62], [214, 104], [178.5, 104], [181.5, 96], [181.5, 16], [181.5, -30]], a: T.corridor - 1.6, press: 2, still: true }, // 17
-  { path: [[259.5, 72], [259.5, 104], ...exitTL], a: T.walk, d: 10.6, lead: true, still: true },                // room 18
-  { path: [[305, 135], [305, 104], ...exitTL], a: T.routes, d: 6.0 },                                         // room 14
-  { path: [[577, 72], [577, 104], ...exitTL], a: T.routes + .3, d: 7.0 },                                     // room 25
-  { path: [[150, 262], [181.5, 262], [181.5, 292], ...yardL, ...toMain], a: T.routes + .2, d: 6.6, safe: 0 }, // 51
-  { path: [[150, 377], [181.5, 377], [181.5, 300], ...yardL, ...toMain], a: T.routes + .6, d: 6.6, safe: 1 }, // 50
-  { path: [[710, 165], [667, 165], [667, 322], ...yardR, ...toMain], a: T.routes + .1, d: 6.8, safe: 2 },     // 6
-  { path: [[830, 247], [787, 247], [787, 104], [667, 104], [667, 322], ...yardR, ...toMain], a: T.routes, d: 7.2, safe: 3 }, // 34
-  { path: [[830, 383], [787, 383], [787, 519.5], [540, 519.5], [533, 536], [514, 556]], a: T.routes + .4, d: 6.4, safe: 4 }, // 37
-  { path: [[343, 480], [343, 519.5], [490, 519.5], [497, 536], [514, 556]], a: T.routes + .5, d: 5.6, safe: 5 },  // 46
+  { press: true, legs: [                                                        // room 17: presses the red button
+    { path: [[214, 62], [214, 104], [178.5, 104]], a: T.corridor - 1.6, d: T.press - .15 - (T.corridor - 1.6) },
+    { path: [[178.5, 104], [181.5, 96], [181.5, 16], [181.5, -30]], a: T.press + .75, d: 3.4, hide: true },
+    { path: [[300, 610], [440, 660], [482, 716]], a: T.out - 1 }] },
+  { lead: true, crouch: [T.s3b - 1, T.walk + 10.6], legs: [                     // room 18: the camera follows them
+    { path: [[259.5, 72], [259.5, 104], ...exitTL], a: T.walk, d: 10.6, hide: true },
+    { path: [[290, 640], [440, 670], [482, 684]], a: T.out - .4 }] },
+  { crouch: [T.walk + 3.6, T.walk + 15], legs: [                                // room 14: crouches along behind them
+    { path: [[305, 135], [305, 104], ...exitTL], a: T.walk + 2.5, d: 12.5, hide: true },
+    { path: [[310, 580], [440, 630], [482, 652]], a: T.out + .2 }] },
+  { call: true, legs: [viaMain([[343, 480], [343, 519.5], [490, 519.5], [497, 536], MAIN_OUT, [515, 748]], T.out - 3.5)] },  // 46
+  { legs: [viaMain([[830, 383], [787, 383], [787, 519.5], [540, 519.5], [533, 536], MAIN_OUT, [548, 748]], T.out - 2.9)] },  // 37
+  { legs: [viaMain([[150, 262], [181.5, 262], [181.5, 292], ...yardL, ...toMain, [482, 748]], T.out - 2.3)] },             // 51
+  { legs: [viaMain([[150, 377], [181.5, 377], [181.5, 300], ...yardL, ...toMain, [515, 716]], T.out - 1.7)] },             // 50
+  { legs: [viaMain([[577, 72], [577, 104], [667, 104], [667, 322], ...yardR, ...toMain, [548, 716]], T.out - 1.1)] },       // 25
+  { legs: [viaMain([[710, 165], [667, 165], [667, 322], ...yardR, ...toMain, [515, 684]], T.out - .5)] },                  // 6
+  { legs: [viaMain([[830, 247], [787, 247], [787, 104], [667, 104], [667, 322], ...yardR, ...toMain, [548, 684]], T.out + .1)] }, // 34
 ]
 
 // ---- walls: room edges, the yard sides with their doors, the outer walls with the exits open -------------------------
@@ -148,11 +190,12 @@ const ROUTES = [
     const q = [c[0] - a[0], c[1] - a[1]], u = (q[0] * s[1] - q[1] * s[0]) / den, v = (q[0] * r[1] - q[1] * r[0]) / den
     return u > 0 && u < 1 && v > 0 && v < 1 ? v : null
   }
+  const paths = ROUTES.flatMap(r => r.legs.map(l => l.path))
   const pieces = []
   for (const w of walls) {
     const len = Math.hypot(w.x1 - w.x0, w.y1 - w.y0), cuts = []
-    for (const r of ROUTES) for (let i = 0; i < r.path.length - 1; i++) {
-      const v = cross(r.path[i], r.path[i + 1], [w.x0, w.y0], [w.x1, w.y1])
+    for (const path of paths) for (let i = 0; i < path.length - 1; i++) {
+      const v = cross(path[i], path[i + 1], [w.x0, w.y0], [w.x1, w.y1])
       if (v !== null) cuts.push([v - 6 / len, v + 6 / len])
     }
     cuts.sort((a, b) => a[0] - b[0])
@@ -172,18 +215,11 @@ const ROUTES = [
   const inner = new THREE.Mesh(mergeGeometries(pieces.filter(s => !s.outer).map(s => box(s, .028, .2))), new THREE.MeshLambertMaterial({ color: 0xF4F6F8 }))
   const outer = new THREE.Mesh(mergeGeometries(pieces.filter(s => s.outer).map(s => box(s, .06, .26))), new THREE.MeshLambertMaterial({ color: 0x86909A }))
   for (const m of [inner, outer]) { m.castShadow = true; m.receiveShadow = true; scene.add(m) }
-  // the shed and the round building in the yard
-  const grey = new THREE.MeshLambertMaterial({ color: 0xE6EAED })
-  const shed = new THREE.Mesh(new THREE.BoxGeometry(.72, .28, .73), grey)
+  const shed = new THREE.Mesh(new THREE.BoxGeometry(.72, .28, .73), new THREE.MeshLambertMaterial({ color: 0xE6EAED }))   // the shed in the yard
   shed.position.copy(V(371, 287.5, .14)); shed.castShadow = shed.receiveShadow = true; scene.add(shed)
-  const ger = new THREE.Group()
-  const gw = new THREE.Mesh(new THREE.CylinderGeometry(.65, .65, .2, 48), grey); gw.position.y = .1
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(.69, .22, 48), grey); roof.position.y = .31
-  ger.add(gw, roof); ger.position.copy(V(473, 290)); ger.traverse(o => { o.castShadow = o.receiveShadow = true }); scene.add(ger)
 }
 
 // ---- textures drawn on canvas ---------------------------------------------------------------------------------------
-await document.fonts.load('760 64px "Golos Text Variable"')
 function canvasTex(w, h, draw) {
   const c = document.createElement('canvas'); c.width = w; c.height = h
   draw(c.getContext('2d'), w, h)
@@ -211,12 +247,6 @@ const sprite = (map, additive) => {
   scene.add(s)
   return s
 }
-const label = (text, color) => canvasTex(1024, 256, (g, w, h) => {
-  g.font = '760 112px "Golos Text Variable"'; g.textAlign = 'center'; g.textBaseline = 'middle'
-  g.lineWidth = 22; g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineJoin = 'round'
-  g.strokeText(text, w / 2, h / 2 + 6)
-  g.fillStyle = color; g.fillText(text, w / 2, h / 2 + 6)
-})
 const flat = (map, w, h) => {                                                   // a picture lying on the floor
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false }))
   m.rotation.order = 'YXZ'; m.rotation.x = -Math.PI / 2
@@ -243,9 +273,9 @@ const layer = Array.from({ length: 40 }, () => sprite(SMOKE, false))
 const CORRIDOR_Z = V(0, 104).z
 
 // alarm: the red button on the corridor wall, a flashing light, rings on the floor
-const ALARM = V(183, 104)
+const ALARM = V(183, 104), BUTTON = V(173.7, 104, .13)
 const button = new THREE.Mesh(new THREE.BoxGeometry(.02, .07, .07), new THREE.MeshBasicMaterial({ color: 0xC8231A }))
-button.position.copy(V(173.7, 104, .13))
+button.position.copy(BUTTON)
 scene.add(button)
 const ringGeo = new THREE.RingGeometry(.9, 1, 64).rotateX(-Math.PI / 2)
 const ring = (color, p) => {
@@ -259,7 +289,7 @@ const alarmLight = new THREE.PointLight(0xFF2A1A, 0, 3, 2)
 alarmLight.position.copy(ALARM).setY(.9)
 scene.add(alarmLight)
 
-// green signs in the corridors: arrows on the floor pointing the way out. Exits: columns of green light.
+// green signs in the corridors: arrows just above the walls with chevrons running the way they point. Exits: green light.
 const ARROW = canvasTex(256, 128, (g, w, h) => {
   g.fillStyle = '#00A34F'; g.beginPath(); g.roundRect(4, 4, w - 8, h - 8, 28); g.fill()
   g.fillStyle = '#fff'; g.beginPath()
@@ -280,6 +310,7 @@ const signPlates = geom.signs.map(([x, y, way]) => {
 })
 const signRings = geom.signs.map(([x, y]) => ring(0x00A34F, V(x, y)))
 const EXITS = [[181.5, 23], [191, 292], [658, 322], [515, 530]].map(([x, y]) => V(x, y))
+const EXIT_ON = [T.routes + 1, T.gate, T.routes + 1, T.routes + 1]            // the yard door by room 51 lights up first
 const beamTex = canvasTex(4, 256, (g, w, h) => {
   const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,1)')
   g.fillStyle = gr; g.fillRect(0, 0, w, h)
@@ -293,47 +324,67 @@ const beams = EXITS.map(p => {
 })
 const exitRings = EXITS.map(p => ring(0x00A34F, p))
 
-// ---- people in hi-vis vests and yellow helmets ----------------------------------------------------------------------
-const bodyGeo = new THREE.CapsuleGeometry(.046, .075, 4, 12), headGeo = new THREE.SphereGeometry(.041, 18, 12)
-const vest = new THREE.MeshLambertMaterial({ color: 0xF07A12 }), helmet = new THREE.MeshLambertMaterial({ color: 0xF7C833 })
-const stripeGeo = new THREE.CylinderGeometry(.049, .049, .014, 20), stripe = new THREE.MeshLambertMaterial({ color: 0xE8EEF2 })
+// ---- people: hi-vis vest, yellow helmet, arms and legs that swing as they walk ---------------------------------------
+const mat = c => new THREE.MeshLambertMaterial({ color: c })
+const VEST = mat(0xF07A12), HELMET = mat(0xF7C833), SKIN = mat(0xD9A77F), PANTS = mat(0x334155), SHIRT = mat(0x3F5068), STRIPE = mat(0xE6ECF0)
+const legGeo = new THREE.CapsuleGeometry(.017, .07, 3, 8).translate(0, -.052, 0)    // hangs from the hip
+const armGeo = new THREE.CapsuleGeometry(.0135, .062, 3, 8).translate(0, -.045, 0)  // hangs from the shoulder
+const torsoGeo = new THREE.CapsuleGeometry(.036, .052, 4, 12), bandGeo = new THREE.CylinderGeometry(.0375, .0375, .011, 20)
+const headGeo = new THREE.SphereGeometry(.028, 16, 12), hatGeo = new THREE.SphereGeometry(.032, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+const brimGeo = new THREE.CylinderGeometry(.038, .038, .005, 20)
+function figure() {
+  const g = new THREE.Group(), fig = new THREE.Group(), upper = new THREE.Group()
+  const limb = (geo, m, x, y) => { const j = new THREE.Group(); j.position.set(x, y, 0); j.add(new THREE.Mesh(geo, m)); return j }
+  const legL = limb(legGeo, PANTS, .02, .105), legR = limb(legGeo, PANTS, -.02, .105)
+  const armL = limb(armGeo, SHIRT, .047, .1), armR = limb(armGeo, SHIRT, -.047, .1)
+  upper.position.y = .105                                                        // the hips: the body bends here
+  const part = (geo, m, y) => { const o = new THREE.Mesh(geo, m); o.position.y = y; return o }
+  upper.add(part(torsoGeo, VEST, .058), part(bandGeo, STRIPE, .045), part(headGeo, SKIN, .148), part(hatGeo, HELMET, .152), part(brimGeo, HELMET, .152), armL, armR)
+  fig.add(legL, legR, upper)
+  g.add(fig)
+  g.rotation.order = 'YXZ'
+  g.traverse(o => { if (o.isMesh) o.castShadow = true })
+  scene.add(g)
+  return { g, fig, upper, legL, legR, armL, armR }
+}
 const TICK = canvasTex(128, 128, g => {
   g.fillStyle = '#00A34F'; g.beginPath(); g.arc(64, 64, 60, 0, 7); g.fill()
   g.strokeStyle = '#fff'; g.lineWidth = 16; g.lineCap = g.lineJoin = 'round'
   g.beginPath(); g.moveTo(36, 66); g.lineTo(56, 86); g.lineTo(94, 44); g.stroke()
 })
-const PEOPLE = ROUTES.map(r => {
-  const path = r.safe === undefined ? r.path : [...r.path, SPOT_XY[r.safe]]   // on to their spot in the safe area
-  const pts = path.map(q => V(...q))
-  const len = pts.slice(1).map((q, i) => q.distanceTo(pts[i]))
-  const total = len.reduce((a, b) => a + b, 0)
-  const g = new THREE.Group(), fig = new THREE.Group()
-  const body = new THREE.Mesh(bodyGeo, vest); body.position.y = .093
-  const band = new THREE.Mesh(stripeGeo, stripe); band.position.y = .1
-  const head = new THREE.Mesh(headGeo, helmet); head.position.y = .205
-  for (const m of [body, band, head]) { m.castShadow = true; fig.add(m) }
-  g.add(fig)
-  g.rotation.order = 'YXZ'
-  scene.add(g)
-  // keep the walking speed when the walk to the safe area is added on
-  const d = r.d && r.safe !== undefined ? r.d * total / len.slice(0, -1).reduce((a, b) => a + b, 0) : r.d
-  return { ...r, d, pts, len, total, g, fig, tick: sprite(TICK, false) }
-})
-function distAt(p, t) {                                                         // how far along its route a person is at t
-  if (p.press === undefined) return walk((t - p.a) / p.d) * p.total
-  const d1 = p.len.slice(0, p.press).reduce((a, b) => a + b, 0), arrive = T.press - .15, leave = T.press + .75
-  return t < leave ? walk((t - p.a) / (arrive - p.a)) * d1 : d1 + walk((t - leave) / 3.4) * (p.total - d1)
-}
-function along(p, d) {
-  for (let i = 0; i < p.len.length; i++) {
-    if (d <= p.len[i]) return { pos: p.pts[i].clone().lerp(p.pts[i + 1], p.len[i] ? d / p.len[i] : 0), dir: p.pts[i + 1].clone().sub(p.pts[i]) }
-    d -= p.len[i]
+// each leg of a route becomes a curve with rounded corners, walked at a steady pace
+function rounded(points, r = .1) {
+  const pts = points.map(q => V(...q)), path = new THREE.CurvePath()
+  let from = pts[0]
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p = pts[i], ra = Math.min(r, p.distanceTo(pts[i - 1]) / 2), rb = Math.min(r, p.distanceTo(pts[i + 1]) / 2)
+    const a = p.clone().addScaledVector(pts[i - 1].clone().sub(p).normalize(), ra), b = p.clone().addScaledVector(pts[i + 1].clone().sub(p).normalize(), rb)
+    if (from.distanceTo(a) > 1e-6) path.add(new THREE.LineCurve3(from, a))
+    path.add(new THREE.QuadraticBezierCurve3(a, p, b))
+    from = b
   }
-  return { pos: p.pts.at(-1).clone(), dir: p.pts.at(-1).clone().sub(p.pts.at(-2)) }
+  path.add(new THREE.LineCurve3(from, pts.at(-1)))
+  return path
 }
-const LEADER = PEOPLE.find(p => p.lead)
-const leadAt = t => along(LEADER, distAt(LEADER, t)).pos
-const crouchAt = t => ease(ramp(t, T.s3b - 1, .6))
+const PEOPLE = ROUTES.map((r, n) => ({ ...r, n, ...figure(), tick: sprite(TICK, false),
+  legs: r.legs.map(l => { const curve = rounded(l.path), L = curve.getLength(); return { ...l, curve, L, d: l.d ?? polyLen(l.path) / WALK } }) }))
+function legAt(p, t) {                                                          // the leg in use at t and how far along it
+  const i = p.legs.findLastIndex(l => t >= l.a)
+  if (i < 0) return { l: p.legs[0], s: 0 }                                       // standing in the room, not left yet
+  const l = p.legs[i], u = (t - l.a) / l.d
+  if (u >= 1 && l.hide) return null                                              // out of sight until the next leg
+  return { l, s: walk(u, Math.min(.15, .45 / l.d)) * l.L }
+}
+const placeAt = (p, t) => { const st = legAt(p, t) ?? { l: p.legs[0], s: p.legs[0].L }; return st.l.curve.getPoint(st.s / st.l.L) }
+const LEADER = PEOPLE.find(p => p.lead), PRESSER = PEOPLE.find(p => p.press), CALLER = PEOPLE.find(p => p.call)
+const leadAt = t => placeAt(LEADER, t)
+const CALL = canvasTex(256, 256, g => {                                         // a phone over the head of whoever calls 101
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 128, 118, 0, 7); g.fill()
+  g.save(); g.translate(56, 56); g.scale(6, 6); g.strokeStyle = '#D52B1E'; g.lineWidth = 2.2; g.lineCap = g.lineJoin = 'round'
+  g.stroke(new Path2D('M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384'))
+  g.restore()
+})
+const call = sprite(CALL, false)
 
 const SAFE = V(...SAFE_XY)
 const safe = new THREE.Group()
@@ -347,14 +398,6 @@ const safe = new THREE.Group()
   safe.position.copy(SAFE)
   scene.add(safe)
 }
-const safeLabel = sprite(label('Аюулгүй талбай', '#00843D'), false)
-const phone = sprite(canvasTex(512, 200, (g, w, h) => {
-  g.fillStyle = '#D52B1E'; g.beginPath(); g.roundRect(8, 8, w - 16, h - 16, 56); g.fill()
-  g.save(); g.translate(48, 52); g.scale(4, 4); g.strokeStyle = '#fff'; g.lineWidth = 2; g.lineCap = g.lineJoin = 'round'
-  g.stroke(new Path2D('M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384'))
-  g.restore()
-  g.font = '820 124px "Golos Text Variable"'; g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText('101', 196, h / 2 + 8)
-}), false)
 const ban = sprite(canvasTex(256, 256, g => {
   g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 128, 118, 0, 7); g.fill()
   g.strokeStyle = '#D52B1E'; g.lineWidth = 30; g.beginPath(); g.arc(128, 128, 100, 0, 7); g.stroke()
@@ -362,73 +405,40 @@ const ban = sprite(canvasTex(256, 256, g => {
 }), false)
 const MAIN = V(515, 530)
 
-// ---- camera: one shot per part of the voice. A shot is a function of time; the next shot takes over with a blend. --
+// ---- camera: one shot per part of the voice, each move with a purpose; shots change with a cut ----------------------
+const cut = t => (Math.round(t * FPS) + .5) / FPS                               // a cut falls between two frames
 const two = (v, u) => typeof v === 'number' ? v : lerp(v[0], v[1], u)          // a number, or [from, to]
-const spline = (pos, look, fov = 40, roll = 0) => {
-  const pc = new THREE.CatmullRomCurve3(pos, false, 'centripetal'), lc = new THREE.CatmullRomCurve3(look, false, 'centripetal')
-  return u => ({ pos: pc.getPoint(clamp(u)), look: lc.getPoint(clamp(u)), fov: two(fov, u), roll: two(roll, u) })
+const track = pts => pts.length > 2 ? (c => u => c.getPoint(u))(new THREE.CatmullRomCurve3(pts, false, 'centripetal')) : u => pts[0].clone().lerp(pts[1], u)
+const shot = (t, pos, look, fov = 40) => { const p = track(pos), l = track(look); return { t, at: u => ({ pos: p(u), look: l(u), fov: two(fov, u) }) } }
+const F = FIRE, A = ALARM, E = MAIN, SW = V(181, 340), YW = V(191, 292)
+function follow(t) {                                                            // alongside the worker, smoothed
+  const avg = (n, w) => { const p = new V3(); for (let k = 0; k < n; k++) p.add(leadAt(t - w + k * w / (n - 1))); return p.multiplyScalar(1 / n) }
+  const p = avg(9, .8)
+  return { pos: P(p.x + .5, 1.15, CORRIDOR_Z + .85), look: avg(5, .3).setY(.12), fov: 44 }
 }
-const orbit = (c, r, h, a, fov = 40, roll = 0) => u => {                       // a = 0: the camera south of c, looking north
-  const ang = two(a, u), rad = two(r, u)
-  return { pos: P(c.x + rad * Math.sin(ang), two(h, u), c.z + rad * Math.cos(ang)), look: c.clone(), fov: two(fov, u), roll: two(roll, u) }
-}
-const F = FIRE, A = ALARM, E = MAIN, SW = V(181, 340), SE = V(668, 366), deg = Math.PI / 180
 const SHOTS = [
-  { t: 0, blend: 0, ease: true, // high over the camp, swooping down on the burning room
-    at: spline([P(6.5, 11.5, 12), P(2.4, 6.2, 5.0), P(F.x + 1.5, 2.0, F.z + 2.9)], [P(0, 0, 0), P(-.8, 0, -1.6), P(F.x, .35, F.z)], [34, 40]) },
-  { t: S[1].a - .6, blend: 1.2, // circle the fire
-    at: orbit(F.clone().setY(.75), [3.0, 2.3], [1.5, 1.0], [35 * deg, -30 * deg], 42, [-3 * deg, 2 * deg]) },
-  { t: T.corridor + .2, blend: 1.3, // a worker from the next room runs to the red button and presses it
-    at: spline([P(A.x + 1.3, 1.3, A.z - 1.0), P(A.x + .85, .95, A.z - .65)], [P(A.x + .25, .1, A.z), P(A.x - .05, .12, A.z + .05)], [42, 40]) },
-  { t: S[2].a - .5, blend: 1.2, follow: true },                                  // with a worker leaving through the smoke
-  { t: S[3].a - .4, blend: 1.6, ease: true, // the green signs point the way: one close, then up over the yard to the others
-    at: spline([SW.clone().add(P(1.0, 1.0, 1.0)), SW.clone().add(P(1.3, 1.5, 1.5)), P(.2, 4.4, 5.2), SE.clone().add(P(1.3, 1.6, 1.6))],
-      [SW.clone().add(P(0, .15, 0)), SW.clone().add(P(0, .1, .1)), P(0, 0, 1.0), SE.clone().add(P(0, .1, 0))], [42, 40]) },
-  { t: S[4].a - .4, blend: 1.4, // along the routes: the yard doors, across the yard, out of the main exit
-    at: spline([P(5.6, 4.4, 3.6), P(2.8, 3.6, 6.2), P(E.x - 1.6, 2.6, E.z + 4.0)], [P(3.0, 0, .3), P(.6, 0, 1.6), P(E.x, 0, E.z)]) },
-  { t: S[5].a - .5, blend: 1.4, // outside: down to the safe area
-    at: spline([P(E.x - 1.2, 3.0, E.z + 5.6), P(E.x + .6, 2.2, E.z + 6.0), P(E.x + 1.4, 1.5, E.z + 5.4)],
-      [P(E.x, 0, E.z + 1.6), P(E.x, .2, E.z + 2.3), P(E.x, .2, E.z + 2.3)], [40, 38]) },
-  { t: S[6].a - .45, blend: 1.0, // push in on the main exit
-    at: spline([P(E.x + .6, 1.1, E.z + 3.2), P(E.x + .2, .75, E.z + 2.1)], [P(E.x, .3, E.z), P(E.x, .33, E.z)], [42, 38]) },
-  { t: T.end - .35, blend: 1.6, // pull back and up: the camp, the smoke, everyone safe
-    at: spline([P(E.x + .8, 1.3, E.z + 3.4), P(3.0, 5.0, 10.5), P(4.5, 9.0, 13.5)], [P(E.x, .3, E.z), P(-.4, .8, -.6), P(-.6, 1.2, -1.2)], [40, 36]) },
+  // the company logo in the yard, up over the whole camp, on to the burning room
+  shot(0, [P(PIT.x, 2.6, PIT.z + .8), P(PIT.x + .4, 3.8, PIT.z + 2.6), P(.9, 4.6, 3.4), P(F.x + 1.4, 2.4, F.z + 3.4), P(F.x + .6, 1.15, F.z + 2.0)],
+    [P(PIT.x, -.05, PIT.z + .28), P(PIT.x, 0, PIT.z - .5), P(-.6, 0, -1.8), P(F.x, .35, F.z), P(F.x, .5, F.z)], [38, 40]),
+  { t: cut(T.corridor + .3), at: (u, t) => ({                                   // a worker from the next room presses the red button
+    pos: P(A.x + 1.25, 1.15, A.z - .85).lerp(P(A.x + .85, .9, A.z - .55), u),
+    look: placeAt(PRESSER, t).setY(.13).lerp(BUTTON, .5 * smooth(ramp(t, T.press - 1, 1))), fov: 40 }) },
+  { t: cut(S[2].a - .25), at: (u, t) => follow(t) },                            // with a worker leaving through the smoke
+  // a green sign, then the way it points: the exit
+  shot(cut(S[3].a - .25), [P(SW.x + .55, .85, SW.z + .75), P(SW.x + .55, .95, SW.z - .2)], [P(SW.x, .15, SW.z), P(YW.x - .1, .1, YW.z - .05)], 42),
+  // high over the main exit: everyone comes through the yard and out
+  shot(cut(S[4].a - .25), [P(E.x + .3, 5.4, E.z + 4.6), P(E.x + .1, 3.4, E.z + 2.9)], [P(E.x - .2, 0, .5), P(E.x, 0, E.z - .4)], [50, 46]),
+  // the safe area: people gather, call 101, register
+  shot(cut(S[5].a - .3), [P(SAFE.x + .8, 1.55, SAFE.z + 3.0), P(SAFE.x + .35, 1.2, SAFE.z + 2.3)], [P(SAFE.x, .15, SAFE.z - .25), P(SAFE.x, .2, SAFE.z - .1)]),
+  // do not go back in: closer to the main exit
+  shot(cut(S[6].a), [P(E.x + .5, .8, E.z + 2.0), P(E.x + .25, .6, E.z + 1.3)], [P(E.x, .3, E.z), P(E.x, .32, E.z)]),
+  // and up: the whole camp, the logo in the yard
+  shot(T.end - .2, [P(E.x + .25, .6, E.z + 1.3), P(E.x + 1.0, 2.2, E.z + 3.2), P(1.8, 4.6, 6.4)],
+    [P(E.x, .32, E.z), P(E.x - .3, .2, E.z - 1.0), P(PIT.x - .2, 0, PIT.z - .6)], [40, 38]),
 ]
-SHOTS.forEach((s, i) => { s.dur = (SHOTS[i + 1]?.t ?? DURATION) - s.t })
-// follow: behind the worker, smoothed over the last second so the turns swing the camera round gently
-function heading(t) {
-  const d = new V3()
-  for (let k = 0; k < 10; k++) { const tk = t - 1 + k / 9; d.add(leadAt(tk + .2).sub(leadAt(tk - .2))) }
-  d.y = 0
-  return d.lengthSq() < 1e-8 ? P(0, 0, 1) : d.normalize()
-}
-function follow(t) {
-  const p = new V3()
-  for (let k = 0; k < 8; k++) p.add(leadAt(t - .5 + k * .5 / 7))
-  p.multiplyScalar(1 / 8)
-  const d = heading(t), turn = d.clone().cross(heading(t - .35)).y
-  let a = Math.atan2(-d.x, d.z)                                                 // 0 walking south, π/2 west, π north
-  if (a < -Math.PI / 2) a += 2 * Math.PI
-  const u = clamp(a / (Math.PI / 2), 0, 2)
-  const off = u < 1 ? P(.6, .8, .9).lerp(P(.9, .7, .15), u) : P(.9, .7, .15).lerp(P(.5, .75, .7), u - 1)
-  off.y -= .08 * crouchAt(t)
-  return { pos: p.clone().add(off), look: p.clone().addScaledVector(d, .1).add(P(0, .1, 0)), fov: 46, roll: clamp(turn * .5, -.1, .1) }
-}
-const poseAt = (s, t) => s.follow ? follow(t) : s.at(s.ease ? ease((t - s.t) / s.dur) : clamp((t - s.t) / s.dur))
 function cameraAt(t) {
-  const i = Math.max(0, SHOTS.findLastIndex(s => s.t <= t))
-  let c = poseAt(SHOTS[i], t)
-  const k = SHOTS[i].blend ? ease(ramp(t, SHOTS[i].t, SHOTS[i].blend)) : 1
-  if (k < 1) {
-    const p = poseAt(SHOTS[i - 1], t)
-    c = { pos: p.pos.lerp(c.pos, k), look: p.look.lerp(c.look, k), fov: lerp(p.fov, c.fov, k), roll: lerp(p.roll, c.roll, k) }
-  }
-  // hand-held: a little shake, more near the fire
-  const near = clamp(1.6 - c.pos.distanceTo(FIRE) / 2) * fireSize(t)
-  const amp = .008 + .018 * near
-  const hand = (a, b, o) => amp * (Math.sin(t * a + o) + .6 * Math.sin(t * b + 2 * o))
-  c.pos.x += hand(1.1, 2.9, 0); c.pos.y += hand(1.4, 3.3, 1); c.look.x += hand(.9, 2.3, 2); c.look.y += hand(1.2, 2.7, 3)
-  return c
+  const i = Math.max(0, SHOTS.findLastIndex(s => s.t <= t)), s = SHOTS[i]
+  return s.at(smooth((t - s.t) / ((SHOTS[i + 1]?.t ?? DURATION) - s.t)), t)
 }
 
 // ---- post: bloom for the fire, light grain and vignette --------------------------------------------------------------
@@ -439,7 +449,7 @@ composer.addPass(new RenderPass(scene, camera))
 composer.addPass(new UnrealBloomPass(new THREE.Vector2(W / 2, H / 2), .55, .4, 1.0))
 composer.addPass(new OutputPass())
 const film = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, seed: { value: 0 }, grain: { value: .035 }, vignette: { value: .4 }, fade: { value: 0 } },
+  uniforms: { tDiffuse: { value: null }, seed: { value: 0 }, grain: { value: .03 }, vignette: { value: .35 }, fade: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: `
     uniform sampler2D tDiffuse; uniform float seed, grain, vignette, fade; varying vec2 vUv;
@@ -456,22 +466,23 @@ composer.addPass(film)
 
 // ---- captions ------------------------------------------------------------------------------------------------------
 const CAPS = [
-  { t: 0, badge: '', text: caps.T },
+  { t: 0, text: caps.T },
   { t: S[1].a, badge: '1', text: caps.S2 }, { t: S[2].a, badge: '2', text: caps.S3a }, { t: T.s3b, badge: '3', text: caps.S3b },
   { t: S[3].a, badge: '4', text: caps.S4 }, { t: S[4].a, badge: '5', text: caps.S5 }, { t: S[5].a, badge: '6', text: caps.S6a },
-  { t: T.s6b, badge: '7', text: caps.S6b }, { t: S[6].a, badge: '8', text: caps.S7 }, { t: T.end, badge: '', text: caps.T },
+  { t: T.s6b, badge: '7', text: caps.S6b }, { t: S[6].a, badge: '8', text: caps.S7 }, { t: T.end, text: caps.T },
 ]
 const capA = document.getElementById('capA'), capB = document.getElementById('capB')
-const capHtml = c => `<div class="panel">${c.badge ? `<div class="kicker">${caps.T}</div>` : ''}<div class="row">` +
-  (c.badge ? `<div class="badge">${c.badge}</div>` : '') + `<div class="cap__text">${c.text}</div></div></div>`
+const capHtml = c => c.badge
+  ? `<div class="kicker">${caps.T}</div><div class="row"><div class="badge">${c.badge}</div><div class="cap__text">${c.text}</div></div>`
+  : `<div class="title">${c.text}</div>`
 const endCard = document.getElementById('end')
 
 // ---- the frame at t --------------------------------------------------------------------------------------------------
 window.seek = t => {
   t = Math.max(0, t)                                                            // the first sub-frame starts a hair before 0
   const c = cameraAt(t)
-  camera.position.copy(c.pos); camera.fov = c.fov; camera.updateProjectionMatrix(); camera.lookAt(c.look); camera.rotateZ(c.roll)
-  const nearCam = s => clamp((s.position.distanceTo(camera.position) - .3) / .6)   // smoke fades out right at the lens
+  camera.position.copy(c.pos); camera.fov = c.fov; camera.updateProjectionMatrix(); camera.lookAt(c.look)
+  const nearCam = s => clamp((s.position.distanceTo(camera.position) - .3 - .45 * s.scale.y) / .8)   // smoke fades out near the lens
   const eye = camera.position.clone(), worker = leadAt(t).setY(.1), ray = worker.clone().sub(eye), rl = ray.length()
   ray.normalize()
   const sight = q => {                                                          // distance from the camera-to-worker line
@@ -484,7 +495,7 @@ window.seek = t => {
   const mood = ramp(t, T.fire, 3) * (1 - ramp(t, S[3].a + 1, 5))
   hemi.intensity = 1.25 * (1 - .25 * mood)
   sun.intensity = 1.7 * (1 - .3 * mood)
-  scene.background.copy(SKY).lerp(SMOKY, mood * .45)
+  scene.background.copy(SKY).lerp(SMOKY, mood * .3)
   scene.fog.color.copy(scene.background)
 
   // fire: flames rise, cool from yellow to red and shrink; embers drift up; the glow and the light flicker
@@ -583,46 +594,51 @@ window.seek = t => {
     m.scale.setScalar(.12 + .3 * u)
     m.material.opacity = clamp(pulse) * (1 - u)
   })
-  const exitsOn = clamp(ramp(t, T.routes + 1, .5) - ramp(t, S[4].b + .6, .5))
-  beams.forEach((m, i) => { m.material.opacity = exitsOn * (.5 + .15 * Math.sin(t * 5 + i)); m.scale.set(1, .4 + .6 * ease(exitsOn), 1); m.position.y = .8 * (.4 + .6 * ease(exitsOn)) })
-  exitRings.forEach((m, i) => {
-    const u = (t * .9 + i * .25) % 1
-    m.scale.setScalar(.12 + .42 * u)
-    m.material.opacity = exitsOn * (1 - u)
+  EXITS.forEach((_, i) => {
+    const on = clamp(ramp(t, EXIT_ON[i], .5) - ramp(t, S[4].b + .6, .5)), u = (t * .9 + i * .25) % 1
+    beams[i].material.opacity = on * (.5 + .15 * Math.sin(t * 5 + i))
+    beams[i].scale.set(1, .4 + .6 * ease(on), 1)
+    beams[i].position.y = .8 * (.4 + .6 * ease(on))
+    exitRings[i].scale.setScalar(.12 + .42 * u)
+    exitRings[i].material.opacity = on * (1 - u)
   })
 
-  // people
+  // people: walk their legs; arms and legs swing with the distance walked, so the feet do not slide
   PEOPLE.forEach(p => {
-    const d = distAt(p, t)
-    const { pos, dir } = along(p, d)
-    const walking = d > 0 && d < p.total && !(p.press !== undefined && Math.abs(t - T.press - .3) < .45)
-    const shown = p.still ? 1 : ease(ramp(t, p.a, .3))
-    const vis = shown > 0 && (p.safe !== undefined || d < p.total - 1e-4)
-    const crouch = p.lead ? crouchAt(t) : 0
-    const lean = p.press !== undefined ? .35 * Math.sin(Math.PI * ramp(t, T.press - .25, .8)) : 0
-    p.g.visible = vis
+    const st = legAt(p, t)
+    p.g.visible = !!st
+    p.tick.visible = false
+    if (!st) return
+    const { l, s } = st, u = s / l.L
+    const pos = l.curve.getPoint(u), dir = l.curve.getTangent(u)
+    const s2 = legAt(p, t + .05)?.l === l ? legAt(p, t + .05).s : s
+    const speed = (s2 - s) / .05, amp = clamp(speed / .12) * .55
+    const ph = s / .25 * 2 * Math.PI
+    const crouch = p.crouch ? ease(ramp(t, p.crouch[0], .6)) * (1 - ramp(t, p.crouch[1] - .4, .4)) : 0
     p.g.position.copy(pos)
-    p.g.scale.setScalar(shown)
-    p.fig.position.y = walking ? Math.abs(Math.sin(t * 10 + p.a)) * .012 : 0
-    p.fig.scale.set(1, 1 - .3 * crouch, 1)
-    if (dir.lengthSq() > 1e-6) p.g.rotation.y = Math.atan2(dir.x, dir.z)
-    p.g.rotation.x = .45 * crouch + lean
-    const k = p.safe === undefined ? 0 : ease(ramp(t, T.check + p.safe * .1, .35))
-    p.tick.visible = vis && k > 0
-    p.tick.position.copy(pos).setY(.36 + .04 * (1 - k))
-    p.tick.scale.setScalar(.15 * k)
+    p.g.rotation.y = Math.atan2(dir.x, dir.z)
+    p.fig.position.y = amp * .008 * Math.abs(Math.cos(ph)) - .012 * crouch
+    p.upper.rotation.x = .55 * crouch
+    p.legL.rotation.x = amp * Math.sin(ph); p.legR.rotation.x = -amp * Math.sin(ph)
+    p.armL.rotation.x = -.8 * amp * Math.sin(ph); p.armR.rotation.x = .8 * amp * Math.sin(ph)
+    p.armR.rotation.z = 0
+    if (p.press) p.armR.rotation.x = lerp(p.armR.rotation.x, -1.3, Math.sin(Math.PI * ramp(t, T.press - .3, .9)))
+    if (p.call) {
+      const k = smooth(ramp(t, T.call - .2, .4)) * (1 - smooth(ramp(t, T.s6b + .6, .4)))
+      p.armR.rotation.x = lerp(p.armR.rotation.x, -2.5, k); p.armR.rotation.z = .35 * k
+      call.position.copy(pos).setY(.42 + .015 * Math.sin(t * 6))
+      call.scale.setScalar(.15 * k * (1 + .08 * Math.sin(t * 9)))
+      call.material.opacity = k
+    }
+    const k = l === p.legs.at(-1) ? ease(ramp(t, T.check + p.n * .06, .3)) : 0
+    p.tick.visible = k > 0
+    p.tick.position.copy(pos).setY(.38 + .04 * (1 - k))
+    p.tick.scale.setScalar(.14 * k)
   })
-  const sa = ease(ramp(t, T.out, .6))
+  const sa = ease(ramp(t, T.routes, .6))
   safe.visible = sa > 0
   safe.children[0].material.opacity = .22 * sa
   safe.children[1].material.opacity = .9 * sa
-  safeLabel.position.copy(SAFE).add(P(0, .2, -1.18))
-  safeLabel.scale.set(1.2, .3, 1)
-  safeLabel.material.opacity = sa * (1 - ramp(t, S[6].a - .6, .4))
-  const ph = ease(ramp(t, T.call, .35)) * (1 - ramp(t, T.s6b + 1, .4))
-  phone.position.copy(SAFE).add(P(0, .85, -.4))
-  phone.scale.set(.82 * (.6 + .4 * ph), .32 * (.6 + .4 * ph), 1)
-  phone.material.opacity = ph
   const bn = ramp(t, T.ban, .35)
   ban.position.copy(MAIN).setY(.4)
   ban.scale.setScalar(.4 * (.6 + .4 * ease(bn)) * (1 + .08 * Math.sin(clamp(bn) * Math.PI)))
@@ -632,11 +648,11 @@ window.seek = t => {
   film.uniforms.fade.value = 1 - ramp(t, 0, .5) * (1 - ramp(t, DURATION - .5, .5))
   composer.render()
 
-  // captions: cross-fade when the text changes
+  // captions: the old one goes, then the new one comes in
   const ci = CAPS.findLastIndex(x => x.t <= t), cur = CAPS[ci], prev = CAPS[ci - 1]
-  const out = ramp(t, cur.t, .15), v = ease(ramp(t, cur.t + .1, .3))           // the old panel goes, then the new one comes in
+  const out = ramp(t, cur.t, .15), v = ease(ramp(t, cur.t + .1, .3))
   capA.innerHTML = capHtml(cur)
-  capA.style.cssText = `opacity:${prev ? v : 1};transform:translateY(${prev ? 20 * (1 - v) : 0}px)`
+  capA.style.cssText = `opacity:${prev ? v : 1};transform:translateY(${prev ? 16 * (1 - v) : 0}px)`
   capB.innerHTML = prev && out < 1 ? capHtml(prev) : ''
   capB.style.cssText = `opacity:${1 - out}`
   const endOn = ramp(t, T.end, .4)
@@ -646,5 +662,6 @@ window.seek = t => {
 
 const EVENTS = { lead: LEAD, fire: T.fire, press: T.press, out: T.out, ban: T.ban, end: T.end }
 Object.assign(window, { DURATION, FPS, EVENTS, subframes: () => 2 })
+await document.fonts.load('760 64px "Golos Text Variable"')
 window.seek(0)
 window.ready = true
