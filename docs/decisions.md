@@ -2366,8 +2366,16 @@ Pane-ийн "Нүүр" дэлгэцийг дагаж хийсэн загвар. 
 - Нэвтрэлт, өгөгдлийн санг серверт гаргасны дараа (Hono, Neon/PostgreSQL) серверийн хэсгийг нэмнэ. Тэр үед түлхүүрүүдийг Cloudflare-ийн Worker secret болгож хадгална.
 
 **Тохиргоо.**
-- `web/wrangler.jsonc` файлд Worker-ийн нэр `gobi-erp`, `assets.directory` нь `./dist`.
+- `web/wrangler.jsonc` файлд Worker-ийн нэр `gobi-erp`, хаяг нь `gobi-erp.gobiresource.workers.dev`.
 - `npm run deploy` нь аппыг бүтээгээд Wrangler-ээр байршуулна.
+- **Яагаад static assets биш, KV вэ.** Эхний оролдлого файл илгээх шатанд 401 алдаа өгсөн.
+  - Cloudflare static assets-ийн файлыг тусгай түр түлхүүрээр (JWT) илгээдэг.
+  - Энэ орчны сүлжээ `api.cloudflare.com` руу явж буй бүх хүсэлтэд API token-ийг тавьдаг. Толгой хоосон эсвэл өөр утгатай байсан ч солигдоно (шалгасан).
+  - Тиймээс файлуудыг Workers Sites (KV) аргаар илгээнэ. KV руу API token-оор бичдэг.
+  - Файлыг `web/worker/site.js` харуулна (~30 мөр, нэмэлт сангүй). `/api/...` нь 404 буцаана, бусад зам аппын нүүр хуудсыг өгнө.
+  - `wrangler dev`-ээр компьютер дээр туршсан: нэвтрэх хуудас, Хүсэлт, фонт хэвийн, алдаагүй.
+- Token-д **Workers KV Storage: Edit** эрх нэмэх шаардлагатай болсон.
+- Сервертэй болох үед Workers Builds (GitHub-аас Cloudflare өөрөө бүтээдэг) эсвэл өөр аргаар static assets руу шилжиж болно.
 
 **Түлхүүр.**
 - Хэрэглэгч Cloudflare-д "Edit Cloudflare Workers" загвараар API token үүсгэнэ.

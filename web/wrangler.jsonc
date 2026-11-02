@@ -1,8 +1,9 @@
-// Cloudflare: the built app (dist) as a Worker's static assets (docs/decisions.md, 2026-11-02). No server code yet: the
-// Timely and scan-AI servers wait for sign-in on the server, as anyone with the link could reach them otherwise.
-// Deploy: npm run deploy (Wrangler, with its usage statistics turned off).
+// Cloudflare: the built app (dist) served by a small Worker from Workers KV (worker/site.js, docs/decisions.md,
+// 2026-11-02). No server code yet: the Timely and scan-AI servers wait for sign-in on the server, as anyone with the link
+// could reach them otherwise. Deploy: npm run deploy (Wrangler, with its usage statistics turned off).
 {
   "name": "gobi-erp",
+  "main": "worker/site.js",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "./dist" }
+  "site": { "bucket": "./dist" }
 }
