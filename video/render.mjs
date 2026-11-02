@@ -2,6 +2,7 @@
 //   node render.mjs --stills 1,2.5,9   a few still frames to out/still-<t>.png
 //   node render.mjs                     every sub-frame to frames/, then python3 build.py makes the MP4
 //   --scene=hse-fire                    another video folder (default erp-intro)
+//   --part=0/3                          every 3rd frame from frame 0: run --part=0/3, 1/3, 2/3 at once, build.py joins them
 // Sub-frames: 180° shutter, a little jitter; build.py averages them into motion blur (the cinematic-video skill).
 import { createRequire } from 'node:module'
 import { createServer } from 'node:http'
@@ -21,6 +22,7 @@ await new Promise(ok => server.listen(0, '127.0.0.1', ok))
 // --preview: half size, 30 fps, no motion blur, to check the cut quickly
 const PREVIEW = process.argv.includes('--preview')
 const SCENE = (process.argv.find(a => a.startsWith('--scene=')) ?? '--scene=erp-intro').slice(8)   // a folder next to this file
+const [PART, PARTS] = (process.argv.find(a => a.startsWith('--part='))?.slice(7) ?? '0/1').split('/').map(Number)
 const url = `http://127.0.0.1:${server.address().port}/${SCENE}/index.html${PREVIEW ? '?scale=0.5' : ''}`
 
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
@@ -47,7 +49,7 @@ if (arg > 0) {
   const frames = Math.round(DURATION * FPS)
   const list = []
   const start = Date.now()
-  for (let f = 0; f < frames; f++) {
+  for (let f = PART; f < frames; f += PARTS) {
     const n = PREVIEW ? 1 : await page.evaluate(f => window.subframes(f), f)
     const subs = []
     for (let k = 0; k < n; k++) {
@@ -59,10 +61,10 @@ if (arg > 0) {
       await page.screenshot({ path: join(ROOT, 'frames', file), type: 'jpeg', quality: 94 })
       subs.push(file)
     }
-    list.push(subs)
-    if (f % 60 === 0) console.log(`frame ${f}/${frames}  ${((Date.now() - start) / 1000).toFixed(0)} s`)
+    list[f] = subs
+    if (f % 60 < PARTS) console.log(`frame ${f}/${frames}  ${((Date.now() - start) / 1000).toFixed(0)} s`)
   }
-  await writeFile(join(ROOT, 'frames/list.json'), JSON.stringify(list))
+  await writeFile(join(ROOT, PARTS > 1 ? `frames/list-${PART}.json` : 'frames/list.json'), JSON.stringify(list))
 }
 await browser.close()
 server.close()

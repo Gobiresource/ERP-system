@@ -9,7 +9,9 @@ from PIL import Image
 
 ROOT = Path(__file__).parent
 out = sys.argv[1] if len(sys.argv) > 1 else str(ROOT / 'out/erp-intro.mp4')
-frames = json.loads((ROOT / 'frames/list.json').read_text())
+parts = [json.loads(f.read_text()) for f in sorted((ROOT / 'frames').glob('list-*.json'))]   # render.mjs --part=k/n
+frames = ([next(l[i] for l in parts if i < len(l) and l[i]) for i in range(max(map(len, parts)))] if parts
+          else json.loads((ROOT / 'frames/list.json').read_text()))
 fps = json.loads((ROOT / 'out/events.json').read_text())['FPS']
 W, H = Image.open(ROOT / 'frames' / frames[0][0]).size
 

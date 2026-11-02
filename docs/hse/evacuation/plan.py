@@ -282,6 +282,7 @@ if __name__ == '__main__':
     VIDEO = HERE.parents[2] / 'video/hse-fire'
     (VIDEO / 'plan-video.svg').write_text(build(labels, video=True), encoding='utf-8')
     geom = dict(K=K, OX=OX, OY=OY, rooms={n: [(x0 + x1) / 2, (y0 + y1) / 2] for n, x0, y0, x1, y1 in ROOMS if n},
-                extinguishers=EXTINGUISHERS, alarms=ALARMS, signs=SIGNS, doors=DOORS, routes=ROUTES)
+                extinguishers=EXTINGUISHERS, alarms=ALARMS, signs=SIGNS, doors=DOORS, routes=ROUTES,
+                rects=ROOMS, walls=WALLS)
     (VIDEO / 'plan-geom.json').write_text(json.dumps(geom), encoding='utf-8')
     print('plan.svg', len(svg) // 1024, 'KB')
