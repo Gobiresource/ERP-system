@@ -7,7 +7,7 @@ import { open } from '../../lib/ui'
 import { checkPop } from '../../lib/motion'
 import { AvatarStack, Prio, ProjectChip, STATUS, STATUSES } from '../../ui/bits'
 import { Seg } from '../../ui/Seg'
-import { DueTag, moveTask } from './TaskCard'
+import { DueTag, mayChange, moveTask } from './TaskCard'
 
 const RANK: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
 
@@ -51,7 +51,7 @@ export function List({ tasks, total }: { tasks: Task[]; total: number }) {
                   const who = t.assignees.map(x => sc.person(x)).filter(x => x !== undefined)
                   return (
                     <div key={t.id} className={`tk-row${t.status === 'done' ? ' is-done' : ''}`}>
-                      <input type="checkbox" className="check" checked={t.status === 'done'} aria-label={`${t.title}: дууссан`}
+                      <input type="checkbox" className="check" checked={t.status === 'done'} aria-label={`${t.title}: дууссан`} disabled={!mayChange(t, s.me)}
                         onChange={e => {
                           if (e.target.checked) checkPop(e.target)
                           // The row moves to another group: keep focus here, on the next row or the group's button

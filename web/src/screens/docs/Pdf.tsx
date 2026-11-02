@@ -6,7 +6,8 @@ import { ArrowLeft, ArrowRight, Download, FilePlus2, FileText, FileUp, Maximize2
 import type { Draft } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
-import { flip, usePageEnter } from '../../lib/motion'
+import { flushSync } from 'react-dom'
+import { flip, gsap, reduced, settle, usePageEnter } from '../../lib/motion'
 import { cid, newCard } from '../../lib/draft'
 import { getFile, putFile, saveBlob } from '../../lib/files'
 import { OpenError, buildPdf, drawPage, openPdf, type Page, type Sign, type Source } from '../../lib/pdf'
@@ -52,6 +53,8 @@ export default function Pdf({ from }: { from?: string }) {
   const [viewing, setViewing] = useState(0)
   const [dragKey, setDragKey] = useState<string | null>(null)
   const ghost = useRef<HTMLDivElement>(null)
+  /** Where the dragged copy starts, and its width */
+  const lift = useRef({ x: 0, y: 0, width: 0 })
   const pick = useRef<HTMLInputElement>(null)
   const savePop = usePopover()
 
@@ -222,66 +225,131 @@ export default function Pdf({ from }: { from?: string }) {
     openDialog({ kind: 'doc', id: doc.id })
   }
 
-  // Drag a page to a new place. With a finger, hold it a moment first, so that a swipe still scrolls.
+  // The dragged page lifts as it appears under the pointer
+  useLayoutEffect(() => {
+    const g = ghost.current
+    if (!dragKey || !g) return
+    const l = lift.current
+    gsap.set(g, { x: l.x, y: l.y, width: l.width, scale: 1, rotation: 0 })
+    if (!reduced()) gsap.fromTo(g, { scale: 1 }, { scale: 1.045, duration: 0.45, ease: 'back.out(2.4)' })
+  }, [dragKey])
+
+  // Drag a page to a new place, the way task cards move (tasks/Board.tsx): the page lifts and follows the pointer, leaning
+  // with its speed, the others slide aside, and let go it flies into its place and settles. With a finger, hold it a moment
+  // first, so that a swipe still scrolls. Escape puts it back.
   const startDrag = (e: RPointerEvent<HTMLElement>, key: string) => {
     if ((e.pointerType === 'mouse' && e.button !== 0) || (e.target as Element).closest('button, input, label')) return
     const el = e.currentTarget.closest<HTMLElement>('.ppage')!
     const r = el.getBoundingClientRect()
     const touch = e.pointerType === 'touch'
-    const p = { x: e.clientX, y: e.clientY }
-    const off = { x: e.clientX - r.left, y: e.clientY - r.top }
+    const x0 = e.clientX
+    const y0 = e.clientY
+    const p = { x: x0, y: y0 }
+    const off = { x: x0 - r.left, y: y0 - r.top }
+    const before = pagesRef.current
     let started = false
     let timer = 0
-    const place = () => { if (ghost.current) ghost.current.style.transform = `translate(${p.x - off.x}px, ${p.y - off.y}px)` }
+    let raf = 0
+    let lastX = x0
+    /** The place a move was asked for and not drawn yet */
+    let asked = -1
+    let tilt: ((deg: number) => void) | null = null
+    /** Where a page sits in the grid, without the slide it may be in the middle of */
+    const laid = (t: HTMLElement) => {
+      const o = (t.offsetParent ?? document.body).getBoundingClientRect()
+      return { left: o.left + t.offsetLeft, top: o.top + t.offsetTop }
+    }
+    const tiles = () => [...document.querySelectorAll<HTMLElement>('.pdf-grid > .ppage')]
+
+    // Once per frame: move and lean the page, scroll near the edges, make room where the pointer is. The places come from
+    // the layout, so pages still sliding aside do not change the answer (going by what is under the pointer swapped back
+    // and forth).
+    const frame = () => {
+      const g = ghost.current
+      if (g) {
+        gsap.set(g, { x: p.x - off.x, y: p.y - off.y })
+        if (!reduced()) {
+          tilt ??= gsap.quickTo(g, 'rotation', { duration: 0.3, ease: 'power2.out' })
+          tilt(Math.max(-6, Math.min(6, (p.x - lastX) * 0.35)))
+        }
+        lastX = p.x
+      }
+      if (p.y < 80) window.scrollBy(0, -Math.ceil((80 - p.y) / 6))
+      else if (p.y > innerHeight - 80) window.scrollBy(0, Math.ceil((p.y - innerHeight + 80) / 6))
+      const ts = tiles()
+      const to = ts.findIndex(t => {
+        const { left, top } = laid(t)
+        return p.x >= left && p.x <= left + t.offsetWidth && p.y >= top && p.y <= top + t.offsetHeight
+      })
+      if (to >= 0 && ts[to].dataset.page === key) asked = -1
+      else if (to >= 0 && to !== asked) {
+        asked = to
+        const done = flip(ts.filter(t => t !== el), { duration: 0.55 })
+        setPages(ps => {
+          const xs = ps.filter(x => x.key !== key)
+          xs.splice(to, 0, ps.find(x => x.key === key)!)
+          return xs
+        })
+        requestAnimationFrame(done)
+      }
+      raf = requestAnimationFrame(frame)
+    }
+
     const begin = () => {
       started = true
       touchDragging = touch
+      lift.current = { x: p.x - off.x, y: p.y - off.y, width: r.width }
       setDragKey(key)
-      requestAnimationFrame(() => {
-        if (!ghost.current) return
-        ghost.current.style.width = `${r.width}px`
-        place()
-      })
+      raf = requestAnimationFrame(frame)
     }
     const move = (ev: PointerEvent) => {
       p.x = ev.clientX
       p.y = ev.clientY
-      if (!started) {
-        const far = Math.hypot(p.x - e.clientX, p.y - e.clientY) > 6
-        if (far) { if (touch) end(); else begin() }
-        return
+      if (!started && Math.hypot(p.x - x0, p.y - y0) > 6) {
+        if (touch) finish(false)
+        else begin()
       }
-      place()
-      const over = document.elementFromPoint(p.x, p.y)?.closest<HTMLElement>('[data-page]')
-      if (!over || over.dataset.page === key) return
-      const to = pagesRef.current.findIndex(x => x.key === over.dataset.page)
-      const done = flip([...document.querySelectorAll('.ppage')].filter(x => x !== el))
-      setPages(ps => {
-        const from = ps.findIndex(x => x.key === key)
-        const xs = [...ps]
-        const [moved] = xs.splice(from, 1)
-        xs.splice(to, 0, moved)
-        return xs
-      })
-      requestAnimationFrame(done)
     }
-    const end = () => {
+    const finish = (keep: boolean) => {
       clearTimeout(timer)
+      cancelAnimationFrame(raf)
       touchDragging = false
       removeEventListener('pointermove', move)
-      removeEventListener('pointerup', end)
-      removeEventListener('pointercancel', end)
+      removeEventListener('pointerup', up)
+      removeEventListener('pointercancel', cancel)
+      removeEventListener('keydown', esc)
       if (!started) return
       // The click that ends a drag must not tick the page
       const swallow = (ev: Event) => { ev.stopPropagation(); ev.preventDefault() }
       addEventListener('click', swallow, { capture: true, once: true })
       setTimeout(() => removeEventListener('click', swallow, { capture: true }), 0)
-      setDragKey(null)
+      if (!keep) {
+        const done = flip(tiles().filter(t => t !== el), { duration: 0.55 })
+        flushSync(() => setPages(before))
+        done()
+      }
+      // Into its place, then a little settle there
+      requestAnimationFrame(() => {
+        const g = ghost.current
+        const land = () => {
+          setDragKey(null)
+          const sheet = el.querySelector<HTMLElement>('.ppage__sheet')
+          if (sheet) settle(sheet)
+        }
+        if (!g || !el.isConnected || reduced()) return land()
+        const to = laid(el)
+        gsap.to(g, { x: to.left, y: to.top, scale: 1, rotation: 0, duration: 0.32, ease: 'power3.out', overwrite: true, onComplete: land })
+      })
     }
+    const up = () => finish(true)
+    const cancel = () => finish(false)
+    const esc = (ev: globalThis.KeyboardEvent) => { if (ev.key === 'Escape') finish(false) }
+
     if (touch) timer = window.setTimeout(begin, 300)
     addEventListener('pointermove', move)
-    addEventListener('pointerup', end)
-    addEventListener('pointercancel', end)
+    addEventListener('pointerup', up)
+    addEventListener('pointercancel', cancel)
+    addEventListener('keydown', esc)
   }
 
   const onDrop = (e: DragEvent) => {

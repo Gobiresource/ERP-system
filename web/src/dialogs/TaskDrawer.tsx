@@ -11,7 +11,7 @@ import { Sheet, useCloseSheet } from '../ui/Sheet'
 import { Seg } from '../ui/Seg'
 import { Avatar, Prio, ProjectChip, STATUS, STATUSES } from '../ui/bits'
 import { PeoplePick } from '../ui/PeoplePick'
-import { moveToTop } from '../screens/tasks/TaskCard'
+import { mayChange, moveToTop } from '../screens/tasks/TaskCard'
 
 /** "Маргааш (10.30)" near today, otherwise "2026.11.19" */
 function dueText(due: string) {
@@ -39,6 +39,8 @@ function Body({ id }: { id: string }) {
   if (!t) return <p className="tp-none">Ажил устгагдсан байна.</p>
 
   const p = sc.project(t.project)
+  /** One of the people responsible: only they change the task (TaskCard.mayChange); the others look and comment */
+  const can = mayChange(t, s.me)
   const who = t.assignees.map(x => sc.person(x)).filter(x => x !== undefined)
   // The task's own ХХК: it may not be the one I am working in now
   const people = s.people.filter(x => x.companies.includes(t.company)).sort((a, b) => collator.compare(a.given, b.given))
@@ -72,7 +74,15 @@ function Body({ id }: { id: string }) {
       <h2 className="tp__title">{t.title}</h2>
 
       <div className="tp__seg">
-        <Seg<TaskStatus> label="Төлөв" value={t.status} onChange={st => { if (st !== t.status) moveToTop(t, st) }} options={STATUSES.map(st => ({ value: st, label: STATUS[st] }))} />
+        {can ? (
+          <Seg<TaskStatus> label="Төлөв" value={t.status} onChange={st => { if (st !== t.status) moveToTop(t, st) }} options={STATUSES.map(st => ({ value: st, label: STATUS[st] }))} />
+        ) : (
+          <p className="tp__state">
+            <span className={`tk-dot tk-dot--${t.status}`} aria-hidden="true" />
+            <b>{STATUS[t.status]}</b>
+            <span>Төлвийг зөвхөн хариуцагч өөрчилнө.</span>
+          </p>
+        )}
       </div>
 
       <dl className="meta tp__meta">
@@ -85,7 +95,7 @@ function Body({ id }: { id: string }) {
                 <span>{short(w)}</span>
               </button>
             )) : <><User className="ico" /><span>Оноогоогүй</span></>}
-            <button type="button" className="btn btn--ghost btn--sm" aria-expanded={pickWho} onClick={() => setPickWho(!pickWho)}>{pickWho ? 'Хураах' : 'Сонгох'}</button>
+            {can && <button type="button" className="btn btn--ghost btn--sm" aria-expanded={pickWho} onClick={() => setPickWho(!pickWho)}>{pickWho ? 'Хураах' : 'Сонгох'}</button>}
           </dd>
         </div>
         <div>
@@ -104,26 +114,28 @@ function Body({ id }: { id: string }) {
           <dd><Clock className="ico" /><span className="tnum">{t.estimate} цаг</span></dd>
         </div>
       </dl>
-      {pickWho && <PeoplePick people={people} value={t.assignees} onToggle={toggleWho} />}
+      {can && pickWho && <PeoplePick people={people} value={t.assignees} onToggle={toggleWho} />}
 
       <section className="block" aria-labelledby="tp-subs">
         <header><h3 id="tp-subs">Дэд ажил</h3><span className="badge tnum">{subsDone}/{t.subtasks.length}</span></header>
-        {t.subtasks.length === 0 && <p className="tp-none">Дэд ажил алга. Доор нэмж болно.</p>}
+        {t.subtasks.length === 0 && <p className="tp-none">{can ? 'Дэд ажил алга. Доор нэмж болно.' : 'Дэд ажил алга.'}</p>}
         <div className="tp__subs">
           {t.subtasks.map(x => (
             <div className="tp-sub" key={x.id}>
               <label>
-                <input type="checkbox" className="check" checked={x.done} onChange={() => actions.toggleSubtask(t.id, x.id)} />
+                <input type="checkbox" className="check" checked={x.done} disabled={!can} onChange={() => actions.toggleSubtask(t.id, x.id)} />
                 <span>{x.title}</span>
               </label>
             </div>
           ))}
         </div>
-        <form className="tp__add" onSubmit={e => { e.preventDefault(); addSub() }}>
-          <label className="sr-only" htmlFor="tp-new-sub">Шинэ дэд ажил</label>
-          <input id="tp-new-sub" className="input" value={sub} onChange={e => setSub(e.target.value)} placeholder="Дэд ажил нэмэх" />
-          <button type="submit" className="btn btn--glass btn--sm">Нэмэх</button>
-        </form>
+        {can && (
+          <form className="tp__add" onSubmit={e => { e.preventDefault(); addSub() }}>
+            <label className="sr-only" htmlFor="tp-new-sub">Шинэ дэд ажил</label>
+            <input id="tp-new-sub" className="input" value={sub} onChange={e => setSub(e.target.value)} placeholder="Дэд ажил нэмэх" />
+            <button type="submit" className="btn btn--glass btn--sm">Нэмэх</button>
+          </form>
+        )}
       </section>
 
       <section className="block" aria-labelledby="tp-comments">
@@ -150,7 +162,7 @@ function Body({ id }: { id: string }) {
         </form>
       </section>
 
-      {confirm ? (
+      {!can ? null : confirm ? (
         <div className="tp__confirm" role="alertdialog" aria-labelledby="tp-del-q">
           <p id="tp-del-q">Энэ ажлыг устгах уу? Дэд ажил, сэтгэгдэл нь хамт устна.</p>
           <div>

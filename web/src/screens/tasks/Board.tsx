@@ -8,7 +8,7 @@ import { scoped, useApp } from '../../lib/store'
 import { open } from '../../lib/ui'
 import { checkPop, gsap, popIn, reduced, settle, slideFrom, tops } from '../../lib/motion'
 import { STATUS, STATUSES } from '../../ui/bits'
-import { TaskCard, moveTask } from './TaskCard'
+import { TaskCard, mayChange, moveTask } from './TaskCard'
 
 const LIMIT = 8
 const EMPTY: Record<TaskStatus, string> = {
@@ -198,11 +198,12 @@ export function Board({ tasks }: { tasks: Task[] }) {
   }
 
   const dragged = drag ? tasks.find(t => t.id === drag.id) : undefined
-  // One listener for all cards, so the cards keep the same props and are not redrawn during a drag
+  // One listener for all cards, so the cards keep the same props and are not redrawn during a drag. Only the people
+  // responsible move a task (TaskCard.mayChange); someone else's card just opens.
   const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
     const el = (e.target as Element).closest<HTMLElement>('.tk-card')
     const t = el && tasks.find(x => x.id === el.dataset.id)
-    if (el && t) start(e, t, el)
+    if (el && t && mayChange(t, s.me)) start(e, t, el)
   }
 
   return (
@@ -228,7 +229,7 @@ export function Board({ tasks }: { tasks: Task[] }) {
                 return (
                   <Fragment key={t.id}>
                     {drag?.col === st && i === drag.index && <div className="tk-slot" style={{ height: drag.height }} aria-hidden="true" />}
-                    <TaskCard task={t} project={sc.project(t.project)} people={s.people} away={t.id === drag?.id} />
+                    <TaskCard task={t} project={sc.project(t.project)} people={s.people} away={t.id === drag?.id} fixed={!mayChange(t, s.me)} />
                   </Fragment>
                 )
               })}

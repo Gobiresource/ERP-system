@@ -63,7 +63,6 @@
 .scard__grid input, .scard__grid select { min-height: 40px; padding-block: 8px; font-size: 15px; }
 .scard__grid:disabled { opacity: .55; }
 .scard__acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-.scard__cost { margin-left: auto; font-size: 12px; color: var(--text-2); }
 
 @media (width <= 1100px) {
   .scard__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -11,7 +11,7 @@ import { eventEnd, thisWeek } from '../lib/derive'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { AvatarStack, KIND, KIND_HUE, KIND_ICON, eventHue } from '../ui/bits'
-import { moveTask } from './tasks/TaskCard'
+import { mayChange, moveTask } from './tasks/TaskCard'
 
 type View = 'month' | 'week'
 const VIEW_KEY = 'erp:calendar-view'
@@ -271,7 +271,7 @@ function Agenda({ day, sc }: { day: string; sc: Scoped }) {
               const p = sc.project(t.project)
               return (
                 <div key={t.id} className={`cal-task${t.status === 'done' ? ' is-done' : ''}`}>
-                  <input type="checkbox" className="check" checked={t.status === 'done'} aria-label={`${t.title}: дууссан`} onChange={e => moveTask(t, e.target.checked ? 'done' : 'todo')} />
+                  <input type="checkbox" className="check" checked={t.status === 'done'} aria-label={`${t.title}: дууссан`} disabled={!mayChange(t, s.me)} onChange={e => moveTask(t, e.target.checked ? 'done' : 'todo')} />
                   <button type="button" className="cal-task__t" onClick={() => open({ kind: 'task', id: t.id })}>
                     <span>{t.title}</span>
                     {p && <small className={`hue--${p.hue}`}><i aria-hidden="true" />{p.name}</small>}

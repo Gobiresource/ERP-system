@@ -66,14 +66,14 @@ export default function Scans() {
       <PageHead
         title="Скан оруулах"
         sub="Цаасан баримтаа скан хийж оруулбал AI уншаад аль ХХК-ийн аль хавтсанд орохыг санал болгоно. Та шалгаад хавтаслана."
-        stats={s.scans.length || s.aiSpent ? [
+        stats={s.scans.length ? [
           { label: 'Хавтаслах', value: s.scans.length },
-          { label: 'AI таньсан', value: s.scans.filter(it => it.state === 'read' && !it.sample).length },
-          { label: 'AI зардал', value: `$${s.aiSpent.toFixed(2)}` },
+          { label: 'Бэлэн', value: ready.length },
+          { label: 'Шалгах', value: check.length },
         ] : undefined}
         actions={ready.length > 1 && <button type="button" className="btn btn--accent" onClick={fileAll}><FolderInput className="ico" />Танигдсаныг хавтаслах ({ready.length})</button>}
       />
-      <AiBar ai={ai} samples={s.scans.some(it => it.sample)} work={s.scans.filter(working).length} />
+      <AiBar ai={ai} samples={s.scans.some(it => it.sample)} />
       <Drop ready={!!ai?.ready} />
       {s.scans.length > 1 && (
         <div className="rtabs" data-enter>
@@ -100,18 +100,11 @@ export default function Scans() {
   )
 }
 
-/** Whether AI reads the scans, and how many wait; without it, the papers are filled in by hand, and demo papers show the way */
-function AiBar({ ai, samples, work }: { ai: AiState | null; samples: boolean; work: number }) {
+/** Speaks only when AI does not read the scans: the papers are then filled in by hand, and demo papers show the way. With AI
+ * on, or while the page asks the server, it says nothing (the user's wish, 2026-11-02); each card shows its own state. */
+function AiBar({ ai, samples }: { ai: AiState | null; samples: boolean }) {
   const [adding, setAdding] = useState(false)
-  if (!ai) return <p className="sbar" role="status"><LoaderCircle className="ico spin" />AI холболтыг шалгаж байна…</p>
-  if (ai.ready) {
-    return (
-      <p className="sbar is-on" role="status">
-        {work ? <LoaderCircle className="ico spin" /> : <Sparkles className="ico" />}
-        <span><b>AI холбогдсон</b> ({ai.model}). Баримтыг хадгалахгүй, сургалтад ашиглахгүй.{work > 0 && ` Уншиж байна: ${work} баримт үлдлээ.`}</span>
-      </p>
-    )
-  }
+  if (!ai || ai.ready) return null
   const add = () => {
     setAdding(true)
     addSamples().then(() => setAdding(false), () => setAdding(false))
@@ -349,7 +342,6 @@ function ScanCard({ it, ai, sure: done }: { it: ScanItem; ai: boolean; sure: boo
             }, failed)}><Merge className="ico" />Өмнөхтэй нийлүүлэх</button>
           )}
           {done && <button type="button" className="btn btn--ghost" onClick={() => setMore(false)}>Хураах</button>}
-          {it.model && <small className="scard__cost">{it.model}{it.cost !== undefined ? `, $${it.cost.toFixed(4)}` : ''}</small>}
         </div>
       </div>
     </li>

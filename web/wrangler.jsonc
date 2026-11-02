@@ -1,8 +1,13 @@
-// Cloudflare: the built app (dist) as a Worker's static assets (docs/decisions.md, 2026-11-02). No server code yet: the
-// Timely and scan-AI servers wait for sign-in on the server, as anyone with the link could reach them otherwise.
-// Deploy: npm run deploy (Wrangler, with its usage statistics turned off).
+// Cloudflare: the built app (dist) served by a small Worker from Workers KV (worker/site.js, docs/decisions.md,
+// 2026-11-02). The scan reader runs here with its own OpenRouter key, a Worker secret the user set, whose workspace budget
+// caps what anyone with the link can spend; the Timely server waits for sign-in on the server. Deploy: npm run deploy
+// (Wrangler, with its usage statistics turned off).
 {
   "name": "gobi-erp",
+  "main": "worker/site.js",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "./dist" }
+  "site": { "bucket": "./dist" },
+  // gobi-erp.gobiresource.workers.dev only: no extra public address for each version
+  "workers_dev": true,
+  "preview_urls": false
 }
