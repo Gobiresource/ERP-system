@@ -11,8 +11,8 @@ FONTS = HERE.parents[2] / 'video/node_modules/@fontsource-variable/golos-text/fi
 
 # Page: A3 landscape at 96 dpi
 PW, PH = 1587, 1123
-K = 1.42                       # photo px -> page px
-OX, OY = (PW - 843 * K) / 2 - 22 * K, 150 - 23 * K
+K = 1.38                       # photo px -> page px
+OX, OY = (PW - 843 * K) / 2 - 22 * K, 188 - 23 * K
 
 def P(x, y): return OX + x * K, OY + y * K
 def R(x0, y0, x1, y1):
@@ -52,7 +52,8 @@ HALLS = [
     (554, 173, 658, 192),
 ]
 YARD = [(191, 173), (554, 173), (554, 192), (658, 192), (658, 437), (191, 437)]
-OUTLINE = [(524, 530), (865, 530), (865, 23), (22, 23), (22, 348), (100, 348), (100, 530), (508, 530)]
+OUTLINE = [(541, 530), (865, 530), (865, 23), (191, 23), (172, 23), (22, 23), (22, 348), (100, 348), (100, 530), (489, 530)]
+WALLS = [OUTLINE[:4], OUTLINE[4:]]   # the outline split at the top left exit; the main exit is the gap between its ends
 
 EXTINGUISHERS = [(190, 37), (711, 84), (756, 85), (527, 103), (697, 131), (215, 188), (793, 211), (307, 274),
                  (307, 300), (210, 323), (699, 335), (160, 338), (700, 381), (793, 430), (119, 517)]
@@ -63,18 +64,19 @@ SIGNS = [(583, 104, 'left'), (787, 275, 'up'), (181, 340, 'up'), (668, 366, 'up'
 # exit signs: corridors lead to the two yard doors or along the bottom corridors, the yard routes and the passage
 # lead out through the main exit. The lower right corridor going down is inferred (old plan has no sign there).
 ROUTES = [
-    [(640, 104), (181.5, 104), (181.5, 292), (204, 292)],          # top corridor west, left corridor, left yard door
-    [(181.5, 40), (181.5, 98)],                                    # top of the left corridor
+    [(640, 104), (181.5, 104), (181.5, 16)],                       # top corridor west, up to the top left exit
+    [(181.5, 179), (181.5, 112)],                                  # upper left corridor, up to the same exit
+    [(181.5, 196), (181.5, 292), (204, 292)],                      # left corridor down to the left yard door
     [(181.5, 430), (181.5, 300)],                                  # lower left corridor up to the door
     [(787, 300), (787, 104), (667, 104), (667, 322), (650, 322)],  # right corridor, top corridor east, right yard door
     [(667, 430), (667, 332)],                                      # lower right inner corridor up to the door
-    [(787, 330), (787, 519.5), (530, 519.5)],                      # lower right corridor, bottom right corridor
-    [(205, 519.5), (498, 519.5)],                                  # bottom left corridor
+    [(787, 330), (787, 519.5), (540, 519.5), (533, 536)],          # lower right corridor, bottom right corridor, main exit
+    [(205, 519.5), (490, 519.5), (497, 536)],                      # bottom left corridor, main exit
     [(214, 292), (300, 328), (420, 382), (504, 432)],              # yard, from the left door
     [(644, 322), (600, 368), (545, 412), (522, 432)],              # yard, from the right door
     [(514, 442), (514, 534)],                                      # passage and main exit
 ]
-DOORS = [(191, 284, 191, 299), (658, 312, 658, 333), (508, 530, 524, 530)]   # yard doors and the main exit
+DOORS = [(191, 284, 191, 299), (658, 312, 658, 333), (489, 530, 541, 530), (172, 23, 191, 23)]   # yard doors, main exit, top left exit
 
 def font_faces():
     css = []
@@ -189,7 +191,9 @@ def build(labels):
         if n:
             cx, cy = P((x0 + x1) / 2, (y0 + y1) / 2)
             o.append(text(cx, cy + 6, n, 17, 600, '#3A4148', 'middle'))
-    o.append(f'<polyline points="{pts}" fill="none" stroke="{INK}" stroke-width="4.5" stroke-linejoin="round"/>')
+    for wall in WALLS:
+        wpts = ' '.join('%.1f,%.1f' % P(x, y) for x, y in wall)
+        o.append(f'<polyline points="{wpts}" fill="none" stroke="{INK}" stroke-width="4.5" stroke-linejoin="round"/>')
     o.append(f'<polyline points="{yard}" fill="none" stroke="#8A949D" stroke-width="1.4"/>')
     # Yard: the shed and the ger-like round building, and the label
     o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="3" fill="#E4E8EB" stroke="#A3ADB5" stroke-width="1.4"/>' % R(345, 261, 397, 314))
@@ -208,9 +212,12 @@ def build(labels):
     for line in ROUTES:
         o.extend(arrow_chain([P(*pt) for pt in line], keep_clear))
     # Main exit: a standard exit symbol outside the door
-    ex, ey = P(514, 539)
+    ex, ey = P(515, 539)
     o.append(f'<g transform="translate({ex:.1f} {ey:.1f})">{exit_symbol(52)}'
              f'{text(38, 34, labels["L6"], 19, 700, GREEN, "start", "letter-spacing=&quot;0.6&quot;")}</g>')
+    tx, ty = P(181.5, 23)
+    o.append(f'<g transform="translate({tx:.1f} {ty - 50:.1f})">{exit_symbol(40)}'
+             f'{text(30, 27, labels["L7"], 17, 700, GREEN, "start", "letter-spacing=&quot;0.6&quot;")}</g>')
     # Equipment and signs
     for x, y in EXTINGUISHERS:
         o.append(icon(EXTINGUISHER, *P(x, y), 25, RED))
