@@ -212,7 +212,7 @@ for (let i = 0; i < 16; i++) {
   m.userData = { x: -3.5 + rand(i) * 11.5, y: 0.6 + rand(i + 9) * 2.6, z: -2.4 - rand(i + 5) * 4.5, spin: (rand(i + 7) - 0.5) * 0.6, ph: rand(i + 11) * 6.28 }
   // While the phone is on screen the depth of field is off (it is the slowest step in software
   // rendering) and each triangle is shown as a flat, already-blurred picture instead.
-  const soft = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTriangle(i % 3 ? '#bc1f29' : '#f2eee8'), depthWrite: false }))
+  const soft = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTriangle(i % 3 ? '#bc1f29' : '#f2eee8'), color: 0xc8c4c0, depthWrite: false }))
   soft.scale.setScalar(s * 1.9)
   m.userData.soft = soft
   floaters.push(m); scene.add(m, soft)
