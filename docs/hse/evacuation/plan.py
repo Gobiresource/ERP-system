@@ -3,6 +3,7 @@
 #   python3 plan.py            writes plan.svg next to this file
 #   node render.mjs            writes plan.png (A3, 2x) and plan.pdf (A3)
 import base64
+import math
 import pathlib
 
 HERE = pathlib.Path(__file__).parent
@@ -58,9 +59,21 @@ EXTINGUISHERS = [(190, 37), (711, 84), (756, 85), (527, 103), (697, 131), (215, 
 ALARMS = [(183, 104), (787, 104), (667, 302), (476, 519), (552, 520)]
 # Exit signs from the old plan: centre and the way their arrow points
 SIGNS = [(583, 104, 'left'), (787, 275, 'up'), (181, 340, 'up'), (668, 366, 'up'), (274, 519, 'right'), (672, 520, 'left')]
-# Routes across the yard to the main exit, as drawn on the old plan
-ROUTES = [((212, 292), (305, 330), (440, 386), (512, 440)), ((638, 324), (606, 362), (546, 405), (516, 440))]
-EXIT_Y = 548          # where the route ends outside the main exit
+# Escape routes as centre lines, drawn as chains of small arrows (ISO 23601 style). They follow the old plan's
+# exit signs: corridors lead to the two yard doors or along the bottom corridors, the yard routes and the passage
+# lead out through the main exit. The lower right corridor going down is inferred (old plan has no sign there).
+ROUTES = [
+    [(640, 104), (181.5, 104), (181.5, 292), (204, 292)],          # top corridor west, left corridor, left yard door
+    [(181.5, 40), (181.5, 98)],                                    # top of the left corridor
+    [(181.5, 430), (181.5, 300)],                                  # lower left corridor up to the door
+    [(787, 300), (787, 104), (667, 104), (667, 322), (650, 322)],  # right corridor, top corridor east, right yard door
+    [(667, 430), (667, 332)],                                      # lower right inner corridor up to the door
+    [(787, 330), (787, 519.5), (530, 519.5)],                      # lower right corridor, bottom right corridor
+    [(205, 519.5), (498, 519.5)],                                  # bottom left corridor
+    [(214, 292), (300, 328), (420, 382), (504, 432)],              # yard, from the left door
+    [(644, 322), (600, 368), (545, 412), (522, 432)],              # yard, from the right door
+    [(514, 442), (514, 534)],                                      # passage and main exit
+]
 DOORS = [(191, 284, 191, 299), (658, 312, 658, 333), (508, 530, 524, 530)]   # yard doors and the main exit
 
 def font_faces():
@@ -117,6 +130,39 @@ def exit_sign(x, y, way, scale=1.0):
 def text(x, y, s, size, weight=400, fill=INK, anchor='start', extra=''):
     return f'<text x="{x:.1f}" y="{y:.1f}" font-size="{size}" font-weight="{weight}" fill="{fill}" text-anchor="{anchor}" {extra}>{s}</text>'
 
+ARROW = 'M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z'
+
+def arrow_chain(pts, keep_clear, step=30, start=12):
+    """Arrows along a page-space polyline, pointing the way it runs. Skips spots under signs and icons."""
+    out, carry = [], start
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        seg = math.hypot(x1 - x0, y1 - y0)
+        ang = math.degrees(math.atan2(y1 - y0, x1 - x0))
+        d = carry
+        while d <= seg:
+            x, y = x0 + (x1 - x0) * d / seg, y0 + (y1 - y0) * d / seg
+            if not any(_covers(c, x, y) for c in keep_clear):
+                out.append(f'<path d="{ARROW}" transform="translate({x:.1f} {y:.1f}) rotate({ang:.0f})" fill="{GREEN}"/>')
+            d += step
+        carry = d - seg
+    return out
+
+def _covers(c, x, y):
+    if len(c) == 3:                                   # round icon: centre and radius
+        return math.hypot(x - c[0], y - c[1]) < c[2]
+    cx, cy, _, way = c                                # exit sign: its rectangle plus a little room
+    w, h = (40, 22) if way in ('left', 'right') else (22, 40)
+    return abs(x - cx) < w and abs(y - cy) < h
+
+def exit_symbol(size):
+    """Green exit sign: a figure running to a door, centred on (0, size/2) so a label can go under it."""
+    s = size / 24
+    return (f'<rect x="{-size / 2}" y="0" width="{size}" height="{size}" rx="{size * .14:.1f}" fill="{GREEN}"/>'
+            f'<rect x="{-size / 2 + size * .14:.1f}" y="{size * .16:.1f}" width="{size * .26:.1f}" height="{size * .68:.1f}" '
+            f'fill="none" stroke="#fff" stroke-width="{2.2 * s:.1f}" rx="1"/>'
+            f'<g transform="translate({-size * .12:.1f} {size * .14:.1f}) scale({s * .78:.3f})">'
+            f'<g {LINE} transform="translate(24 0) scale(-1 1)">{RUNNER}</g></g>')
+
 def build(labels):
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{PW}" height="{PH}" viewBox="0 0 {PW} {PH}" font-family="Golos, sans-serif">',
          f'<style>{font_faces()} text{{font-feature-settings:"tnum"}}</style>',
@@ -137,7 +183,7 @@ def build(labels):
     yard = ' '.join('%.1f,%.1f' % P(x, y) for x, y in YARD)
     o.append(f'<polygon points="{yard}" fill="url(#yard)"/>')
     for x0, y0, x1, y1 in HALLS:
-        o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#E6F3EA"/>' % R(x0, y0, x1, y1))
+        o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#EEF1F3"/>' % R(x0, y0, x1, y1))
     for n, x0, y0, x1, y1 in ROOMS:
         o.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#fff" stroke="#8A949D" stroke-width="1.4"/>' % R(x0, y0, x1, y1))
         if n:
@@ -156,15 +202,15 @@ def build(labels):
         (a, b), (c, d) = P(x0, y0), P(x1, y1)
         o.append(f'<line x1="{a:.1f}" y1="{b:.1f}" x2="{c:.1f}" y2="{d:.1f}" stroke="#fff" stroke-width="7"/>')
         o.append(f'<line x1="{a:.1f}" y1="{b:.1f}" x2="{c:.1f}" y2="{d:.1f}" stroke="{GREEN}" stroke-width="5" stroke-linecap="round"/>')
-    # Routes: each yard door to the passage, then out through the main exit
-    for p0, c1, c2, p3 in ROUTES:
-        d = 'M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f L%.1f %.1f' % (*P(*p0), *P(*c1), *P(*c2), *P(*p3), *P(514, EXIT_Y))
-        o.append(f'<path d="{d}" fill="none" stroke="{GREEN}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>')
-    # Main exit marker outside
-    ex, ey = P(514, EXIT_Y + 12)
-    o.append(f'<g transform="translate({ex:.1f} {ey:.1f})"><rect x="-118" y="0" width="236" height="46" rx="10" fill="{GREEN}"/>'
-             f'<g transform="translate(-104 8) scale(1.25)"><g {LINE}>{RUNNER}</g></g>'
-             f'{text(16, 31, labels["L6"], 22, 700, "#fff", "middle", "letter-spacing=&quot;1&quot;")}</g>')
+    # Routes: small arrows every 30 px along each centre line, left out where a sign or icon sits
+    keep_clear = ([(*P(x, y), 21) for x, y in EXTINGUISHERS + ALARMS] +
+                  [(*P(x, y), 0, way) for x, y, way in SIGNS])
+    for line in ROUTES:
+        o.extend(arrow_chain([P(*pt) for pt in line], keep_clear))
+    # Main exit: a standard exit symbol outside the door
+    ex, ey = P(514, 539)
+    o.append(f'<g transform="translate({ex:.1f} {ey:.1f})">{exit_symbol(52)}'
+             f'{text(38, 34, labels["L6"], 19, 700, GREEN, "start", "letter-spacing=&quot;0.6&quot;")}</g>')
     # Equipment and signs
     for x, y in EXTINGUISHERS:
         o.append(icon(EXTINGUISHER, *P(x, y), 25, RED))
@@ -177,10 +223,10 @@ def build(labels):
     o.append(f'<line x1="48" y1="{fy}" x2="{PW - 48}" y2="{fy}" stroke="#E3E7EA" stroke-width="2"/>')
     ly = fy + 44
     o.append(text(48, ly + 6, labels['L0'], 14, 700, MUTED, extra='letter-spacing="1.2"'))
-    for x, kind, w, label in [(300, 'route', 66, labels['L1']), (560, 'exit', 80, labels['L2']),
+    for x, kind, w, label in [(300, 'route', 76, labels['L1']), (560, 'exit', 80, labels['L2']),
                               (840, 'ext', 40, labels['L3']), (1150, 'alarm', 38, labels['L4'])]:
         if kind == 'route':
-            o.append(f'<path d="M{x + 2} {ly}h42" stroke="{GREEN}" stroke-width="8" stroke-linecap="round" marker-end="url(#head)"/>')
+            o.extend(arrow_chain([(x, ly), (x + 62, ly)], [], step=26, start=8))
         elif kind == 'exit':
             o.append(exit_sign(x + 33, ly, 'right', .95))
         elif kind == 'ext':

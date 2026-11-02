@@ -10,15 +10,15 @@
 <g transform="translate(1539 58)"><rect x="-262" y="0" width="262" height="58" rx="12" fill="#D52B1E"/><text x="-237.0" y="38.0" font-size="22" font-weight="600" fill="#fff" text-anchor="start" >Гал түймэр</text><text x="-22.0" y="41.0" font-size="34" font-weight="800" fill="#fff" text-anchor="end" >101</text></g>
 <polygon points="907.8,869.9 1392.0,869.9 1392.0,150.0 195.0,150.0 195.0,611.5 305.7,611.5 305.7,869.9 885.1,869.9" fill="#fff"/>
 <polygon points="434.9,363.0 950.4,363.0 950.4,390.0 1098.1,390.0 1098.1,737.9 434.9,737.9" fill="url(#yard)"/>
-<rect x="408.0" y="150.0" width="27.0" height="587.9" fill="#E6F3EA"/>
-<rect x="434.9" y="252.2" width="860.5" height="25.6" fill="#E6F3EA"/>
-<rect x="1267.1" y="277.8" width="28.4" height="592.1" fill="#E6F3EA"/>
-<rect x="1098.1" y="277.8" width="25.6" height="460.1" fill="#E6F3EA"/>
-<rect x="444.9" y="841.5" width="413.2" height="28.4" fill="#E6F3EA"/>
-<rect x="931.9" y="841.5" width="335.1" height="28.4" fill="#E6F3EA"/>
-<rect x="858.1" y="737.9" width="73.8" height="132.1" fill="#E6F3EA"/>
-<rect x="287.3" y="150.0" width="28.4" height="221.5" fill="#E6F3EA"/>
-<rect x="950.4" y="363.0" width="147.7" height="27.0" fill="#E6F3EA"/>
+<rect x="408.0" y="150.0" width="27.0" height="587.9" fill="#EEF1F3"/>
+<rect x="434.9" y="252.2" width="860.5" height="25.6" fill="#EEF1F3"/>
+<rect x="1267.1" y="277.8" width="28.4" height="592.1" fill="#EEF1F3"/>
+<rect x="1098.1" y="277.8" width="25.6" height="460.1" fill="#EEF1F3"/>
+<rect x="444.9" y="841.5" width="413.2" height="28.4" fill="#EEF1F3"/>
+<rect x="931.9" y="841.5" width="335.1" height="28.4" fill="#EEF1F3"/>
+<rect x="858.1" y="737.9" width="73.8" height="132.1" fill="#EEF1F3"/>
+<rect x="287.3" y="150.0" width="28.4" height="221.5" fill="#EEF1F3"/>
+<rect x="950.4" y="363.0" width="147.7" height="27.0" fill="#EEF1F3"/>
 <rect x="195.0" y="150.0" width="92.3" height="83.8" fill="#fff" stroke="#8A949D" stroke-width="1.4"/>
 <text x="241.1" y="197.9" font-size="17" font-weight="600" fill="#3A4148" text-anchor="middle" >57</text>
 <rect x="195.0" y="233.8" width="92.3" height="63.9" fill="#fff" stroke="#8A949D" stroke-width="1.4"/>
@@ -146,9 +146,112 @@
 <line x1="1098.1" y1="560.4" x2="1098.1" y2="590.2" stroke="#00843D" stroke-width="5" stroke-linecap="round"/>
 <line x1="885.1" y1="869.9" x2="907.8" y2="869.9" stroke="#fff" stroke-width="7"/>
 <line x1="885.1" y1="869.9" x2="907.8" y2="869.9" stroke="#00843D" stroke-width="5" stroke-linecap="round"/>
-<path d="M464.8 532.0 C596.8 585.9 788.5 665.5 890.8 742.1 L893.6 895.5" fill="none" stroke="#00843D" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
-<path d="M1069.7 577.4 C1024.2 631.4 939.0 692.4 896.4 742.1 L893.6 895.5" fill="none" stroke="#00843D" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#head)"/>
-<g transform="translate(893.6 912.5)"><rect x="-118" y="0" width="236" height="46" rx="10" fill="#00843D"/><g transform="translate(-104 8) scale(1.25)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="3.6" r="2.3" fill="#fff" stroke="none"/><path d="M13.6 7.4 11 13.6M13.6 8.4l3.4 2.2 2.6-1.4M13 8.6 9.4 9.4 7.2 12.4M11 13.6l3.6 2.6-1.2 5.2M11 13.6 8.8 17.8 4.4 18.8"/></g></g><text x="16.0" y="31.0" font-size="22" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing=&quot;1&quot;>ҮНДСЭН ГАРЦ</text></g>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1060.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(940.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(880.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(850.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(820.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(790.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(760.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(730.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(700.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(670.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(640.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(610.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(580.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(550.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(520.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(490.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(460.5 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 286.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 316.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 346.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 376.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 406.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 436.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 466.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 496.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 526.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(445.4 532.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 216.1) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 715.9) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 685.9) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(421.5 655.9) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 441.3) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 381.3) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 351.3) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 321.3) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 291.3) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1247.6 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1217.6 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1187.6 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1157.6 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1127.6 265.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 278.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 308.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 338.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 368.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 398.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 428.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 458.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 488.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 518.3) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1107.2 574.6) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 715.9) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 685.9) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1110.9 595.9) rotate(-90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 597.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 627.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 657.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 687.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 747.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 777.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 807.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1281.3 837.9) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1268.4 855.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1238.4 855.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1208.4 855.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1178.4 855.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1058.4 855.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1028.4 855.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(998.4 855.0) rotate(180)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(466.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(496.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(616.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(646.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(676.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(706.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(736.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(766.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(796.8 855.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(478.7 536.6) rotate(23)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(506.4 548.2) rotate(23)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(534.0 559.8) rotate(23)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(561.7 571.4) rotate(23)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(589.4 583.0) rotate(23)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(616.7 595.3) rotate(24)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(644.1 607.6) rotate(24)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(671.4 619.9) rotate(24)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(698.8 632.2) rotate(24)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(726.2 644.5) rotate(24)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(753.5 656.8) rotate(24)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(779.7 671.4) rotate(31)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(805.5 686.8) rotate(31)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(831.2 702.1) rotate(31)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(857.0 717.5) rotate(31)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1069.9 583.3) rotate(134)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1049.2 604.9) rotate(134)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1028.4 626.6) rotate(134)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(1006.7 647.2) rotate(141)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(983.2 665.9) rotate(141)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(959.8 684.6) rotate(141)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(936.4 703.4) rotate(139)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(913.8 723.1) rotate(139)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(893.6 757.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(893.6 787.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(893.6 817.0) rotate(90)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(893.6 847.0) rotate(90)" fill="#00843D"/>
+<g transform="translate(893.6 882.7)"><rect x="-26.0" y="0" width="52" height="52" rx="7.3" fill="#00843D"/><rect x="-18.7" y="8.3" width="13.5" height="35.4" fill="none" stroke="#fff" stroke-width="4.8" rx="1"/><g transform="translate(-6.2 7.3) scale(1.690)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform="translate(24 0) scale(-1 1)"><circle cx="15" cy="3.6" r="2.3" fill="#fff" stroke="none"/><path d="M13.6 7.4 11 13.6M13.6 8.4l3.4 2.2 2.6-1.4M13 8.6 9.4 9.4 7.2 12.4M11 13.6l3.6 2.6-1.2 5.2M11 13.6 8.8 17.8 4.4 18.8"/></g></g><text x="38.0" y="34.0" font-size="19" font-weight="700" fill="#00843D" text-anchor="start" letter-spacing=&quot;0.6&quot;>ҮНДСЭН ГАРЦ</text></g>
 <g transform="translate(421.0 157.4)"><rect width="25" height="25" rx="4" fill="#D52B1E"/><g transform="translate(3.5 3.5) scale(0.750)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5"/><path d="M9 18h8"/><path d="M18 3h-3"/><path d="M11 3a6 6 0 0 0-6 6v11"/><path d="M5 13h4"/><path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z"/></g></g></g>
 <g transform="translate(1160.8 224.1)"><rect width="25" height="25" rx="4" fill="#D52B1E"/><g transform="translate(3.5 3.5) scale(0.750)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5"/><path d="M9 18h8"/><path d="M18 3h-3"/><path d="M11 3a6 6 0 0 0-6 6v11"/><path d="M5 13h4"/><path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z"/></g></g></g>
 <g transform="translate(1224.8 225.5)"><rect width="25" height="25" rx="4" fill="#D52B1E"/><g transform="translate(3.5 3.5) scale(0.750)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5"/><path d="M9 18h8"/><path d="M18 3h-3"/><path d="M11 3a6 6 0 0 0-6 6v11"/><path d="M5 13h4"/><path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z"/></g></g></g>
@@ -177,8 +280,10 @@
 <g transform="translate(1118.0 855.7)"><rect x="-31.349999999999998" y="-11.399999999999999" width="62.699999999999996" height="22.799999999999997" rx="3.8" fill="#00843D"/><g transform="translate(10.45 -9.5) scale(0.792)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform=&quot;translate(24 0) scale(-1 1)&quot;><circle cx="15" cy="3.6" r="2.3" fill="#fff" stroke="none"/><path d="M13.6 7.4 11 13.6M13.6 8.4l3.4 2.2 2.6-1.4M13 8.6 9.4 9.4 7.2 12.4M11 13.6l3.6 2.6-1.2 5.2M11 13.6 8.8 17.8 4.4 18.8"/></g></g><path d="M5.699999999999999 0H-12.35M-7.6 -4.75L-12.35 0L-7.6 4.75" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="-27.074999999999996" y="-6.6499999999999995" width="8.549999999999999" height="13.299999999999999" rx="1" fill="#fff"/></g>
 <line x1="48" y1="972" x2="1539" y2="972" stroke="#E3E7EA" stroke-width="2"/>
 <text x="48.0" y="1022.0" font-size="14" font-weight="700" fill="#5B6670" text-anchor="start" letter-spacing="1.2">ТАНИХ ТЭМДЭГ</text>
-<path d="M302 1016h42" stroke="#00843D" stroke-width="8" stroke-linecap="round" marker-end="url(#head)"/>
-<text x="366.0" y="1023.0" font-size="19" font-weight="500" fill="#1F2429" text-anchor="start" >Аврах зам</text>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(308.0 1016.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(334.0 1016.0) rotate(0)" fill="#00843D"/>
+<path d="M-7 -2.6H.5V-6.5L8 0 .5 6.5V2.6H-7Z" transform="translate(360.0 1016.0) rotate(0)" fill="#00843D"/>
+<text x="376.0" y="1023.0" font-size="19" font-weight="500" fill="#1F2429" text-anchor="start" >Аврах зам</text>
 <g transform="translate(593.0 1016.0)"><rect x="-31.349999999999998" y="-11.399999999999999" width="62.699999999999996" height="22.799999999999997" rx="3.8" fill="#00843D"/><g transform="translate(-29.45 -9.5) scale(0.792)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="3.6" r="2.3" fill="#fff" stroke="none"/><path d="M13.6 7.4 11 13.6M13.6 8.4l3.4 2.2 2.6-1.4M13 8.6 9.4 9.4 7.2 12.4M11 13.6l3.6 2.6-1.2 5.2M11 13.6 8.8 17.8 4.4 18.8"/></g></g><path d="M-5.699999999999999 0H12.35M7.6 -4.75L12.35 0L7.6 4.75" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="18.525" y="-6.6499999999999995" width="8.549999999999999" height="13.299999999999999" rx="1" fill="#fff"/></g>
 <text x="640.0" y="1023.0" font-size="19" font-weight="500" fill="#1F2429" text-anchor="start" >Аврах гарц</text>
 <g transform="translate(839.5 1002.5)"><rect width="27" height="27" rx="4" fill="#D52B1E"/><g transform="translate(3.8 3.8) scale(0.810)"><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5"/><path d="M9 18h8"/><path d="M18 3h-3"/><path d="M11 3a6 6 0 0 0-6 6v11"/><path d="M5 13h4"/><path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z"/></g></g></g>
