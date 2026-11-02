@@ -95,6 +95,8 @@ EXTINGUISHER = ('<path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5"/><path d
                 '<path d="M11 3a6 6 0 0 0-6 6v11"/><path d="M5 13h4"/>'
                 '<path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z"/>')
 DOOR = '<path d="M5 21V3h11v18M3 21h16"/><path d="M12.5 12h.01" stroke-width="3"/>'
+SPACED = 'letter-spacing="0.6"'
+MIRROR = ' transform="translate(24 0) scale(-1 1)"'
 LINE = 'fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"'
 
 def icon(sym, x, y, size, bg, rx=4, mirror=False):
@@ -117,7 +119,7 @@ def exit_sign(x, y, way, scale=1.0):
         g = [f'<rect x="{-w / 2}" y="{-h / 2}" width="{w}" height="{h}" rx="{4 * scale}" fill="{GREEN}"/>']
         d = 1 if way == 'right' else -1
         g.append(f'<g transform="translate({-d * 21 * scale - 10 * scale} {-10 * scale}) scale({20 * scale / 24:.3f})">'
-                 f'<g {LINE}{" transform=&quot;translate(24 0) scale(-1 1)&quot;" if d < 0 else ""}>{RUNNER}</g></g>')
+                 f'<g {LINE}{MIRROR if d < 0 else ""}>{RUNNER}</g></g>')
         ax0, ax1 = -d * 6 * scale, d * 13 * scale
         g.append(f'<path d="M{ax0} 0H{ax1}M{ax1 - d * 5 * scale} {-5 * scale}L{ax1} 0L{ax1 - d * 5 * scale} {5 * scale}" {LINE}/>')
         g.append(f'<rect x="{d * 24 * scale - 4.5 * scale}" y="{-7 * scale}" width="{9 * scale}" height="{14 * scale}" rx="1" fill="#fff"/>')
@@ -165,20 +167,34 @@ def exit_symbol(size):
             f'<g transform="translate({-size * .12:.1f} {size * .14:.1f}) scale({s * .78:.3f})">'
             f'<g {LINE} transform="translate(24 0) scale(-1 1)">{RUNNER}</g></g>')
 
-def build(labels):
+def build(labels, video=False):
+    """The A3 plan; with video=True only the building (no page, header or footer) for video/hse-fire."""
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{PW}" height="{PH}" viewBox="0 0 {PW} {PH}" font-family="Golos, sans-serif">',
          f'<style>{font_faces()} text{{font-feature-settings:"tnum"}}</style>',
          f'<defs><marker id="head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse">'
          f'<path d="M0 0L10 5L0 10z" fill="{GREEN}"/></marker>'
          f'<pattern id="yard" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#F4F6F2"/>'
          f'<circle cx="7" cy="7" r="1" fill="#DCE3DA"/></pattern></defs>',
-         f'<rect width="{PW}" height="{PH}" fill="#fff"/>',
-         f'<rect x="18" y="18" width="{PW - 36}" height="{PH - 36}" rx="14" fill="none" stroke="#D9DEE2" stroke-width="2"/>']
-    # Header
+         ]
+    if not video:
+        o.append(f'<rect width="{PW}" height="{PH}" fill="#fff"/>')
+        o.append(f'<rect x="18" y="18" width="{PW - 36}" height="{PH - 36}" rx="14" fill="none" stroke="#D9DEE2" stroke-width="2"/>')
+        o.extend(header(labels))
+    o.extend(building(labels))
+    if not video:
+        o.extend(footer(labels))
+    return '\n'.join(o + ['</svg>'])
+
+def header(labels):
+    o = []
     o.append(text(48, 86, labels['T1'], 38, 700))
     o.append(text(48, 122, labels['T2'], 21, 500, MUTED))
     o.append(f'<g transform="translate({PW - 48} 58)"><rect x="-262" y="0" width="262" height="58" rx="12" fill="{RED}"/>'
              f'{text(-237, 38, labels["P1"], 22, 600, "#fff")}{text(-22, 41, "101", 34, 800, "#fff", "end")}</g>')
+    return o
+
+def building(labels):
+    o = []
     # Building: fills, then walls
     pts = ' '.join('%.1f,%.1f' % P(x, y) for x, y in OUTLINE)
     o.append(f'<polygon points="{pts}" fill="#fff"/>')
@@ -214,15 +230,15 @@ def build(labels):
     # Main exit: a standard exit symbol outside the door
     ex, ey = P(515, 539)
     o.append(f'<g transform="translate({ex:.1f} {ey:.1f})">{exit_symbol(52)}'
-             f'{text(38, 34, labels["L6"], 19, 700, GREEN, "start", "letter-spacing=&quot;0.6&quot;")}</g>')
+             f'{text(38, 34, labels["L6"], 19, 700, GREEN, "start", SPACED)}</g>')
     tx, ty = P(181.5, 23)
     o.append(f'<g transform="translate({tx:.1f} {ty - 50:.1f})">{exit_symbol(40)}'
-             f'{text(30, 27, labels["L7"], 17, 700, GREEN, "start", "letter-spacing=&quot;0.6&quot;")}</g>')
+             f'{text(30, 27, labels["L7"], 17, 700, GREEN, "start", SPACED)}</g>')
     # The two doors from the corridors to the yard are exits too (user, 2026-11-02)
     for x, y, side in [(210, 248, 1), (638, 270, -1)]:
         cx, cy = P(x, y)
         o.append(f'<g transform="translate({cx:.1f} {cy:.1f})">{exit_symbol(36)}'
-                 f'{text(side * 26, 25, labels["L7"], 16, 700, GREEN, "start" if side > 0 else "end", "letter-spacing=&quot;0.6&quot;")}</g>')
+                 f'{text(side * 26, 25, labels["L7"], 16, 700, GREEN, "start" if side > 0 else "end", SPACED)}</g>')
     # Equipment and signs
     for x, y in EXTINGUISHERS:
         o.append(icon(EXTINGUISHER, *P(x, y), 25, RED))
@@ -230,6 +246,10 @@ def build(labels):
         o.append(alarm(*P(x, y), 22))
     for x, y, way in SIGNS:
         o.append(exit_sign(*P(x, y), way, .95))
+    return o
+
+def footer(labels):
+    o = []
     # Footer: legend, then phone numbers. Labels sit in a left column, items in fixed columns so nothing overlaps.
     fy = 972
     o.append(f'<line x1="48" y1="{fy}" x2="{PW - 48}" y2="{fy}" stroke="#E3E7EA" stroke-width="2"/>')
@@ -252,11 +272,16 @@ def build(labels):
     spans = ''.join(f'<tspan dx="{0 if i == 0 else 44}" fill="{MUTED}" font-weight="500" font-size="18">{n}</tspan>'
                     f'<tspan dx="10" fill="{INK}" font-weight="700" font-size="24">{num}</tspan>' for i, (n, num) in enumerate(phones))
     o.append(f'<text x="300" y="{py + 2}">{spans}</text>')
-    return '\n'.join(o + ['</svg>'])
+    return o
 
 if __name__ == '__main__':
     import json
     labels = json.loads((HERE / 'labels.json').read_text(encoding='utf-8'))
     svg = build(labels)
     (HERE / 'plan.svg').write_text(svg, encoding='utf-8')
+    VIDEO = HERE.parents[2] / 'video/hse-fire'
+    (VIDEO / 'plan-video.svg').write_text(build(labels, video=True), encoding='utf-8')
+    geom = dict(K=K, OX=OX, OY=OY, rooms={n: [(x0 + x1) / 2, (y0 + y1) / 2] for n, x0, y0, x1, y1 in ROOMS if n},
+                extinguishers=EXTINGUISHERS, alarms=ALARMS, signs=SIGNS, doors=DOORS, routes=ROUTES)
+    (VIDEO / 'plan-geom.json').write_text(json.dumps(geom), encoding='utf-8')
     print('plan.svg', len(svg) // 1024, 'KB')

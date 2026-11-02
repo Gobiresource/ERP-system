@@ -1,6 +1,7 @@
 // Render the ERP intro frame by frame in headless Chromium.
 //   node render.mjs --stills 1,2.5,9   a few still frames to out/still-<t>.png
 //   node render.mjs                     every sub-frame to frames/, then python3 build.py makes the MP4
+//   --scene=hse-fire                    another video folder (default erp-intro)
 // Sub-frames: 180° shutter, a little jitter; build.py averages them into motion blur (the cinematic-video skill).
 import { createRequire } from 'node:module'
 import { createServer } from 'node:http'
@@ -19,7 +20,8 @@ const server = createServer(async (req, res) => {
 await new Promise(ok => server.listen(0, '127.0.0.1', ok))
 // --preview: half size, 30 fps, no motion blur, to check the cut quickly
 const PREVIEW = process.argv.includes('--preview')
-const url = `http://127.0.0.1:${server.address().port}/erp-intro/index.html${PREVIEW ? '?scale=0.5' : ''}`
+const SCENE = (process.argv.find(a => a.startsWith('--scene=')) ?? '--scene=erp-intro').slice(8)   // a folder next to this file
+const url = `http://127.0.0.1:${server.address().port}/${SCENE}/index.html${PREVIEW ? '?scale=0.5' : ''}`
 
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: PREVIEW ? 0.5 : 1 })

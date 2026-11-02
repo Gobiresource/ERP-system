@@ -1,5 +1,5 @@
 # Average each frame's sub-frames in linear light (motion blur), then encode the MP4 with the sound.
-#   python3 build.py out/erp-intro.mp4
+#   python3 build.py out/erp-intro.mp4 [audio.wav]   (default out/sfx.wav)
 import json
 import subprocess
 import sys
@@ -14,7 +14,7 @@ fps = json.loads((ROOT / 'out/events.json').read_text())['FPS']
 W, H = Image.open(ROOT / 'frames' / frames[0][0]).size
 
 cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(fps), '-i', '-',
-       '-i', str(ROOT / 'out/sfx.wav'), '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p',
+       '-i', sys.argv[2] if len(sys.argv) > 2 else str(ROOT / 'out/sfx.wav'), '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p',
        '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', out]
 enc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 for subs in frames:
