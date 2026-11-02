@@ -117,83 +117,97 @@ def head(c, eyes='open', mouth='smile', brows='flat', d=0):
 
 
 def torso(c, d=0):
-    # hood bunched around the neck, then the open hoodie over a white t-shirt
-    for y, (x0, x1) in {32: (15, 17), 33: (15, 19), 34: (14, 21)}.items():
+    # hood rolled around the neck (mostly behind the jaw), shoulders, chest and a flared hem
+    for y, (x0, x1) in {31: (16, 19), 32: (15, 20), 33: (15, 21), 34: (15, 22)}.items():
         c.span(y + d, x0, x1, 'R'); c.span(y + d, 55 - x1, 55 - x0, 'R')
-    c.span(35 + d, 14, 41, 'R'); c.span(36 + d, 14, 41, 'R'); c.span(37 + d, 13, 42, 'R'); c.span(38 + d, 13, 42, 'R')
-    for y in range(39, 55):
-        c.span(y + d, 15, 40, 'R')
-    c.span(35 + d, 23, 32, 's'); c.span(36 + d, 24, 31, 's')            # neck
-    for y in range(37, 54):
-        c.span(y + d, 24, 31, 'W'); c.set(24, y + d, 'w')
-    for y in range(36, 54):
-        c.set(23, y + d, 'r'); c.set(32, y + d, 'r')                     # zip edges
-    c.pix([(16, 33), (17, 34), (18, 34), (19, 35), (20, 35), (21, 36), (22, 36)], 'r', d)   # hood rim
-    c.pix([(39, 33), (38, 34), (37, 34), (36, 35), (35, 35), (34, 36), (33, 36)], 'r', d)
-    c.span(37 + d, 16, 20, 'P'); c.span(37 + d, 35, 39, 'P')
-    for y in range(40, 53):
-        c.set(39, y + d, 'r'); c.set(40, y + d, 'r')
-    c.span(53 + d, 15, 40, 'r'); c.span(54 + d, 15, 40, 'r')            # hem
-    # the logo's white triangle on the left chest
-    c.set(36, 41 + d, 'W'); c.span(42 + d, 35, 37, 'W'); c.span(43 + d, 34, 38, 'W'); c.span(44 + d, 33, 39, 'W')
+    c.pix([(20, 33), (21, 33), (21, 34), (22, 34), (22, 35), (23, 35)], 'r', d)          # inside of the hood
+    c.pix([(35, 33), (34, 33), (34, 34), (33, 34), (33, 35), (32, 35)], 'r', d)
+    c.span(35 + d, 19, 36, 'R')
+    for y in range(36, 51):
+        c.span(y + d, 18, 37, 'R')
+    c.span(51 + d, 17, 38, 'R'); c.span(52 + d, 17, 38, 'R')
+    c.span(35 + d, 24, 31, 's')                                                       # neck
+    for y in range(36, 53):
+        c.span(y + d, 24, 31, 'W'); c.set(24, y + d, 'w')                              # t-shirt
+        c.set(23, y + d, 'r'); c.set(32, y + d, 'r')                                   # zip edges
+    c.span(36 + d, 19, 21, 'P'); c.span(36 + d, 34, 36, 'P')
+    for y in range(38, 51):
+        c.set(37, y + d, 'r')
+    c.span(51 + d, 17, 38, 'r'); c.span(52 + d, 17, 38, 'r')                             # hem
+    c.span(51 + d, 24, 31, 'W'); c.span(52 + d, 25, 30, 'w')
+    c.set(35, 41 + d, 'W'); c.span(42 + d, 34, 36, 'W'); c.span(43 + d, 33, 37, 'W')    # logo
 
 
-# Raised arms, drawn for the right side of the picture (the left arm uses them mirrored),
-# and the thinking arm, drawn for the left side. (x, y) is the sprite's top-left pixel.
+# Arm sprites. 'rest', 'up', 'up2' and 'point' are drawn for the right side of the picture
+# (the left arm uses them mirrored); 'chin' is drawn for the left side. (x, y) is the top-left.
 ARMS = {
-    'up': (41, 17, [
-        ".......S.S.S...",
-        ".......S.S.S.S.",
-        "......SSSSSSSS.",
-        ".....SSSSSSSSs.",
-        ".....SSSSSSSs..",
-        "......SSSSSs...",
-        ".......SSSs....",
-        ".......rrrrr...",
-        ".......rrrrr...",
-        ".......RRRRr...",
-        ".......PRRRr...",
-        "......PRRRRr...",
-        "......PRRRRr...",
-        "......PRRRRr...",
-        ".....PRRRRr....",
-        "....PRRRRRr....",
-        "...PRRRRRr.....",
-        "..PRRRRRr......",
-        ".PRRRRRr.......",
-        "RRRRRRr........",
-        "RRRRRr.........",
-        "RRRRr..........",
-        "RRRRr..........",
-        "RRRRr..........",
+    'rest': (37, 35, [
+        "PP....",
+        "RRRP..",
+        ".rRRP.",
+        "..rRRP",
+        "..rRRP",
+        "..rRRP",
+        "..rRRP",
+        "..rRRP",
+        "..rRRP",
+        "..rRRP",
+        "..rrrr",
+        "..rrrr",
+        "..SSSS",
+        "..SSSS",
+        "..sSSS",
+        "...ss.",
     ]),
-    'up2': (41, 17, [         # same arm with the hand tipped out, for waving
-        ".........S.S.S...",
-        ".........S.S.S.S.",
-        "........SSSSSSSS.",
-        ".......SSSSSSSSs.",
-        ".......SSSSSSSs..",
-        "........SSSSSs...",
-        ".........SSSs....",
-        "........rrrrr..",
-        "........rrrrr..",
-        "........RRRRr..",
-        ".......PRRRr...",
-        ".......PRRRRr..",
-        "......PRRRRr...",
-        "......PRRRRr...",
-        ".....PRRRRr....",
-        "....PRRRRRr....",
-        "...PRRRRRr.....",
-        "..PRRRRRr......",
-        ".PRRRRRr.......",
-        "RRRRRRr........",
-        "RRRRRr.........",
-        "RRRRr..........",
-        "RRRRr..........",
-        "RRRRr..........",
+    'up': (36, 17, [
+        "..........S.S.S..",
+        "..........S.S.S.S",
+        ".........SSSSSSSS",
+        "........SSSSSSSSs",
+        "........SSSSSSSs.",
+        ".........SSSSSs..",
+        "..........sSSs...",
+        "..........rrrrr..",
+        "..........rrrrr..",
+        "..........PRRRr..",
+        "..........PRRRr..",
+        ".........PRRRRr..",
+        "........PRRRRr...",
+        ".......PRRRRr....",
+        "......PRRRRr.....",
+        ".....PRRRRr......",
+        "....PRRRRr.......",
+        "...PRRRRr........",
+        "..PRRRRr.........",
+        ".PRRRRr..........",
+        "RRRRRr...........",
+        "RRRRr............",
     ]),
-    'point': (41, 19, [
+    'up2': (36, 17, [
+        "............S.S.S..",
+        "............S.S.S.S",
+        "...........SSSSSSSS",
+        "..........SSSSSSSSs",
+        "..........SSSSSSSs.",
+        "...........SSSSSs..",
+        "...........sSSs....",
+        "..........rrrrr....",
+        "..........rrrrr....",
+        "..........PRRRr....",
+        "..........PRRRRr...",
+        ".........PRRRRr....",
+        "........PRRRRr.....",
+        ".......PRRRRr......",
+        "......PRRRRr.......",
+        ".....PRRRRr........",
+        "....PRRRRr.........",
+        "...PRRRRr..........",
+        "..PRRRRr...........",
+        ".PRRRRr............",
+        "RRRRRr.............",
+        "RRRRr..............",
+    ]),
+    'point': (36, 18, [
         "...............SS",
         "..............SSs",
         ".............SSs.",
@@ -213,84 +227,57 @@ ARMS = {
         ".PRRRRr..........",
         "RRRRRr...........",
         "RRRRr............",
-        "RRRRr............",
-        "RRRRr............",
-        "RRRRr............",
+        "RRRr.............",
     ]),
-    'chin': (10, 31, [        # hand under the chin, forearm across the chest
-        ".............S......",
-        "............SS......",
-        "............SSSSS...",
-        "...........SSSSSSs..",
-        "...........SSSSSSs..",
-        "...........SSSSSs...",
-        "RRRRr.......ssss....",
-        "RRRRr.....rrrrr.....",
-        "RRRRr....rrrrr......",
-        "RRRRr...PRRRr.......",
-        "RRRRr..PRRRr........",
-        "RRRRr.PRRRr.........",
-        "RRRRrPRRRr..........",
-        "RRRRPRRRr...........",
-        "RRRPRRRr............",
-        "RRRRRRr.............",
-        "RRRRRr..............",
+    'chin': (12, 31, [
+        ".........S........",
+        ".........SS.......",
+        "........SSSSSS....",
+        "........SSSSSSs...",
+        ".....PP.SSSSSSs...",
+        "...PRRR..sssss....",
+        "..PRRr.rrrrr......",
+        ".PRRr.rrrrr.......",
+        ".PRRrKRRRr........",
+        ".PRRKRRRr.........",
+        ".PRKRRRr..........",
+        ".PKRRRr...........",
+        ".PRRRRr...........",
+        ".RRRRRr...........",
+        "..rrrr............",
     ]),
 }
 
 
-def hand_fist(c, x, y, mirror=False):
-    for j, row in enumerate(['SSSS.', 'SSSSs', 'SSSSs', '.sss.']):
-        for i, ch in enumerate(row[::-1] if mirror else row):
-            if ch != '.':
-                c.set(x + i, y + j, ch)
-
-
 def arm(c, side, pose='rest', d=0, lift=0):
-    """side 'L' or 'R' as seen in the picture; lift raises a resting hand (walk swing)."""
-    right = side == 'R'
-    if pose == 'rest':
-        X = (lambda x: 55 - x) if right else (lambda x: x)
-        for y in range(38, 50):
-            for x in range(10, 15):
-                c.set(X(x), y + d, 'R')
-        for y in range(40, 49):
-            c.set(X(14), y + d, 'r')
-        for x in range(10, 15):
-            c.set(X(x), 49 + d, 'r'); c.set(X(x), 50 + d - lift, 'r')
-        hand_fist(c, X(14) if right else 10, 51 + d - lift, right)
-        return
-    flip = (right and pose == 'chin') or (not right and pose != 'chin')
+    """side 'L' or 'R' as seen in the picture; lift raises the arm a little (walk swing)."""
+    flip = (side == 'R') == (pose == 'chin')
     X = (lambda x: 55 - x) if flip else (lambda x: x)
     x0, y0, rows = ARMS[pose]
+    y0 += d - lift
     pts = {(i, j): ch for j, row in enumerate(rows) for i, ch in enumerate(row) if ch != '.'}
-    if pose == 'chin':
-        # edge where the arm crosses the body: dark red on the hoodie, outline colour on skin and shirt;
-        # over empty space the normal outline is added later
-        for (i, j) in pts:
-            for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                if (i + di, j + dj) not in pts:
-                    gx, gy = X(x0 + i + di), y0 + j + dj + d
-                    under = c.get(gx, gy)
-                    if under:
-                        c.set(gx, gy, 'r' if under in 'RrP' else 'K')
+    # dark edge where the arm lies over the body or face; over empty space the outline comes later
+    for (i, j) in pts:
+        for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if (i + di, j + dj) not in pts and c.get(X(x0 + i + di), y0 + j + dj):
+                c.set(X(x0 + i + di), y0 + j + dj, 'K')
     for (i, j), ch in pts.items():
-        c.set(X(x0 + i), y0 + j + d, ch)
+        c.set(X(x0 + i), y0 + j, ch)
 
 
 def legs(c, pose='stand'):
     """'stepL' / 'stepR' lift one foot for walking, 'tuck' lifts both in a jump."""
     def leg(x0, x1, up, sx0, sx1):
-        for y in range(57, 63 - up):
+        for y in range(55, 60 - up):
             c.span(y, x0, x1, 'B'); c.set(x1, y, 'b')
-        shoe = 63 - up
+        shoe = 60 - up
         for y in range(shoe, shoe + 3):
             c.span(y, sx0, sx1, 'W')
         c.span(shoe + 2, sx0, sx1, 'z'); c.set(sx0 + 3, shoe, 'w'); c.set(sx0 + 5, shoe, 'w')
-    c.span(55, 17, 38, 'B'); c.span(56, 17, 38, 'B')
+    c.span(53, 19, 36, 'B'); c.span(54, 19, 36, 'B')
     up_l, up_r = {'stand': (0, 0), 'stepL': (2, 0), 'stepR': (0, 2), 'tuck': (3, 3)}[pose]
-    leg(17, 26, up_l, 15, 26)
-    leg(29, 38, up_r, 29, 40)
+    leg(19, 26, up_l, 17, 26)
+    leg(29, 36, up_r, 29, 38)
 
 
 def outline(c, color='K'):
