@@ -75,6 +75,8 @@
 .tk-card::after { box-shadow: 0 30px 46px -20px color-mix(in srgb, var(--accent) 55%, transparent); }
 @media (hover: hover) { .tk-card:hover::before { opacity: .8; } }
 .tk-card.is-lifted { background: var(--glass-solid); cursor: grabbing; }
+/* Someone else's task: it opens, it does not move */
+.tk-card.is-fixed { cursor: pointer; }
 .tk-card.is-lifted::before, .tk-card.is-lifted::after { opacity: 1; }
 .tk-card.is-away { display: none; }
 .tk-card__top { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 24px; }
@@ -145,6 +147,9 @@
 .tp__top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-right: 48px; }
 .tp__title { padding-right: 8px; font: 700 clamp(22px, 1vw + 16px, 28px)/1.15 var(--font); letter-spacing: -.02em; }
 .tp__seg .seg { display: flex; width: 100%; }
+/* Someone else's task: its state, without the switch */
+.tp__state { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--fill); font-size: 14px; }
+.tp__state > span:last-child { color: var(--text-2); }
 .tp__seg .seg__btn { flex: 1; padding: 0 6px; }
 .tp__meta dd button { min-width: 0; max-width: 100%; overflow: hidden; color: var(--accent-ink); font-weight: 600; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .tp__subs { display: grid; }

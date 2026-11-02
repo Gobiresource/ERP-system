@@ -1,6 +1,6 @@
 import { memo, type Ref } from 'react'
 import { Calendar, Check, Ellipsis, MessageSquare } from 'lucide-react'
-import type { Person, Project, Task, TaskStatus } from '../../lib/types'
+import type { Id, Person, Project, Task, TaskStatus } from '../../lib/types'
 import { actions, getState } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { daysFromToday, dueLabel } from '../../lib/format'
@@ -19,6 +19,12 @@ export function DueTag({ task, className = 'tk-due' }: { task: Task; className?:
     </span>
   )
 }
+
+/**
+ * Only the people responsible (хариуцагч) move a task to another state, finish it, change it or delete it; everyone else,
+ * the one who sent it too, looks and comments (the user's choice, 2026-11-02)
+ */
+export const mayChange = (t: Task, me: Id) => t.assignees.includes(me)
 
 /** Moves a task (optionally before another one) and offers Undo, like Pane's "Moved to …" message */
 export function moveTask(t: Task, status: TaskStatus, before?: string) {
@@ -43,17 +49,19 @@ function moveCard(t: Task, status: TaskStatus) {
 }
 
 /**
- * A task on the board. The menu is the keyboard way to move a card to another column.
+ * A task on the board. The menu is the keyboard way to move a card to another column. A `fixed` card is someone else's
+ * task: it opens, but does not move and has no menu.
  * Memoised with its project and everyone (the store's people, which a drag does not change) passed in, so a drag only
  * redraws the cards that change.
  */
-export const TaskCard = memo(function TaskCard({ task: t, project: p, people, ref, lifted, away, menu = true }: {
+export const TaskCard = memo(function TaskCard({ task: t, project: p, people, ref, lifted, away, fixed, menu = !fixed }: {
   task: Task
   project?: Project
   people: Person[]
   ref?: Ref<HTMLElement>
   lifted?: boolean
   away?: boolean
+  fixed?: boolean
   menu?: boolean
 }) {
   const subsDone = t.subtasks.filter(x => x.done).length
@@ -62,7 +70,7 @@ export const TaskCard = memo(function TaskCard({ task: t, project: p, people, re
   const done = t.status === 'done'
 
   return (
-    <article ref={ref} className={`tk-card${done ? ' is-done' : ''}${lifted ? ' is-lifted' : ''}${away ? ' is-away' : ''}`} data-id={t.id}>
+    <article ref={ref} className={`tk-card${done ? ' is-done' : ''}${lifted ? ' is-lifted' : ''}${away ? ' is-away' : ''}${fixed ? ' is-fixed' : ''}`} data-id={t.id}>
       <div className="tk-card__top">
         <ProjectChip project={p} />
         <Prio prio={t.prio} />
