@@ -66,10 +66,10 @@ export default function Scans() {
       <PageHead
         title="Скан оруулах"
         sub="Цаасан баримтаа скан хийж оруулбал AI уншаад аль ХХК-ийн аль хавтсанд орохыг санал болгоно. Та шалгаад хавтаслана."
-        stats={s.scans.length || s.aiSpent ? [
+        stats={s.scans.length ? [
           { label: 'Хавтаслах', value: s.scans.length },
-          { label: 'AI таньсан', value: s.scans.filter(it => it.state === 'read' && !it.sample).length },
-          { label: 'AI зардал', value: `$${s.aiSpent.toFixed(2)}` },
+          { label: 'Бэлэн', value: ready.length },
+          { label: 'Шалгах', value: check.length },
         ] : undefined}
         actions={ready.length > 1 && <button type="button" className="btn btn--accent" onClick={fileAll}><FolderInput className="ico" />Танигдсаныг хавтаслах ({ready.length})</button>}
       />
@@ -342,7 +342,6 @@ function ScanCard({ it, ai, sure: done }: { it: ScanItem; ai: boolean; sure: boo
             }, failed)}><Merge className="ico" />Өмнөхтэй нийлүүлэх</button>
           )}
           {done && <button type="button" className="btn btn--ghost" onClick={() => setMore(false)}>Хураах</button>}
-          {it.model && <small className="scard__cost">{it.model}{it.cost !== undefined ? `, $${it.cost.toFixed(4)}` : ''}</small>}
         </div>
       </div>
     </li>
