@@ -73,7 +73,7 @@ export default function Scans() {
         ] : undefined}
         actions={ready.length > 1 && <button type="button" className="btn btn--accent" onClick={fileAll}><FolderInput className="ico" />Танигдсаныг хавтаслах ({ready.length})</button>}
       />
-      <AiBar ai={ai} samples={s.scans.some(it => it.sample)} work={s.scans.filter(working).length} />
+      <AiBar ai={ai} samples={s.scans.some(it => it.sample)} />
       <Drop ready={!!ai?.ready} />
       {s.scans.length > 1 && (
         <div className="rtabs" data-enter>
@@ -100,18 +100,11 @@ export default function Scans() {
   )
 }
 
-/** Whether AI reads the scans, and how many wait; without it, the papers are filled in by hand, and demo papers show the way */
-function AiBar({ ai, samples, work }: { ai: AiState | null; samples: boolean; work: number }) {
+/** Speaks only when AI does not read the scans: the papers are then filled in by hand, and demo papers show the way. With AI
+ * on, or while the page asks the server, it says nothing (the user's wish, 2026-11-02); each card shows its own state. */
+function AiBar({ ai, samples }: { ai: AiState | null; samples: boolean }) {
   const [adding, setAdding] = useState(false)
-  if (!ai) return <p className="sbar" role="status"><LoaderCircle className="ico spin" />AI холболтыг шалгаж байна…</p>
-  if (ai.ready) {
-    return (
-      <p className="sbar is-on" role="status">
-        {work ? <LoaderCircle className="ico spin" /> : <Sparkles className="ico" />}
-        <span><b>AI холбогдсон</b> ({ai.model}). Баримтыг сургалтад ашиглахгүй.{work > 0 && ` Уншиж байна: ${work} баримт үлдлээ.`}</span>
-      </p>
-    )
-  }
+  if (!ai || ai.ready) return null
   const add = () => {
     setAdding(true)
     addSamples().then(() => setAdding(false), () => setAdding(false))
