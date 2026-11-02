@@ -33,7 +33,7 @@ export function RequestsCard() {
           <h2 className="card__title" id="docs-req">Хүсэлтийн явц</h2>
           <p className="card__sub">Бичиг хэрэгт илгээсэн хүсэлт</p>
         </div>
-        <a className="btn btn--ghost btn--sm" href="#docs-requests">Бүгдийг харах<ChevronRight className="ico" /></a>
+        <a className="btn btn--ghost btn--sm" href="#requests">Бүгдийг харах<ChevronRight className="ico" /></a>
       </div>
       <ul className="rmini">
         {requests.map(r => {

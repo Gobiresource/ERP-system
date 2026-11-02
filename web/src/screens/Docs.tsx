@@ -1,6 +1,6 @@
 // Бичиг хэрэг: a folder for each ХХК with its documents by category (an employee's own, rules, forms, templates), contracts
-// and their approval (a contract's Word file at #docs-word-<contract>), requests to the office for a document, and the
-// PDF tool (docs/decisions.md, 2026-10-29).
+// and their approval (a contract's Word file at #docs-word-<contract>), and the PDF tool (docs/decisions.md, 2026-10-29).
+// Requests to the office for a document moved to «Хүсэлт» (screens/Requests.tsx, 2026-11-01).
 import { BookOpenText, ClipboardList, FileCheck, FilePen, FileText, Mail, ScrollText, Stamp } from 'lucide-react'
 import '../styles/screens/docs.css'
 import type { DocKind, DocRequest } from '../lib/types'
@@ -8,7 +8,6 @@ import { DOC_HUE, REQ_STATUS, stepsOf } from '../lib/docs'
 import { SubNav } from '../ui/SubNav'
 import Folders from './docs/Folders'
 import FolderPage from './docs/Folder'
-import Requests from './docs/Requests'
 import Contracts, { useContractTodo } from './docs/Contracts'
 import ContractPage from './docs/Contract'
 import WordPage from './docs/Word'
@@ -20,7 +19,6 @@ import { NoAccess } from '../ui/bits'
 
 export default function Docs({ id }: { id?: string }) {
   const s = useApp()
-  if (id === 'requests') return <Requests />
   if (id === 'contracts') return <Contracts />
   if (id === 'scan') return docView(s).edit(s.company) ? <Scans /> : <NoAccess />
   if (id?.startsWith('contract-')) return <ContractPage key={id} id={id.slice(9)} />
@@ -31,7 +29,7 @@ export default function Docs({ id }: { id?: string }) {
   return <Folders />
 }
 
-const TABS = [['', 'Бичиг баримт'], ['contracts', 'Гэрээ'], ['requests', 'Хүсэлт'], ['scan', 'Скан оруулах'], ['pdf', 'PDF засах']] as const
+const TABS = [['', 'Бичиг баримт'], ['contracts', 'Гэрээ'], ['scan', 'Скан оруулах'], ['pdf', 'PDF засах']] as const
 
 /** The section's tabs; Гэрээ counts the contracts waiting for the person, Скан оруулах (the office's) the papers not filed yet */
 export function DocsNav({ at }: { at: (typeof TABS)[number][0] }) {

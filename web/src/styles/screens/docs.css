@@ -32,7 +32,9 @@
 .rpill--sent { background: color-mix(in srgb, var(--orange) 15%, transparent); color: var(--prio-high); }
 .rpill--working { background: color-mix(in srgb, var(--blue) 14%, transparent); color: var(--prio-medium); }
 .rpill--ready { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--ok-ink); }
-.rpill--declined { background: color-mix(in srgb, var(--danger) 13%, transparent); color: var(--bad-ink); }
+/* Light tints so the coloured words keep 4.5:1 over the glass (Гэрээний буцаасан шошго ч 9%) */
+.rpill--declined { background: color-mix(in srgb, var(--danger) 9%, transparent); color: var(--bad-ink); }
+[data-mode="dark"] .rpill--ready { background: color-mix(in srgb, var(--green) 11%, transparent); }
 .rsteps { display: flex; align-items: center; }
 .rsteps li { position: relative; width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--fill-2); }
 .rsteps li + li { margin-left: 16px; }
@@ -53,12 +55,18 @@
 .rtabs__count { min-width: 20px; padding: 2px 6px; border-radius: 999px; background: var(--accent); color: #fff; font: 650 12px/1.25 var(--font); text-align: center; font-variant-numeric: tabular-nums; }
 .rlist { padding: 8px; }
 .rlist ul > li + li { border-top: 1px solid var(--sep); }
+/* A request as a row (screens/Requests.tsx): leave, overtime and hiring with a pill as long as "Шууд удирдлага хянаж буй" */
 .rrow {
-  display: grid; grid-template-columns: 40px minmax(0, 1fr) 128px 132px 204px; align-items: center; gap: 16px;
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) 120px 112px 290px; align-items: center; gap: 16px;
   width: 100%; padding: 11px 10px; border-radius: 16px; text-align: left; transition: background .2s;
 }
 .rrow:hover { background: var(--fill-hover); }
 .rrow__ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--fill); color: var(--text-2); }
+.rrow__ico--hue { background: color-mix(in srgb, var(--hue) 16%, transparent); color: color-mix(in srgb, var(--hue) 72%, #000); }
+[data-mode="dark"] .rrow__ico--hue { background: color-mix(in srgb, var(--hue) 24%, transparent); color: color-mix(in srgb, var(--hue) 70%, #fff); }
+.rpill--todo { background: var(--accent-soft); color: var(--accent-ink); }
+.rkinds { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.rpage__hint { margin-top: 12px; font-size: 13px; color: var(--text-2); }
 .rrow__text { display: grid; min-width: 0; }
 .rrow__text b, .rrow__text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rrow__text b { font-size: 15px; font-weight: 600; }
@@ -73,6 +81,14 @@
   .rrow__form, .rrow .rsteps { display: none; }
   .rrow__need { grid-column: 2; grid-row: 2; font-weight: 500; }
   .rrow__state { grid-column: 3; grid-row: 1 / span 2; }
+}
+/* Phones: the pill under the name, so a long one ("Шууд удирдлага хянаж буй") leaves the name its width */
+@media (width <= 600px) {
+  .rrow { grid-template-columns: 40px minmax(0, 1fr); }
+  .rrow > :first-child { grid-row: span 3; align-self: start; }
+  .rrow__need { grid-column: 2; grid-row: auto; }
+  .rrow__need:empty { display: none; }
+  .rrow__state { grid-column: 2; grid-row: auto; justify-content: flex-start; }
 }
 
 /* Document window */
@@ -95,6 +111,56 @@ fieldset.field { margin: 0; padding: 0; border: 0; }
 .dfilepick__name { overflow: hidden; font-size: 14.5px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
 
 /* One request */
+/* Хүсэлт гаргах: the kinds to ask for (dialogs/RequestForms.tsx) */
+.rnew__head { margin: 4px 48px 16px; text-align: center; }
+.rnew__list { display: grid; gap: 8px; }
+.rnew__kind { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px; border-radius: 20px; background: var(--fill); text-align: left; transition: background .2s; }
+.rnew__kind:hover { background: var(--fill-2); }
+.rnew__text { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.rnew__text b { font-size: 16px; font-weight: 600; }
+.rnew__text small { font-size: 13.5px; line-height: 1.4; color: var(--text-2); }
+.rnew__go { flex: none; color: var(--text-3); }
+.rnew__hint { margin-top: 14px; text-align: center; font-size: 13px; color: var(--text-3); }
+/* Timely's figures in a form or a request: leave left, hours worked */
+.rbal { padding: 14px 16px; border-radius: 18px; background: var(--fill); }
+.rbal__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 8px; }
+.rbal__head h3 { font: 650 14px/1.3 var(--font); }
+.rbal__head > span { font-size: 12.5px; color: var(--text-3); }
+.rbal__tag { padding: 2px 8px; border-radius: 999px; background: var(--glass-solid); color: var(--accent-ink); font-weight: 650; box-shadow: 0 0 0 1px var(--sep); }
+.rbal dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 12px; margin: 0; }
+.rbal dt { font-size: 12.5px; color: var(--text-2); }
+.rbal dd { margin: 2px 0 0; font-size: 20px; font-weight: 650; }
+.rbal dd small { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.rbal__none { font-size: 14px; color: var(--text-2); }
+.rq .rbal, .rq .rquota, .rq__away { margin-top: 12px; }
+.rq__sum { display: flex; flex-wrap: wrap; align-content: center; align-items: center; gap: 4px 10px; }
+.rq__sum b { font-size: 15px; font-weight: 650; }
+.rq__sum small { flex-basis: 100%; font-size: 13px; color: var(--text-2); }
+.rq__over { color: var(--bad-ink) !important; font-weight: 600; }
+.rq__info { padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); font-size: 14px; line-height: 1.45; }
+.rquota p { font-size: 14px; }
+.rquota b { font-weight: 650; }
+.rquota__bar { display: block; height: 8px; margin-bottom: 8px; overflow: hidden; border-radius: 999px; background: var(--fill-2); }
+.rquota__bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left; }
+.rq__back { display: grid; gap: 4px; margin-bottom: 14px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--danger) 10%, var(--glass-solid)); }
+.rq__back b { font-size: 13px; font-weight: 650; color: var(--bad-ink); }
+.rq__back p { font-size: 14.5px; line-height: 1.45; }
+.rq__back small { font-size: 12.5px; color: var(--text-2); }
+.rq__meta { grid-template-columns: 1fr 1fr; }
+.rq__wide { grid-column: 1 / -1; }
+.rq__away { display: grid; gap: 2px; padding: 12px 14px; border-radius: 14px; background: var(--fill); font-size: 14px; }
+.rq__away.is-some { background: color-mix(in srgb, var(--orange) 12%, transparent); }
+.rq__away b { font-weight: 600; }
+.rq__away small { font-size: 13px; color: var(--text-2); }
+.rq__h { margin: 20px 0 10px; font: 650 15px/1.2 var(--font); }
+.rq__steps li.is-now::before { background: var(--glass-solid); box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 4px var(--accent-soft); }
+.rq__steps li.is-back::before { background: var(--danger); box-shadow: none; }
+.rq__steps--plan { margin: 4px 0 0; }
+.rq__say { display: block; width: fit-content; max-width: 100%; margin-top: 6px; padding: 8px 12px; border-radius: 12px; background: var(--fill); font-size: 13.5px; overflow-wrap: anywhere; }
+.rq__hint { font-size: 13.5px; line-height: 1.45; color: var(--text-2); }
+.rq__time { display: flex; flex-wrap: wrap; gap: 10px; }
+.rq__time label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); }
+.rq__time input { width: 88px; }
 .rq .meta dd span { overflow-wrap: anywhere; white-space: normal; }
 .rq__late { font-size: 13px; font-weight: 650; color: var(--bad-ink); }
 .rq__who { display: flex; align-items: center; gap: 8px; margin: 8px 0 18px; font-size: 14px; color: var(--text-2); }
