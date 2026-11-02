@@ -47,7 +47,8 @@ python3 sfx.py && python3 build.py out/erp-intro.mp4
 | `hse-fire/plan-video.svg`, `plan-geom.json` | Схем ба түүний цэгүүд. `docs/hse/evacuation/plan.py` бичдэг, гараар засахгүй |
 | `hse-fire/captions.json` | Дэлгэц дээрх богино бичиг (Gemini) |
 | `hse-fire/scene.js` | three.js тайз ба `seek(t)`: камер, гал, утаа, хүмүүс, бичиг. Бүх хэсэг `voice.json`-ийн өгүүлбэр, үгийн цагаас хамаарна |
-| `hse-fire/audio.py` | Хоолой, намуухан хөгжим, дохиоллын дуу |
+| `hse-fire/music.mp3` | Хөгжмийн эхний 52 секунд: Mixkit «Break Away» (Ahjay Stelino), Mixkit Stock Music Free License. Бичлэгт үнэгүй ашиглаж болно, нэр дурдах шаардлагагүй, хөгжмийг дангаар нь тарааж болохгүй |
+| `hse-fire/audio.py` | Хоолой, хөгжим (хоолой ярих үед 8 dB намсана), дохиоллын дуу. `out/hse-fire-music.mp3`-д хөгжмийг дангаар нь гаргана |
 
 ```bash
 cd video
