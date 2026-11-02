@@ -5,5 +5,8 @@
   "name": "gobi-erp",
   "main": "worker/site.js",
   "compatibility_date": "2026-10-01",
-  "site": { "bucket": "./dist" }
+  "site": { "bucket": "./dist" },
+  // gobi-erp.gobiresource.workers.dev only: no extra public address for each version
+  "workers_dev": true,
+  "preview_urls": false
 }

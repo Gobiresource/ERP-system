@@ -76,6 +76,24 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
 - **Сүлжээ.** 2026-10-29-нд хэрэглэгч бүрэн хандалт өгсөн. Хязгаарлавал эдгээр хаяг нээлттэй байх ёстой: antigravity.google, antigravity-cli-auto-updater-974169037036.us-central1.run.app, storage.googleapis.com, oauth2.googleapis.com, accounts.google.com, www.googleapis.com, cloudcode-pa.googleapis.com, aicode.googleapis.com, generativelanguage.googleapis.com, play.googleapis.com.
 - **Ажиллахгүй бол** (нэвтрэх код байхгүй гэх мэт) Gemini-гүйгээр үргэлжлүүлж, хянуулах текстээ `docs/decisions.md`-д тэмдэглэж үлдээнэ.
 
+## Cloudflare-т байршуулах
+
+Туршилтын хувилбарын хаяг: https://gobi-erp.gobiresource.workers.dev (2026-11-02).
+- Зөвхөн хөтчийн хэсэг байрласан. Өгөгдөл нь жишээ бөгөөд хүн бүрийн хөтөч дотор хадгалагдана.
+- Timely, скан AI-ийн серверийг серверт нэвтрэлт хийгдэх хүртэл байршуулахгүй.
+
+**Түлхүүр.** Хэрэглэгчийн API token энэ орчны Network secrets-д `api.cloudflare.com` хаягтай хадгалагдсан.
+- Эрхүүд: Workers Scripts Edit, Workers KV Storage Edit, Account Settings Read.
+- Прокси энэ хаяг руу явах хүсэлт бүрт token-ийг тавьдаг тул командад `via-proxy` гэж бичнэ.
+- Token-ийг хэвлэхгүй, асуухгүй.
+
+**Шинэчлэх.** Шинэ хувилбар бүрийн дараа туршилтын хуудастай (artifact) хамт шинэчилнэ:
+```bash
+cd web && CLOUDFLARE_ACCOUNT_ID=$(curl -s -H "Authorization: Bearer via-proxy" https://api.cloudflare.com/client/v4/accounts | python3 -c "import json,sys; print(json.load(sys.stdin)['result'][0]['id'])") CLOUDFLARE_API_TOKEN=via-proxy npm run deploy
+```
+
+**Яагаад KV.** Cloudflare static assets файлыг тусгай түр түлхүүрээр илгээдэг. Прокси тэр түлхүүрийг солидог тул энэ орчинд static assets ажиллахгүй. Иймээс файлыг Workers KV-ээс жижиг Worker (`web/worker/site.js`) харуулдаг.
+
 ## Instagram reel үзэх арга
 
 Хэрэглэгч reel явуулбал:
