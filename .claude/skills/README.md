@@ -12,6 +12,7 @@
 | Skill | Юунд |
 |---|---|
 | `erp-ui-guidelines` | ERP-ийн дэлгэц, компонент зохиох болон шалгах дүрэм. NN/g, Carbon, Polaris, GOV.UK, WCAG 2.2, Apple HIG-ээс нэгтгэсэн |
+| `cinematic-video` | Лого, маскотын 3D «кино» бичлэгийг бүхэлд нь кодоор хийх арга: three.js, Playwright, ffmpeg, numpy. Өөр сессийн туршлагаас (2026-11-02) |
 
 ## Гадны skill-үүд
 
