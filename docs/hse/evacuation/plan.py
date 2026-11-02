@@ -218,6 +218,11 @@ def build(labels):
     tx, ty = P(181.5, 23)
     o.append(f'<g transform="translate({tx:.1f} {ty - 50:.1f})">{exit_symbol(40)}'
              f'{text(30, 27, labels["L7"], 17, 700, GREEN, "start", "letter-spacing=&quot;0.6&quot;")}</g>')
+    # The two doors from the corridors to the yard are exits too (user, 2026-11-02)
+    for x, y, side in [(210, 248, 1), (638, 270, -1)]:
+        cx, cy = P(x, y)
+        o.append(f'<g transform="translate({cx:.1f} {cy:.1f})">{exit_symbol(36)}'
+                 f'{text(side * 26, 25, labels["L7"], 16, 700, GREEN, "start" if side > 0 else "end", "letter-spacing=&quot;0.6&quot;")}</g>')
     # Equipment and signs
     for x, y in EXTINGUISHERS:
         o.append(icon(EXTINGUISHER, *P(x, y), 25, RED))
