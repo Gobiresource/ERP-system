@@ -1,7 +1,7 @@
 // Pages live in the address hash: #tasks, #project-p1, #hr-employees, #draft-b1. Plain names only, so links also work inside a preview page.
 import { useSyncExternalStore } from 'react'
 
-export const PAGES = ['home', 'tasks', 'chat', 'calendar', 'projects', 'draft', 'insights', 'team', 'hr', 'docs', 'admin', 'preferences'] as const
+export const PAGES = ['home', 'tasks', 'requests', 'chat', 'calendar', 'projects', 'draft', 'insights', 'team', 'hr', 'docs', 'admin', 'preferences'] as const
 export type Page = (typeof PAGES)[number]
 export interface Route { page: Page; id?: string }
 
@@ -11,7 +11,9 @@ export function parse(hash: string): Route {
   // Human resources: #hr, #hr-employees, #hr-structure, #hr-new, #hr-<employee>, #hr-<employee>-edit, #hr-attendance,
   // #hr-attendance-<employee> (or -t<Timely worker number>)
   if (h.startsWith('hr-')) return { page: 'hr', id: h.slice(3) }
-  // Бичиг хэрэг: #docs, #docs-folder-<company>, #docs-folder-<company>-<kind>, #docs-requests, #docs-contract-<contract>,
+  // Хүсэлт: #requests (the office's requests were at #docs-requests)
+  if (h === 'docs-requests') return { page: 'requests' }
+  // Бичиг хэрэг: #docs, #docs-folder-<company>, #docs-folder-<company>-<kind>, #docs-contract-<contract>,
   // #docs-word-<contract>, #docs-pdf, #docs-pdf-<board>-<card>
   // (the PDF tool was at #draft-pdf before)
   if (h.startsWith('docs-')) return { page: 'docs', id: h.slice(5) }

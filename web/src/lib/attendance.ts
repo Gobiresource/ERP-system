@@ -178,11 +178,7 @@ const workerOf = (id: Id) => [...id].reduce((n, c) => (n * 31 + c.charCodeAt(0))
 export function sampleMonth(s: State, month: string): TimelyMonth {
   const today = ymd(new Date())
   const staff = s.employees.filter(e => e.company === s.company && current(e)).sort((a, b) => b.hired.localeCompare(a.hired))
-  const dept = (id: Id) => s.departments.find(d => d.id === id)?.name ?? ''
-  const pos = (id: Id) => s.positions.find(p => p.id === id)?.name ?? ''
-  const employees = staff.slice(1).map(e =>
-    sampleEmployee({ workerId: workerOf(e.id), family: e.family, given: e.given, register: e.regNo.toUpperCase(), position: pos(e.position), division: dept(e.dept) }, e.id, month, today, e.user === s.me),
-  )
+  const employees = staff.slice(1).map(e => sampleFor(s, e, month))
   const strangers = [
     { workerId: 90_001, family: 'Должин', given: 'Сэр-Од', register: 'УБ85032417', position: 'Харуул', division: 'Аж ахуй' },
     { workerId: 90_002, family: 'Ганзориг', given: 'Номин', register: 'УБ01250833', position: 'Цэвэрлэгч', division: 'Аж ахуй' },
@@ -190,6 +186,16 @@ export function sampleMonth(s: State, month: string): TimelyMonth {
   const [from, to] = [`${month}-01`, datesOf(month).filter(d => d <= today).pop() ?? `${month}-01`]
   return { month, from, to, updated: new Date().toISOString(), employees: [...employees, ...strangers] }
 }
+
+/** One employee's example month, as sampleMonth makes it: for a window that needs only them (Хүсэлт) */
+export function sampleFor(s: State, e: Employee, month: string): TimelyEmployee {
+  const dept = s.departments.find(d => d.id === e.dept)?.name ?? ''
+  const pos = s.positions.find(p => p.id === e.position)?.name ?? ''
+  return sampleEmployee({ workerId: workerOf(e.id), family: e.family, given: e.given, register: e.regNo.toUpperCase(), position: pos, division: dept }, e.id, month, ymd(new Date()), e.user === s.me)
+}
+
+/** The employee's row in a Timely month, by registration number */
+export const rowOf = (m: TimelyMonth, e: Employee) => m.employees.find(t => t.register && regKey(t.register) === regKey(e.regNo)) ?? null
 
 /** The example days of the employee above, the same ones its month was summed from */
 export function sampleDays(s: State, t: TimelyEmployee, month: string): TimelyDay[] {

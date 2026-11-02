@@ -1,11 +1,12 @@
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import { CalendarPlus, ChevronLeft, ChevronRight, Flag, MapPin, Plus } from 'lucide-react'
+import { CalendarPlus, ChevronLeft, ChevronRight, Flag, MapPin, Plus, TreePalm } from 'lucide-react'
 import '../styles/screens/calendar.css'
 import type { CalEvent, Hue } from '../lib/types'
 import { scoped, useApp, type Scoped } from '../lib/store'
+import { awayByDay } from '../lib/hrRequests'
 import { open } from '../lib/ui'
 import { enter, usePageEnter } from '../lib/motion'
-import { addDays, duration, hm, monthDay, monthTitle, parse, today, weekStart, weekday, weekdayShort, ymd, ymdhm } from '../lib/format'
+import { addDays, duration, hm, monthDay, monthTitle, parse, short, today, weekStart, weekday, weekdayShort, ymd, ymdhm } from '../lib/format'
 import { eventEnd, thisWeek } from '../lib/derive'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
@@ -137,6 +138,9 @@ function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date
     for (const p of sc.projects) for (const ms of p.milestones) m.set(ms.date, [...(m.get(ms.date) ?? []), { hue: p.hue, name: `${ms.name} (${p.name})` }])
     return m
   }, [sc.projects])
+  // Signed leaves (Хүсэлт): a palm on each day someone is away
+  const s = useApp()
+  const away = useMemo(() => awayByDay(s, s.company), [s])
 
   // Arrow keys move between days (into the month before or after), Page Up/Down change the month; focus stays in the grid
   const onKey = (e: KeyboardEvent) => {
@@ -157,6 +161,7 @@ function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date
         const k = ymd(d)
         const evs = byDay.get(k) ?? []
         const fl = flags.get(k) ?? []
+        const aw = away.get(k) ?? []
         const out = d.getMonth() !== month
         const weekend = d.getDay() === 0 || d.getDay() === 6
         const shown = evs.slice(0, 3)
@@ -168,7 +173,7 @@ function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date
             className={`cal-day${out ? ' is-out' : ''}${weekend ? ' is-weekend' : ''}${k === t ? ' is-today' : ''}`}
             aria-pressed={k === selected}
             aria-current={k === t ? 'date' : undefined}
-            aria-label={`${monthDay(d)}, ${weekday(d)}. ${evs.length ? `${evs.length} тов` : 'Товгүй'}${fl.length ? `, ${fl.length} үе шат` : ''}`}
+            aria-label={`${monthDay(d)}, ${weekday(d)}. ${evs.length ? `${evs.length} тов` : 'Товгүй'}${fl.length ? `, ${fl.length} үе шат` : ''}${aw.length ? `, ${aw.length} хүн амралттай` : ''}`}
             tabIndex={k === tab ? 0 : -1}
             onClick={() => onSelect(k)}
             onDoubleClick={() => open({ kind: 'newEvent', defaults: { start: `${k}T10:00` } })}
@@ -177,6 +182,7 @@ function MonthGrid({ from, month, sc, selected, onSelect, onPage }: { from: Date
               <span className="cal-day__n">{d.getDate()}</span>
               {evs.length > 3 && <span className="cal-more">+{evs.length - 3}</span>}
               {fl.slice(0, 2).map((f, i) => <span key={i} className={`cal-flag hue--${f.hue}`} title={f.name}><Flag className="ico" /></span>)}
+              {aw.length > 0 && <span className="cal-flag hue--orange" title={`Амралттай: ${aw.map(id => sc.person(id)).filter(x => x !== undefined).map(short).join(', ')}`}><TreePalm className="ico" /></span>}
             </span>
             <span className="cal-day__evs" aria-hidden="true">
               {shown.map(e => (
@@ -199,6 +205,8 @@ function Agenda({ day, sc }: { day: string; sc: Scoped }) {
   const events = sc.events.filter(e => e.start.startsWith(day))
   const due = sc.tasks.filter(t => t.due === day)
   const milestones = sc.projects.flatMap(p => p.milestones.filter(m => m.date === day).map(m => ({ m, p })))
+  const s = useApp()
+  const away = (awayByDay(s, s.company).get(day) ?? []).map(id => sc.person(id)).filter(x => x !== undefined)
   const now = new Date()
   const nowIndex = isToday ? events.filter(e => parse(e.start) <= now).length : -1
 
@@ -215,6 +223,12 @@ function Agenda({ day, sc }: { day: string; sc: Scoped }) {
         </button>
       </div>
       <div className="cal-ag">
+        {away.map(p => (
+          <div key={p.id} className="cal-ms hue--orange">
+            <TreePalm className="ico" />
+            <span><b>{short(p)}</b><small>Амралттай</small></span>
+          </div>
+        ))}
         {milestones.map(({ m, p }) => (
           <div key={m.id} className={`cal-ms hue--${p.hue}`}>
             <Flag className="ico" />

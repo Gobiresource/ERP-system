@@ -1,12 +1,12 @@
 // One employee: general details, employment history and the personal file
 import { useRef, useState } from 'react'
-import { CalendarCheck, ChevronLeft, CircleDashed, FileCheck2, FileClock, FileX2, Pencil, TriangleAlert, Upload, UserRound, X } from 'lucide-react'
+import { CalendarCheck, ChevronLeft, CircleDashed, FileCheck2, FileClock, FileX2, Pencil, Stamp, TriangleAlert, Upload, UserRound, X } from 'lucide-react'
 import type { DocType, Employee } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
 import { ALERT_DAYS, CONTRACT, MOVE, MOVE_HUE, ageOn, alertsOf, dots, fileScore, fileState, readRegNo, tenure, whenEnds, type FileState } from '../../lib/hr'
-import { hrView } from '../../lib/access'
+import { docView, hrView } from '../../lib/access'
 import { addDays, daysFromToday, short, today, ymd } from '../../lib/format'
 import { bossOf } from '../../lib/reports'
 import { PageHead } from '../../ui/PageHead'
@@ -183,7 +183,10 @@ function History({ e }: { e: Employee }) {
             <span className="etime__date tnum">{dots(m.date)}</span>
             <span className="etime__dot" aria-hidden="true" />
             <div className="etime__body">
-              <p><b>{MOVE[m.kind]}</b>{m.order && <span className="badge tnum">Тушаал {m.order}</span>}</p>
+              <p>
+                <b>{MOVE[m.kind]}</b>{m.order && <span className="badge tnum">Тушаал {m.order}</span>}
+                {m.doc && <button type="button" className="btn btn--ghost btn--sm" onClick={() => open({ kind: 'doc', id: m.doc! })}>Тушаал харах</button>}
+              </p>
               {m.note && <p className="etime__note">{m.note}</p>}
             </div>
           </li>
@@ -196,6 +199,9 @@ function History({ e }: { e: Employee }) {
 const FILE_ICON: Record<FileState, typeof FileCheck2> = { ok: FileCheck2, soon: FileClock, expired: FileX2, missing: CircleDashed }
 
 function PersonalFile({ e, types, edit }: { e: Employee; types: DocType[]; edit: boolean }) {
+  const s = useApp()
+  // Orders the system made for the person (a signed leave), as far as the viewer may open them
+  const orders = e.moves.flatMap(m => s.docs.filter(d => d.id === m.doc && docView(s).doc(d)).map(d => ({ m, d })))
   const input = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<DocType | null>(null)
   const f = fileScore(e, types)
@@ -262,6 +268,20 @@ function PersonalFile({ e, types, edit }: { e: Employee; types: DocType[]; edit:
           )
         })}
       </ul>
+      {orders.length > 0 && (
+        <>
+          <h3 className="efile-h">Тушаал</h3>
+          <ul className="efile-list">
+            {orders.map(({ m, d }) => (
+              <li key={m.id} className="efile is-ok">
+                <span className="efile__icon"><Stamp className="ico" /></span>
+                <span className="efile__main"><b>{d.name}</b><small>{m.note ?? dots(m.date)}</small></span>
+                <span className="efile__acts"><button type="button" className="btn btn--glass btn--sm" onClick={() => open({ kind: 'doc', id: d.id })}>Харах<span className="sr-only">: {d.name}</span></button></span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   )
 }

@@ -1,6 +1,6 @@
 // Screen state that is not saved: which window is open, the island message, the focus timer.
 import { useSyncExternalStore } from 'react'
-import type { BoardFile, Id, Task, CalEvent } from './types'
+import type { BoardFile, HrRequestKind, Id, Task, CalEvent } from './types'
 import { actions, getState, takeSaved } from './store'
 import { go } from './router'
 import { seed } from './seed'
@@ -23,6 +23,9 @@ export type Dialog =
   | { kind: 'company'; id?: Id }
   | { kind: 'docRequest' }
   | { kind: 'request'; id: Id; office?: boolean }
+  | { kind: 'newRequest' }
+  | { kind: 'hrRequestForm'; type: HrRequestKind; id?: Id }
+  | { kind: 'hrRequest'; id: Id }
   | { kind: 'newChat' }
   | { kind: 'chatGroup'; id: Id }
   | { kind: 'file'; file: BoardFile; pdf?: string }
@@ -61,7 +64,7 @@ export interface Ui {
   note: Note | null
   islandOpen: boolean
   focus: Focus
-  /** Demo only: the person the contract pages act as, to try every step of the process (null: me) */
+  /** Demo only: the person the contract and request pages act as, to try every step of a process (null: me) */
   actAs: Id | null
   /** Who is signed in; null shows the sign-in page */
   session: Id | null

@@ -1,4 +1,4 @@
-import { CalendarDays, ChartColumn, Files, Folder, House, IdCard, MessagesSquare, NotebookPen, Settings, ShieldCheck, SquareCheck, Users } from 'lucide-react'
+import { CalendarDays, ChartColumn, Files, Folder, House, IdCard, Inbox, MessagesSquare, NotebookPen, Settings, ShieldCheck, SquareCheck, Users } from 'lucide-react'
 import type { Page } from '../lib/router'
 import type { State } from '../lib/types'
 import { accessOf } from '../lib/access'
@@ -6,6 +6,7 @@ import { accessOf } from '../lib/access'
 export const NAV: { page: Page; label: string; icon: typeof House; key: string }[] = [
   { page: 'home', label: 'Нүүр', icon: House, key: 'H' },
   { page: 'tasks', label: 'Ажил', icon: SquareCheck, key: 'T' },
+  { page: 'requests', label: 'Хүсэлт', icon: Inbox, key: 'Q' },
   { page: 'chat', label: 'Зурвас', icon: MessagesSquare, key: 'J' },
   { page: 'calendar', label: 'Календарь', icon: CalendarDays, key: 'C' },
   { page: 'projects', label: 'Төсөл', icon: Folder, key: 'P' },

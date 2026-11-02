@@ -1,15 +1,16 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, Id, KpiRules, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, HrRequest, HrRequestDraft, Id, KpiRules, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
-import { bandOf, dueOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
+import { bandOf, dueOf, empOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
 import { accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
 import { companyMark, today } from './format'
 import { docTypesFor } from './seedHr'
+import { STEPS, firstStep, leaveMove, mayAct, mayCancel, mayReturn, orderLines, ORDER_NAME, seedHrRequests, stepOf, withMove } from './hrRequests'
 
 const KEY = 'erp:v1'
 
@@ -59,6 +60,8 @@ function load(): State | null {
     if (!s.scans) s = { ...s, scans: [], aiSpent: 0 }
     // Saved before Ирц existed
     if (!s.timely) s = { ...s, timely: {} }
+    // Saved before Хүсэлт had leave, overtime and hiring: their demo requests, the signed leave's order and its history line
+    if (!s.hrRequests) s = { ...s, ...seedHrRequests(new Date(), s) }
     // Saved by v29–v31, whose example accounts took the e-mail's name as typed: a login with capitals could never sign in,
     // and two people could share one. Each is kept as sign-in reads it, with a number when that is taken (as demoAccounts
     // does now); a login that already works stays as it is.
@@ -706,6 +709,65 @@ export const actions = {
         ? { ...r, status, doc: more.doc ?? r.doc, steps: [...r.steps, { status, at: new Date().toISOString(), by: s.me, note: more.note }] }
         : r)),
     })),
+
+  // Хүсэлт: ээлжийн амралт, илүү цаг, шинэ ажилтан авах (lib/hrRequests.ts). `who` acts: me, or whoever an admin tries
+  // the steps as, as in Гэрээ.
+  /** A new request in the current ХХК, or one sent back, fixed and sent again: from the first step either way */
+  sendHrRequest(d: HrRequestDraft, who: Id, id?: Id): HrRequest | null {
+    const old = id ? state.hrRequests.find(r => r.id === id) : undefined
+    if (id && (!old || old.by !== who || old.status !== 'returned' || old.kind !== d.kind)) return null
+    const company = old?.company ?? state.company
+    const manager = d.kind === 'hire' ? undefined : managerOf(state, company, who)
+    const at = new Date().toISOString()
+    const r = { ...old, ...d, id: old?.id ?? uid('hq'), company, by: who, status: 'open', step: firstStep(d.kind, manager), manager, history: [...(old?.history ?? []), { what: 'sent', by: who, at }] } as HrRequest
+    set(s => ({ ...s, hrRequests: old ? s.hrRequests.map(x => (x.id === r.id ? r : x)) : [r, ...s.hrRequests] }))
+    return r
+  },
+  /**
+   * The person at the step agrees, and it goes on to the next step or is done. A leave signed by the director becomes its
+   * order in Бичиг хэрэг and a line in the employee's history; finance closes an overtime with how it is paid.
+   */
+  approveHrRequest(id: Id, who: Id, more: { note?: string; pay?: 'pay' | 'rest'; minutes?: number } = {}) {
+    const r = state.hrRequests.find(x => x.id === id)
+    if (!r || !mayAct(state, r, who)) return false
+    const step = stepOf(r)
+    const decides = r.kind === 'overtime' && step === 'finance'
+    if (decides && (!more.pay || !(Number.isInteger(more.minutes) && more.minutes! > 0))) return false
+    const at = new Date().toISOString()
+    const last = r.step === STEPS[r.kind].length - 1
+    let next = { ...r, step: last ? r.step : r.step + 1, status: last ? 'done' : 'open', history: [...r.history, { what: 'approved', by: who, at, step, note: more.note || undefined }] } as HrRequest
+    if (decides) next = { ...next, pay: more.pay, minutes: more.minutes } as HrRequest
+    let doc: Doc | undefined
+    if (next.kind === 'leave' && step === 'director') {
+      doc = { id: uid('dc'), company: r.company, name: ORDER_NAME, kind: 'order', text: orderLines(state, next), to: [r.by], by: who, added: at }
+      next = { ...next, order: doc.id }
+    }
+    const e = doc && empOf(state, r.company, r.by)
+    const line = e && next.kind === 'leave' ? leaveMove(next, uid('mv'), doc!.id) : undefined
+    set(s => ({
+      ...s,
+      hrRequests: s.hrRequests.map(x => (x.id === id ? next : x)),
+      docs: doc ? [doc, ...s.docs] : s.docs,
+      employees: line ? s.employees.map(x => (x.id === e!.id ? { ...x, moves: withMove(x.moves, line) } : x)) : s.employees,
+    }))
+    return true
+  },
+  /** The person at the step sends it back to the asker with the reason */
+  returnHrRequest(id: Id, who: Id, reason: string) {
+    const r = state.hrRequests.find(x => x.id === id)
+    if (!r || !mayReturn(state, r, who) || !reason.trim()) return false
+    const at = new Date().toISOString()
+    set(s => ({ ...s, hrRequests: s.hrRequests.map(x => (x.id === id ? { ...x, status: 'returned', history: [...x.history, { what: 'returned', by: who, at, step: stepOf(x), note: reason.trim() }] } : x)) }))
+    return true
+  },
+  /** The asker calls it off */
+  cancelHrRequest(id: Id, who: Id) {
+    const r = state.hrRequests.find(x => x.id === id)
+    if (!r || !mayCancel(r, who)) return false
+    const at = new Date().toISOString()
+    set(s => ({ ...s, hrRequests: s.hrRequests.map(x => (x.id === id ? { ...x, status: 'canceled', history: [...x.history, { what: 'canceled', by: who, at }] } : x)) }))
+    return true
+  },
 
   /** Puts back fresh demo data, for the same person, and returns a function that undoes it */
   reset() {

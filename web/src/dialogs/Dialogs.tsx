@@ -15,6 +15,7 @@ import { ContractAsk, ContractPdf, ContractReason, ContractRegister, NewContract
 import { KpiRules, ReportPdf, ReportReturn } from './ReportForms'
 import { ScanSplit } from './ScanForms'
 import { PasswordReset } from './AdminForms'
+import { HrRequestForm, HrRequestSheet, NewRequest } from './RequestForms'
 
 /** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
 export function Dialogs() {
@@ -38,6 +39,9 @@ export function Dialogs() {
     case 'company': return <CompanyForm id={dialog.id} />
     case 'docRequest': return <RequestForm />
     case 'request': return <RequestSheet key={dialog.id} id={dialog.id} office={dialog.office} />
+    case 'newRequest': return <NewRequest />
+    case 'hrRequestForm': return <HrRequestForm key={dialog.type + (dialog.id ?? '')} type={dialog.type} id={dialog.id} />
+    case 'hrRequest': return <HrRequestSheet key={dialog.id} id={dialog.id} />
     case 'newChat': return <NewChat />
     case 'chatGroup': return <ChatGroup key={dialog.id} id={dialog.id} />
     case 'file': return <FileSheet key={dialog.file.id} file={dialog.file} pdf={dialog.pdf} />

@@ -155,6 +155,7 @@
 .etime__note { margin-top: 2px; font-size: 13.5px; color: var(--text-2); }
 
 .efile-list { display: grid; }
+.efile-h { margin: 18px 0 6px; font: 650 15px/1.2 var(--font); }
 .efile { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px 4px; }
 .efile + .efile { border-top: 1px solid var(--sep); }
 .efile__icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 11px; background: var(--fill); color: var(--text-3); }

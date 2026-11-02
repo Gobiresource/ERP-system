@@ -208,12 +208,13 @@ export type EmpStatus = 'active' | 'probation' | 'leave' | 'childcare' | 'left'
 export type ContractKind = 'open' | 'fixed' | 'service'
 export type MoveKind = 'hired' | 'moved' | 'promoted' | 'confirmed' | 'pay' | 'vacation' | 'leave' | 'childcare' | 'back' | 'award' | 'penalty' | 'left'
 
-/** One line of the employment history. `order` is the order's number, e.g. "Б/12" */
+/** One line of the employment history. `order` is the order's number, e.g. "Б/12"; `doc` the order itself, when the system made it */
 export interface Move {
   id: Id
   date: string // YYYY-MM-DD
   kind: MoveKind
   order?: string
+  doc?: Id
   note?: string
 }
 
@@ -536,6 +537,66 @@ export interface DocRequest {
   doc?: Id
 }
 
+// Хүсэлт: ээлжийн амралт, илүү цаг, шинэ ажилтан авах (docs/decisions.md, 2026-11-01). Each kind goes through its own
+// steps (lib/hrRequests.ts); whoever's step it is approves it or sends it back with the reason, and the person who asked
+// fixes it and sends it again, from the first step.
+
+export type HrRequestKind = 'leave' | 'overtime' | 'hire'
+/** Who acts at a step: the asker's direct manager, anyone who keeps HR records, the finance director, the director */
+export type HrStep = 'manager' | 'hr' | 'finance' | 'director'
+export type HrRequestStatus = 'open' | 'returned' | 'done' | 'canceled'
+/** `step`: the step an approval or a sending back was made at */
+export interface HrRequestEvent { what: 'sent' | 'approved' | 'returned' | 'canceled'; by: Id; at: string; step?: HrStep; note?: string }
+
+interface HrRequestBase {
+  id: Id
+  company: Id
+  by: Id
+  status: HrRequestStatus
+  /** Index into the kind's steps, of the step it waits at */
+  step: number
+  /** The direct manager when it was sent: the manager's step stays theirs if HR changes it meanwhile */
+  manager?: Id
+  history: HrRequestEvent[]
+}
+/** Ээлжийн амралт, in work days. Signed by the director, it becomes an order (`order`, a Doc); HR then registers it in Timely. */
+export interface LeaveRequest extends HrRequestBase {
+  kind: 'leave'
+  from: string // YYYY-MM-DD
+  to: string
+  days: number
+  /** Орлох хүн: who does the work meanwhile (an HR record) */
+  stand?: Id
+  note?: string
+  order?: Id
+}
+/** Илүү цаг, asked before the work. Finance decides afterwards, from the hours Timely saw: pay or time off. */
+export interface OvertimeRequest extends HrRequestBase {
+  kind: 'overtime'
+  date: string // YYYY-MM-DD
+  start: string // HH:MM
+  end: string
+  work: string
+  pay?: 'pay' | 'rest'
+  /** The minutes finance counted */
+  minutes?: number
+}
+/** Шинэ ажилтан авах: anyone may ask; HR checks the headcount, finance the budget, the director decides */
+export interface HireRequest extends HrRequestBase {
+  kind: 'hire'
+  position: Id
+  count: number
+  start: string // YYYY-MM-DD
+  /** Into a vacant place, or with a new place in the headcount */
+  reason: 'vacant' | 'new'
+  duties: string
+  needs?: string
+}
+export type HrRequest = LeaveRequest | OvertimeRequest | HireRequest
+/** What a form fills in: a request without its id, place, asker, progress and what its steps added */
+type DraftOf<T> = T extends unknown ? Omit<T, 'id' | 'company' | 'by' | 'status' | 'step' | 'manager' | 'history' | 'order' | 'pay' | 'minutes'> : never
+export type HrRequestDraft = DraftOf<HrRequest>
+
 // Сарын тайлан: by the last day of each month an employee writes what they did, their problems and ideas, and next month's
 // plan; their direct manager scores it on the ХХК's criteria, and the score sets the bonus (docs/decisions.md, 2026-10-30).
 
@@ -591,6 +652,7 @@ export interface State {
   drafts: Draft[]
   docs: Doc[]
   requests: DocRequest[]
+  hrRequests: HrRequest[]
   chats: Chat[]
   messages: Message[]
   contracts: Contract[]
