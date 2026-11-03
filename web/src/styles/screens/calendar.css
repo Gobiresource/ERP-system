@@ -88,17 +88,18 @@
 .cal-wk__head { padding-bottom: 10px; }
 .cal-wk__day { display: flex; align-items: baseline; justify-content: center; gap: 6px; padding: 6px 0; border-radius: 12px; }
 .cal-wk__day small { font: 650 12.5px/1 var(--font); color: var(--text-2); }
-.cal-wk__day b { display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 4px; border-radius: 999px; font: 700 16px/1 var(--font); }
+/* Only today's number has a circle; the others take no extra room, so each day's name and number sit in the middle of its column */
+.cal-wk__day b { display: grid; place-items: center; height: 28px; font: 700 16px/1 var(--font); }
 .cal-wk__day.is-today small { color: var(--accent-ink); }
-.cal-wk__day.is-today b { background: var(--accent); color: #fff; }
+.cal-wk__day.is-today b { min-width: 28px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: #fff; }
 .cal-wk__body { position: relative; }
 .cal-wk__hours { position: relative; z-index: 3; pointer-events: none; }
 .cal-wk__hours span { position: absolute; right: 10px; font: 600 12px/1 var(--font); white-space: nowrap; color: var(--text-2); transform: translateY(-50%); }
-.cal-wk__hours span:first-child { transform: none; }
-.cal-wk__col {
-  position: relative; border-left: 1px solid var(--sep); cursor: copy;
-  background-image: repeating-linear-gradient(to bottom, var(--sep) 0 1px, transparent 1px var(--hh));
-}
+.cal-wk__col { position: relative; border-left: 1px solid var(--sep); cursor: copy; }
+/* One row per hour draws the line. Borders snap to whole screen pixels, so every line is equally sharp at 125% or 150%
+   scaling; the repeating gradient used before blurred some lines into darker ones. The last row closes the grid. */
+.cal-wk__slot { display: block; height: var(--hh); border-top: 1px solid var(--sep); pointer-events: none; }
+.cal-wk__slot:last-of-type { border-bottom: 1px solid var(--sep); }
 .cal-wk__col:last-child { border-right: 1px solid var(--sep); }
 .cal-wk__col.is-today { background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
 .cal-wk__col.is-weekend { background-color: var(--fill-hover); }

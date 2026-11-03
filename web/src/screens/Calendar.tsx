@@ -349,6 +349,7 @@ function WeekGrid({ from, sc }: { from: Date; sc: Scoped }) {
           return (
             <div key={k} className={`cal-wk__col${k === t ? ' is-today' : ''}${d.getDay() === 0 || d.getDay() === 6 ? ' is-weekend' : ''}`}
               onClick={e => addAt(e, d)} aria-label={`${monthDay(d)}, ${weekday(d)}`} role="group">
+              {Array.from({ length: h1 - h0 }, (_, i) => <i key={i} className="cal-wk__slot" />)}
               {placed.map(({ e, s0, lane }) => {
                 // Two lines need an hour of height; a shorter event keeps its start time on the title's line
                 const short = e.minutes < 60
