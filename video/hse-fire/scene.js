@@ -1,5 +1,5 @@
 // «Кемпэд гал гарвал» in 3D: the camp evacuation plan as a scale model (the plan printed on the floor, low walls), the
-// company logo in the round pit in the yard, fire and smoke as particles, people with arms and legs. window.seek(t)
+// company logo in the round pit in the yard, fire and smoke as particles, people as dots, seen from above. window.seek(t)
 // draws the frame at t seconds and keeps no state, so any frame can be drawn again. All timing comes from voice.json
 // (sentence and word times): a new recording re-times the video by itself (it must still have 7 sentences).
 //   plan-video.svg, plan-geom.json   written by docs/hse/evacuation/plan.py
@@ -68,9 +68,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap
 const scene = new THREE.Scene()
 const SKY = new THREE.Color(0xDCE2E7), SMOKY = new THREE.Color(0x59616A)
 scene.background = SKY.clone()
-scene.fog = new THREE.Fog(SKY.clone(), 18, 42)
-const camera = new THREE.PerspectiveCamera(40, W / H, 0.03, 90)
-camera.setViewOffset(W, H, 0, -150, W, H)                                       // the subject sits below the captions
+scene.fog = new THREE.Fog(SKY.clone(), 80, 200)
+const camera = new THREE.PerspectiveCamera(30, W / H, 1, 200)
 
 const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xB4BEC6, 1.25)
 const sun = new THREE.DirectionalLight(0xFFF1DE, 1.7)
@@ -150,14 +149,14 @@ const toMain = [[514, 442], MAIN_OUT]
 const polyLen = pts => pts.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1]), 0)
 const viaMain = (path, tOut) => ({ path, a: tOut - polyLen(path.slice(0, path.indexOf(MAIN_OUT) + 1)) / WALK, d: polyLen(path) / WALK })
 const ROUTES = [
-  { press: true, legs: [                                                        // room 17: presses the red button
+  { legs: [                                                                     // room 17: presses the red button
     { path: [[214, 62], [214, 104], [178.5, 104]], a: T.corridor - 1.6, d: T.press - .15 - (T.corridor - 1.6) },
     { path: [[178.5, 104], [181.5, 96], [181.5, 16], [181.5, -30]], a: T.press + .75, d: 3.4, hide: true },
     { path: [[300, 610], [440, 660], [482, 716]], a: T.out - 1 }] },
-  { lead: true, crouch: [T.s3b - 1, T.walk + 10.6], legs: [                     // room 18: the camera follows them
+  { legs: [                                                                     // room 18: leaves through the smoke
     { path: [[259.5, 72], [259.5, 104], ...exitTL], a: T.walk, d: 10.6, hide: true },
     { path: [[290, 640], [440, 670], [482, 684]], a: T.out - .4 }] },
-  { crouch: [T.walk + 3.6, T.walk + 15], legs: [                                // room 14: crouches along behind them
+  { legs: [                                                                     // room 14: follows behind them
     { path: [[305, 135], [305, 104], ...exitTL], a: T.walk + 2.5, d: 12.5, hide: true },
     { path: [[310, 580], [440, 630], [482, 652]], a: T.out + .2 }] },
   { call: true, legs: [viaMain([[343, 480], [343, 519.5], [490, 519.5], [497, 536], MAIN_OUT, [515, 748]], T.out - 3.5)] },  // 46
@@ -289,7 +288,7 @@ const alarmLight = new THREE.PointLight(0xFF2A1A, 0, 3, 2)
 alarmLight.position.copy(ALARM).setY(.9)
 scene.add(alarmLight)
 
-// green signs in the corridors: arrows just above the walls with chevrons running the way they point. Exits: green light.
+// green signs in the corridors: arrows just above the walls with chevrons running the way they point. Exits: green rings.
 const ARROW = canvasTex(256, 128, (g, w, h) => {
   g.fillStyle = '#00A34F'; g.beginPath(); g.roundRect(4, 4, w - 8, h - 8, 28); g.fill()
   g.fillStyle = '#fff'; g.beginPath()
@@ -311,41 +310,16 @@ const signPlates = geom.signs.map(([x, y, way]) => {
 const signRings = geom.signs.map(([x, y]) => ring(0x00A34F, V(x, y)))
 const EXITS = [[181.5, 23], [191, 292], [658, 322], [515, 530]].map(([x, y]) => V(x, y))
 const EXIT_ON = [T.routes + 1, T.gate, T.routes + 1, T.routes + 1]            // the yard door by room 51 lights up first
-const beamTex = canvasTex(4, 256, (g, w, h) => {
-  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,1)')
-  g.fillStyle = gr; g.fillRect(0, 0, w, h)
-})
-const beams = EXITS.map(p => {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(.14, .14, 1.6, 32, 1, true),
-    new THREE.MeshBasicMaterial({ map: beamTex, color: 0x18C46C, transparent: true, depthWrite: false, side: THREE.DoubleSide }))
-  m.position.copy(p).setY(.8)
-  scene.add(m)
-  return m
-})
 const exitRings = EXITS.map(p => ring(0x00A34F, p))
 
-// ---- people: hi-vis vest, yellow helmet, arms and legs that swing as they walk ---------------------------------------
-const mat = c => new THREE.MeshLambertMaterial({ color: c })
-const VEST = mat(0xF07A12), HELMET = mat(0xF7C833), SKIN = mat(0xD9A77F), PANTS = mat(0x334155), SHIRT = mat(0x3F5068), STRIPE = mat(0xE6ECF0)
-const legGeo = new THREE.CapsuleGeometry(.017, .07, 3, 8).translate(0, -.052, 0)    // hangs from the hip
-const armGeo = new THREE.CapsuleGeometry(.0135, .062, 3, 8).translate(0, -.045, 0)  // hangs from the shoulder
-const torsoGeo = new THREE.CapsuleGeometry(.036, .052, 4, 12), bandGeo = new THREE.CylinderGeometry(.0375, .0375, .011, 20)
-const headGeo = new THREE.SphereGeometry(.028, 16, 12), hatGeo = new THREE.SphereGeometry(.032, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)
-const brimGeo = new THREE.CylinderGeometry(.038, .038, .005, 20)
-function figure() {
-  const g = new THREE.Group(), fig = new THREE.Group(), upper = new THREE.Group()
-  const limb = (geo, m, x, y) => { const j = new THREE.Group(); j.position.set(x, y, 0); j.add(new THREE.Mesh(geo, m)); return j }
-  const legL = limb(legGeo, PANTS, .02, .105), legR = limb(legGeo, PANTS, -.02, .105)
-  const armL = limb(armGeo, SHIRT, .047, .1), armR = limb(armGeo, SHIRT, -.047, .1)
-  upper.position.y = .105                                                        // the hips: the body bends here
-  const part = (geo, m, y) => { const o = new THREE.Mesh(geo, m); o.position.y = y; return o }
-  upper.add(part(torsoGeo, VEST, .058), part(bandGeo, STRIPE, .045), part(headGeo, SKIN, .148), part(hatGeo, HELMET, .152), part(brimGeo, HELMET, .152), armL, armR)
-  fig.add(legL, legR, upper)
-  g.add(fig)
-  g.rotation.order = 'YXZ'
-  g.traverse(o => { if (o.isMesh) o.castShadow = true })
+// ---- people: dots, as on the plan --------------------------------------------------------------------------------------
+const dotGeo = new THREE.CircleGeometry(.07, 32).rotateX(-Math.PI / 2), edgeGeo = new THREE.RingGeometry(.068, .092, 32).rotateX(-Math.PI / 2)
+const DOT = new THREE.MeshBasicMaterial({ color: 0x1F2429 }), EDGE = new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+function dot() {
+  const g = new THREE.Group()
+  for (const m of [new THREE.Mesh(edgeGeo, EDGE), new THREE.Mesh(dotGeo, DOT)]) { m.position.y = .03; g.add(m) }
   scene.add(g)
-  return { g, fig, upper, legL, legR, armL, armR }
+  return g
 }
 const TICK = canvasTex(128, 128, g => {
   g.fillStyle = '#00A34F'; g.beginPath(); g.arc(64, 64, 60, 0, 7); g.fill()
@@ -366,7 +340,7 @@ function rounded(points, r = .1) {
   path.add(new THREE.LineCurve3(from, pts.at(-1)))
   return path
 }
-const PEOPLE = ROUTES.map((r, n) => ({ ...r, n, ...figure(), tick: sprite(TICK, false),
+const PEOPLE = ROUTES.map((r, n) => ({ ...r, n, g: dot(), tick: sprite(TICK, false),
   legs: r.legs.map(l => { const curve = rounded(l.path), L = curve.getLength(); return { ...l, curve, L, d: l.d ?? polyLen(l.path) / WALK } }) }))
 function legAt(p, t) {                                                          // the leg in use at t and how far along it
   const i = p.legs.findLastIndex(l => t >= l.a)
@@ -375,10 +349,7 @@ function legAt(p, t) {                                                          
   if (u >= 1 && l.hide) return null                                              // out of sight until the next leg
   return { l, s: walk(u, Math.min(.15, .45 / l.d)) * l.L }
 }
-const placeAt = (p, t) => { const st = legAt(p, t) ?? { l: p.legs[0], s: p.legs[0].L }; return st.l.curve.getPoint(st.s / st.l.L) }
-const LEADER = PEOPLE.find(p => p.lead), PRESSER = PEOPLE.find(p => p.press), CALLER = PEOPLE.find(p => p.call)
-const leadAt = t => placeAt(LEADER, t)
-const CALL = canvasTex(256, 256, g => {                                         // a phone over the head of whoever calls 101
+const CALL = canvasTex(256, 256, g => {                                         // a phone by whoever calls 101
   g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 128, 118, 0, 7); g.fill()
   g.save(); g.translate(56, 56); g.scale(6, 6); g.strokeStyle = '#D52B1E'; g.lineWidth = 2.2; g.lineCap = g.lineJoin = 'round'
   g.stroke(new Path2D('M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384'))
@@ -405,40 +376,22 @@ const ban = sprite(canvasTex(256, 256, g => {
 }), false)
 const MAIN = V(515, 530)
 
-// ---- camera: one shot per part of the voice, each move with a purpose; shots change with a cut ----------------------
-const cut = t => (Math.round(t * FPS) + .5) / FPS                               // a cut falls between two frames
-const two = (v, u) => typeof v === 'number' ? v : lerp(v[0], v[1], u)          // a number, or [from, to]
-const track = pts => pts.length > 2 ? (c => u => c.getPoint(u))(new THREE.CatmullRomCurve3(pts, false, 'centripetal')) : u => pts[0].clone().lerp(pts[1], u)
-const shot = (t, pos, look, fov = 40) => { const p = track(pos), l = track(look); return { t, at: u => ({ pos: p(u), look: l(u), fov: two(fov, u) }) } }
-const F = FIRE, A = ALARM, E = MAIN, SW = V(181, 340), YW = V(191, 292)
-function follow(t) {                                                            // alongside the worker, smoothed
-  const avg = (n, w) => { const p = new V3(); for (let k = 0; k < n; k++) p.add(leadAt(t - w + k * w / (n - 1))); return p.multiplyScalar(1 / n) }
-  const p = avg(9, .8)
-  return { pos: P(p.x + .5, 1.15, CORRIDOR_Z + .85), look: avg(5, .3).setY(.12), fov: 44 }
-}
-const SHOTS = [
-  // the company logo in the yard, up over the whole camp, on to the burning room
-  shot(0, [P(PIT.x, 2.6, PIT.z + .8), P(PIT.x + .4, 3.8, PIT.z + 2.6), P(.9, 4.6, 3.4), P(F.x + 1.4, 2.4, F.z + 3.4), P(F.x + .6, 1.15, F.z + 2.0)],
-    [P(PIT.x, -.05, PIT.z + .28), P(PIT.x, 0, PIT.z - .5), P(-.6, 0, -1.8), P(F.x, .35, F.z), P(F.x, .5, F.z)], [38, 40]),
-  { t: cut(T.corridor + .3), at: (u, t) => ({                                   // a worker from the next room presses the red button
-    pos: P(A.x + 1.25, 1.15, A.z - .85).lerp(P(A.x + .85, .9, A.z - .55), u),
-    look: placeAt(PRESSER, t).setY(.13).lerp(BUTTON, .5 * smooth(ramp(t, T.press - 1, 1))), fov: 40 }) },
-  { t: cut(S[2].a - .25), at: (u, t) => follow(t) },                            // with a worker leaving through the smoke
-  // a green sign, then the way it points: the exit
-  shot(cut(S[3].a - .25), [P(SW.x + .55, .85, SW.z + .75), P(SW.x + .55, .95, SW.z - .2)], [P(SW.x, .15, SW.z), P(YW.x - .1, .1, YW.z - .05)], 42),
-  // high over the main exit: everyone comes through the yard and out
-  shot(cut(S[4].a - .25), [P(E.x + .3, 5.4, E.z + 4.6), P(E.x + .1, 3.4, E.z + 2.9)], [P(E.x - .2, 0, .5), P(E.x, 0, E.z - .4)], [50, 46]),
-  // the safe area: people gather, call 101, register
-  shot(cut(S[5].a - .3), [P(SAFE.x + .8, 1.55, SAFE.z + 3.0), P(SAFE.x + .35, 1.2, SAFE.z + 2.3)], [P(SAFE.x, .15, SAFE.z - .25), P(SAFE.x, .2, SAFE.z - .1)]),
-  // do not go back in: closer to the main exit
-  shot(cut(S[6].a), [P(E.x + .5, .8, E.z + 2.0), P(E.x + .25, .6, E.z + 1.3)], [P(E.x, .3, E.z), P(E.x, .32, E.z)]),
-  // and up: the whole camp, the logo in the yard
-  shot(T.end - .2, [P(E.x + .25, .6, E.z + 1.3), P(E.x + 1.0, 2.2, E.z + 3.2), P(1.8, 4.6, 6.4)],
-    [P(E.x, .32, E.z), P(E.x - .3, .2, E.z - 1.0), P(PIT.x - .2, 0, PIT.z - .6)], [40, 38]),
+// ---- camera: always from above, north up as on the posted plan; it only glides and zooms between a few views ----------
+const TILT = 10 * Math.PI / 180, SPAN = 2 * Math.tan(15 * Math.PI / 180) * W / H     // picture width per unit of distance
+const FULL = { x: 0, z: 1.55, w: 12.6 }                                         // the whole camp and the safe area
+const VIEWS = [                                                                 // from t, glide for d seconds to: centre x, z and width w
+  { t: 0, x: PIT.x, z: PIT.z, w: 2.4 },                                         // the logo in the yard
+  { t: 1, d: 2.6, ...FULL },
+  { t: S[1].a - .8, x: -2.45, z: -2.75, w: 4.4 },                               // the fire, the corridor, the button, the near exit
+  { t: S[3].a - .5, ...FULL },                                                  // the signs and the routes
+  { t: S[5].a - .5, x: MAIN.x, z: 4.55, w: 4.8 },                               // the main exit and the safe area
+  { t: T.end - .3, ...FULL },
 ]
 function cameraAt(t) {
-  const i = Math.max(0, SHOTS.findLastIndex(s => s.t <= t)), s = SHOTS[i]
-  return s.at(smooth((t - s.t) / ((SHOTS[i + 1]?.t ?? DURATION) - s.t)), t)
+  const i = Math.max(0, VIEWS.findLastIndex(v => v.t <= t)), b = VIEWS[i], a = VIEWS[Math.max(0, i - 1)]
+  const u = smooth(ramp(t, b.t, b.d ?? 1.6))
+  const x = lerp(a.x, b.x, u), z = lerp(a.z, b.z, u), dist = Math.exp(lerp(Math.log(a.w), Math.log(b.w), u)) / SPAN
+  return { pos: P(x, dist * Math.cos(TILT), z + dist * Math.sin(TILT)), look: P(x, 0, z) }
 }
 
 // ---- post: bloom for the fire, light grain and vignette --------------------------------------------------------------
@@ -481,15 +434,7 @@ const endCard = document.getElementById('end')
 window.seek = t => {
   t = Math.max(0, t)                                                            // the first sub-frame starts a hair before 0
   const c = cameraAt(t)
-  camera.position.copy(c.pos); camera.fov = c.fov; camera.updateProjectionMatrix(); camera.lookAt(c.look)
-  const nearCam = s => clamp((s.position.distanceTo(camera.position) - .3 - .45 * s.scale.y) / .8)   // smoke fades out near the lens
-  const eye = camera.position.clone(), worker = leadAt(t).setY(.1), ray = worker.clone().sub(eye), rl = ray.length()
-  ray.normalize()
-  const sight = q => {                                                          // distance from the camera-to-worker line
-    if (t < S[2].a - 1 || t > S[3].a) return 9
-    const v = q.clone().sub(eye), d = clamp(v.dot(ray), 0, rl)
-    return v.sub(ray.clone().multiplyScalar(d)).length()
-  }
+  camera.position.copy(c.pos); camera.lookAt(c.look)
 
   // mood: the light drops and the sky turns smoky while the fire burns, and comes back once people are outside
   const mood = ramp(t, T.fire, 3) * (1 - ramp(t, S[3].a + 1, 5))
@@ -541,13 +486,13 @@ window.seek = t => {
     s.visible = true
     s.position.set(FIRE.x + (rnd(i + 1300) - .5) * .7 * Math.sqrt(age) + Math.sin(age * .7 + i) * .14,
       .5 + Math.sqrt(age) * (1.1 + .6 * rnd(i + 1400)),
-      FIRE.z + .17 * age + (rnd(i + 1500) - .5) * .5)
+      FIRE.z - .22 * age + (rnd(i + 1500) - .5) * .5)            // the wind takes it north, off the camp
     const k = (.5 + 1.9 * u) * (.75 + .25 * clamp(f))
     s.scale.set(k, k, 1)
     s.material.rotation = rnd(i + 1600) * 6.28 + age * .12 * (rnd(i + 1700) - .5)
     const shade = .06 + .24 * u, heat = .55 * clamp(1 - age / .7) * clamp(f)
     s.material.color.setRGB(shade + .9 * heat, shade * 1.02 + .3 * heat, shade * 1.07 + .04 * heat)
-    s.material.opacity = .9 * ease(u / .1) * (1 - ease((u - .45) / .55)) * nearCam(s)
+    s.material.opacity = .9 * ease(u / .1) * (1 - ease((u - .45) / .55))
   })
   // smoke layer: creeps along the corridor both ways from the burning room
   const lStart = T.corridor - 1.2
@@ -562,7 +507,7 @@ window.seek = t => {
     s.material.rotation = rnd(i + 2200) * 6.28 + t * .05 * (rnd(i + 2300) - .5)
     const shade = .2 + .1 * rnd(i + 2400)
     s.material.color.setRGB(shade, shade, shade * 1.05)
-    s.material.opacity = .42 * ease(age / 1.5) * (1 - .55 * ramp(t, T.out, 3)) * nearCam(s) * clamp((sight(s.position) - .1) / .14)
+    s.material.opacity = .42 * ease(age / 1.5) * (1 - .55 * ramp(t, T.out, 3))
   })
 
   // alarm: the button and a light flash red, rings spread on the floor
@@ -596,44 +541,28 @@ window.seek = t => {
   })
   EXITS.forEach((_, i) => {
     const on = clamp(ramp(t, EXIT_ON[i], .5) - ramp(t, S[4].b + .6, .5)), u = (t * .9 + i * .25) % 1
-    beams[i].material.opacity = on * (.5 + .15 * Math.sin(t * 5 + i))
-    beams[i].scale.set(1, .4 + .6 * ease(on), 1)
-    beams[i].position.y = .8 * (.4 + .6 * ease(on))
     exitRings[i].scale.setScalar(.12 + .42 * u)
     exitRings[i].material.opacity = on * (1 - u)
   })
 
-  // people: walk their legs; arms and legs swing with the distance walked, so the feet do not slide
+  // people: dots walking their legs; a green tick by each one once they have registered
   PEOPLE.forEach(p => {
     const st = legAt(p, t)
     p.g.visible = !!st
     p.tick.visible = false
     if (!st) return
-    const { l, s } = st, u = s / l.L
-    const pos = l.curve.getPoint(u), dir = l.curve.getTangent(u)
-    const s2 = legAt(p, t + .05)?.l === l ? legAt(p, t + .05).s : s
-    const speed = (s2 - s) / .05, amp = clamp(speed / .12) * .55
-    const ph = s / .25 * 2 * Math.PI
-    const crouch = p.crouch ? ease(ramp(t, p.crouch[0], .6)) * (1 - ramp(t, p.crouch[1] - .4, .4)) : 0
+    const pos = st.l.curve.getPoint(st.s / st.l.L)
     p.g.position.copy(pos)
-    p.g.rotation.y = Math.atan2(dir.x, dir.z)
-    p.fig.position.y = amp * .008 * Math.abs(Math.cos(ph)) - .012 * crouch
-    p.upper.rotation.x = .55 * crouch
-    p.legL.rotation.x = amp * Math.sin(ph); p.legR.rotation.x = -amp * Math.sin(ph)
-    p.armL.rotation.x = -.8 * amp * Math.sin(ph); p.armR.rotation.x = .8 * amp * Math.sin(ph)
-    p.armR.rotation.z = 0
-    if (p.press) p.armR.rotation.x = lerp(p.armR.rotation.x, -1.3, Math.sin(Math.PI * ramp(t, T.press - .3, .9)))
     if (p.call) {
       const k = smooth(ramp(t, T.call - .2, .4)) * (1 - smooth(ramp(t, T.s6b + .6, .4)))
-      p.armR.rotation.x = lerp(p.armR.rotation.x, -2.5, k); p.armR.rotation.z = .35 * k
-      call.position.copy(pos).setY(.42 + .015 * Math.sin(t * 6))
-      call.scale.setScalar(.15 * k * (1 + .08 * Math.sin(t * 9)))
+      call.position.copy(pos).add(P(.12, .2, -.12))
+      call.scale.setScalar(.2 * k * (1 + .08 * Math.sin(t * 9)))
       call.material.opacity = k
     }
-    const k = l === p.legs.at(-1) ? ease(ramp(t, T.check + p.n * .06, .3)) : 0
+    const k = st.l === p.legs.at(-1) ? ease(ramp(t, T.check + p.n * .06, .3)) : 0
     p.tick.visible = k > 0
-    p.tick.position.copy(pos).setY(.38 + .04 * (1 - k))
-    p.tick.scale.setScalar(.14 * k)
+    p.tick.position.copy(pos).add(P(.1, .2, -.1))
+    p.tick.scale.setScalar(.17 * k)
   })
   const sa = ease(ramp(t, T.routes, .6))
   safe.visible = sa > 0
