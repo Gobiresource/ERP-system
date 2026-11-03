@@ -1,7 +1,7 @@
-# Sound for «Кемпэд гал гарвал»: the ElevenLabs voice over music (Mixkit «Break Away» by Ahjay Stelino, Mixkit Stock
-# Music Free License), the music ducked while the voice speaks, and three alarm beeps when the button is pressed.
+# Sound for «Кемпэд гал гарвал»: the ElevenLabs voice and three alarm beeps when the button is pressed. MUSIC = True puts
+# music under it (Mixkit «Break Away» by Ahjay Stelino, Mixkit Stock Music Free License), ducked while the voice speaks.
 # Times come from out/events.json, written by render.mjs from the scene.  numpy and ffmpeg.
-#   python3 audio.py   -> ../out/hse-fire-audio.wav (48 kHz, stereo, 16-bit) and ../out/hse-fire-music.mp3 (the music alone)
+#   python3 audio.py   -> ../out/hse-fire-audio.wav (48 kHz, stereo, 16-bit), with MUSIC also ../out/hse-fire-music.mp3
 import json
 import subprocess
 import wave
@@ -11,6 +11,7 @@ import numpy as np
 HERE = Path(__file__).parent
 OUT = HERE.parent / 'out'
 SR = 48000
+MUSIC = False                                    # the user asked for the voice without music (2026-11-03)
 ev = json.loads((OUT / 'events.json').read_text())
 E = ev['EVENTS']
 N = int((ev['DURATION'] + .3) * SR)
@@ -38,11 +39,12 @@ voice[i:i + len(v)] = v[:N - i]
 
 # Music: from its start, faded out over the last 3 s, at -22 dBFS RMS
 music = np.zeros((N, 2))
-m = load(HERE / 'music.mp3')[:N]
+m = load(HERE / 'music.mp3')[:N] if MUSIC else np.zeros((1, 2))
 music[:len(m)] = m
 music *= (np.clip(t / .05, 0, 1) * np.clip((ev['DURATION'] - t) / 3, 0, 1))[:, None]
-music *= db(-22) / np.sqrt((music[:int(40 * SR)] ** 2).mean())
-write(OUT / 'hse-fire-music.wav', music * db(-1) / np.abs(music).max())
+music *= db(-22) / max(1e-9, np.sqrt((music[:int(40 * SR)] ** 2).mean()))
+if MUSIC:
+    write(OUT / 'hse-fire-music.wav', music * db(-1) / np.abs(music).max())
 
 # Duck the music 8 dB while the voice speaks: the voice level every 10 ms, a gate, quick attack and slow release
 hop = SR // 100
@@ -67,5 +69,6 @@ for k in range(3):
 
 mix *= min(1, .97 / np.abs(mix).max())
 write(OUT / 'hse-fire-audio.wav', mix)
-subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(OUT / 'hse-fire-music.wav'), '-b:a', '192k', str(OUT / 'hse-fire-music.mp3')], check=True)
+if MUSIC:
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(OUT / 'hse-fire-music.wav'), '-b:a', '192k', str(OUT / 'hse-fire-music.mp3')], check=True)
 print('hse-fire-audio.wav', round(N / SR, 1), 's')
