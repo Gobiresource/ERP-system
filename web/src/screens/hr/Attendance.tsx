@@ -8,7 +8,7 @@ import '../../styles/screens/attendance.css'
 import type { State, TimelyDay, TimelyEmployee, TimelyMonth } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { usePageEnter } from '../../lib/motion'
-import { DAY_STATE, EVERY, LOW, avgIn, datesOf, dayStateOf, linkOf, loadDays, loadMonth, matchUp, pctOf, sampleDays, sampleMonth, spanOf, sumUp, timelyState, type DayState, type Row, type TimelyState } from '../../lib/attendance'
+import { DAY_STATE, EVERY, LOW, NO_RIGHT, avgIn, datesOf, dayStateOf, linkOf, loadDays, loadMonth, matchUp, pctOf, sampleDays, sampleMonth, spanOf, sumUp, timelyState, type DayState, type Row, type TimelyState } from '../../lib/attendance'
 import { dots } from '../../lib/hr'
 import { hrView, seer } from '../../lib/access'
 import { monthKey, monthName, prevMonth } from '../../lib/reports'
@@ -368,7 +368,7 @@ function Everyone({ rows }: { rows: Row[] }) {
                       <span className="efiles__bar" aria-hidden="true"><i style={{ transform: `scaleX(${(p ?? 0) / 100})` }} /></span>
                     </span>
                   </td>
-                  <td className="num tnum hide-sm">{r.t.leave ? `${r.t.leave.left} хоног` : <span className="muted">—</span>}</td>
+                  <td className="num tnum hide-sm">{r.t.leave && !r.t.leave.uncapped ? `${r.t.leave.left} хоног` : <span className="muted" title={r.t.leave ? NO_RIGHT : undefined}>—{r.t.leave && <span className="sr-only"> {NO_RIGHT}</span>}</span>}</td>
                 </tr>
               )
             })}
@@ -474,7 +474,7 @@ export function AttendanceOne({ id }: { id: string }) {
           { label: 'Ирц', value: p ?? '—', unit: p === null ? undefined : '%', alert: p !== null && p < LOW },
           { label: 'Ажилласан өдөр', value: row.t.workedDays, unit: `/ ${row.t.supposedDays}` },
           { label: 'Дундаж ирсэн цаг', value: avg ?? '—' },
-          { label: 'Амралтын үлдэгдэл', value: row.t.leave?.left ?? '—', unit: row.t.leave ? 'хоног' : undefined },
+          { label: 'Амралтын үлдэгдэл', value: row.t.leave && !row.t.leave.uncapped ? row.t.leave.left : '—', unit: row.t.leave && !row.t.leave.uncapped ? 'хоног' : undefined },
         ] : undefined}
         actions={<MonthTools a={{ ...a, load: (fresh: boolean) => (a.load(fresh), setAgain(n => n + 1)) }} />}
       />
@@ -558,15 +558,15 @@ function Leave({ t }: { t: TimelyEmployee }) {
       <div className="card__head">
         <div>
           <h2 className="card__title" id="atv-t">Ээлжийн амралт</h2>
-          <p className="card__sub">{l ? `${l.year} оны эрх` : 'Timely-д бүртгэлгүй'}</p>
+          <p className="card__sub">{l ? (l.uncapped ? NO_RIGHT : `${l.year} оны эрх`) : 'Timely-д бүртгэлгүй'}</p>
         </div>
       </div>
       {l ? (
         <>
           <dl className="att-leave">
-            <div><dt>Эрх</dt><dd className="tnum">{l.earned}<small> хоног</small></dd></div>
+            {!l.uncapped && <div><dt>Эрх</dt><dd className="tnum">{l.earned}<small> хоног</small></dd></div>}
             <div><dt>Ашигласан</dt><dd className="tnum">{l.used}<small> хоног</small></dd></div>
-            <div><dt>Үлдсэн</dt><dd className="tnum">{l.left}<small> хоног</small></dd></div>
+            {!l.uncapped && <div><dt>Үлдсэн</dt><dd className="tnum">{l.left}<small> хоног</small></dd></div>}
           </dl>
           {l.taken.length > 0 ? (
             <ul className="att-taken">

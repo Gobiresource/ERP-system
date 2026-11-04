@@ -340,7 +340,11 @@ export interface ScanReading {
 /** A Timely company the server's keys open, with what each key may read */
 export interface TimelyCompany { id: number; name: string; register: string | null; scopes: string[] }
 /** The current leave year's annual leave, in days, and the leave taken */
-export interface TimelyLeave { year: number; earned: number; used: number; left: number; taken: { from: string; to: string; days: number }[] }
+export interface TimelyLeave {
+  year: number; earned: number; used: number; left: number; taken: { from: string; to: string; days: number }[]
+  /** Timely counts no entitlement for the year (earned and left come as 0): there is no balance, only the days used */
+  uncapped?: boolean
+}
 export interface TimelyEmployee {
   workerId: number
   family: string

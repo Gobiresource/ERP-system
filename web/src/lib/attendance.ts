@@ -24,6 +24,9 @@ export async function timelyState(): Promise<TimelyState> {
   }
 }
 
+/** Timely counts no leave entitlement ("uncapped"): why no balance shows (Gemini 43) */
+export const NO_RIGHT = 'Timely-д эрх тохируулаагүй'
+
 /** Names without "ХХК", quotes and case, to find an ХХК's Timely company */
 const plain = (name: string) => name.toLowerCase().replace(/ххк|«|»|"|'|\./g, '').replace(/\s+/g, ' ').trim()
 

@@ -104,8 +104,18 @@ export function rangeOf(month: string) {
   return from > today ? null : { from, to: last < today ? last : today }
 }
 
+/**
+ * A month's sums stop at yesterday, as the example month counts: today is not over, and its whole working day set
+ * against the hours worked so far showed everyone short (real data, 2026-11-04). On the month's first day there is no
+ * yesterday in it, so today stays.
+ */
+export function doneOf(range: { from: string; to: string }) {
+  const yesterday = new Date(Date.now() + 8 * 3_600_000 - 86_400_000).toISOString().slice(0, 10)
+  return range.to > yesterday && yesterday >= range.from ? { ...range, to: yesterday } : range
+}
+
 /** Timely's own shapes, as far as they are read here; anything may be missing */
-interface RawLeave { year?: number; earnedDays?: number; usedDays?: number; remainingDays?: number; used?: { begDate?: string; endDate?: string; days?: number }[] }
+interface RawLeave { year?: number; earnedDays?: number; usedDays?: number; remainingDays?: number; uncapped?: boolean; used?: { begDate?: string; endDate?: string; days?: number }[] }
 interface RawEmployee { workerId?: number; firstname?: string | null; lastname?: string | null; register?: string | null; position?: string | null; division?: { name?: string | null } | null; annualLeave?: RawLeave | null }
 interface RawSummary { supposedWorkDays?: number; supposedWorkHours?: number; workedDays?: number; workedHours?: number }
 interface RawDay { date?: string; clockIn?: string | null; clockOut?: string | null }
@@ -135,7 +145,7 @@ function employeeOf(e: RawEmployee, s: RawSummary | null): TimelyEmployee {
     division: str(e.division?.name),
     leave: l
       ? {
-          year: num(l.year), earned: num(l.earnedDays), used: num(l.usedDays), left: num(l.remainingDays),
+          year: num(l.year), earned: num(l.earnedDays), used: num(l.usedDays), left: num(l.remainingDays), uncapped: l.uncapped === true,
           taken: (Array.isArray(l.used) ? l.used : []).map(u => ({ from: str(u.begDate).slice(0, 10), to: str(u.endDate).slice(0, 10), days: num(u.days) })),
         }
       : null,
@@ -208,7 +218,7 @@ export async function handleAttendance(req: Request, env: TimelyEnv): Promise<Re
     if (!a) return failed ? json({ error: failed.message }, 502) : json({ error: 'Энэ ХХК Timely-тэй холбогдоогүй байна.' }, 404)
     const account = a
     return json(what === 'month'
-      ? await keep(`m:${id}:${month}`, again, () => monthOf(account, month, range))
+      ? await keep(`m:${id}:${month}`, again, () => monthOf(account, month, doneOf(range)))
       : await keep(`d:${id}:${worker}:${month}`, again, () => daysOf(account, worker, range)))
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : SILENT }, 502)
