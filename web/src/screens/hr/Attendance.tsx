@@ -401,7 +401,8 @@ function Everyone({ rows }: { rows: Row[] }) {
                   <td className="hide-md">{deptOf(r)}</td>
                   <td className="num tnum">
                     {r.t.workedDays}<small className="att-of"> / {r.t.supposedDays}</small>
-                    {r.t.since && r.t.supposedDays > 0 && <small className="att-since">Анхны ирц: {dots(r.t.since).slice(5)}</small>}
+                    {r.t.since && r.t.supposedDays > 0 && <small className="att-note">Ажилд орсон: {dots(r.t.since).slice(5)}</small>}
+                    {r.t.offDays && <small className="att-note">Чөлөө, ээлжийн амралт: {r.t.offDays} хоног</small>}
                   </td>
                   <td className="num tnum hide-sm">{Math.round(r.t.workedHours)}<small className="att-of"> / {Math.round(r.t.supposedHours)}</small></td>
                   <td className="num">
@@ -514,7 +515,7 @@ export function AttendanceOne({ id }: { id: string }) {
         sub={row ? [
           row.e ? hr.position(row.e.position)?.name : row.t.position,
           row.e ? hr.dept(row.e.dept)?.name : row.t.division,
-          row.t.since && row.t.supposedDays > 0 && `Анхны ирц: ${dots(row.t.since).slice(5)}`,
+          row.t.since && row.t.supposedDays > 0 && `Ажилд орсон: ${dots(row.t.since).slice(5)}`,
         ].filter(Boolean).join(', ') : undefined}
         lead={<>{back}{!outside && (row?.e || ours) ? <span className="head__icon"><EmpAvatar e={(row?.e ?? ours)!} size="xl" /></span> : null}</>}
         stats={row ? [

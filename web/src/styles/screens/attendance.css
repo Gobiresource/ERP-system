@@ -34,8 +34,8 @@
 .att-table .efiles__bar { width: 56px; }
 /* "of 22": smaller, not lighter, so small figures keep 4.5:1 on glass in both modes */
 .att-of { font-size: 12.5px; font-weight: 450; }
-/* A new employee's first day, under their days: smaller, not lighter, like "of 22" */
-.att-since { display: block; font-size: 12px; font-weight: 450; }
+/* Under the days, the day someone started and the time off taken out: smaller, not lighter, like "of 22" */
+.att-note { display: block; font-size: 12px; font-weight: 450; white-space: normal; text-wrap: balance; }
 .att-days tr.is-rest th, .att-days tr.is-rest td { color: var(--text-2); }
 .att-days tbody tr { cursor: default; }
 /* Timely's words for a day can be long ("Томилолт, Амралтаар ажилласан"): on a phone they wrap, as the employee list's status does */
