@@ -11,17 +11,27 @@ export const LOW = 80
 /** How often an open page reads Timely again; the server keeps answers as long */
 export const EVERY = 5 * 60_000
 
-export interface TimelyState { ready: boolean; companies: TimelyCompany[]; errors: string[] }
+/** `locked`: the server wants its code first (server/timely.ts, the test address) */
+export interface TimelyState { ready: boolean; companies: TimelyCompany[]; errors: string[]; locked?: boolean }
 
 /** The Timely companies our server's keys open: none without the server (the preview page) or its keys */
 export async function timelyState(): Promise<TimelyState> {
   try {
     const r = await fetch(API, { signal: AbortSignal.timeout(10_000) })
     const j = r.ok ? await r.json() : null
-    return { ready: !!j?.ready, companies: j?.companies ?? [], errors: j?.errors ?? [] }
+    return { ready: !!j?.ready, companies: j?.companies ?? [], errors: j?.errors ?? [], locked: r.status === 401 }
   } catch {
     return { ready: false, companies: [], errors: [] }
   }
+}
+
+/** Gives the server the code that opens attendance; it keeps the browser open for 30 days. Throws what went wrong. */
+export async function unlock(code: string) {
+  const r = await fetch(`${API}/unlock`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }), signal: AbortSignal.timeout(10_000) })
+    .catch(() => {
+      throw new Error('Сервертэй холбогдож чадсангүй. Интернэтээ шалгаад дахин оролдоно уу.')
+    })
+  if (!r.ok) throw new Error((await r.json().catch(() => null))?.error ?? 'Код буруу байна. Дахин шалгаад бичнэ үү.')
 }
 
 /** Names without "ХХК", quotes and case, to find an ХХК's Timely company */

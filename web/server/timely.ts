@@ -13,7 +13,7 @@ export const KEEP = 5 * 60_000
 /** "Шинэчлэх" asks again only when the answer is older than this */
 const FRESH = 30_000
 
-export interface TimelyEnv { TIMELY_API_KEYS?: string }
+export interface TimelyEnv { TIMELY_API_KEYS?: string; ATTENDANCE_CODE?: string }
 
 interface Account { key: string; token?: string; until?: number; scopes?: string[]; company?: TimelyCompany; groups?: Map<string, string> }
 const accounts = new Map<string, Account>()
@@ -38,7 +38,9 @@ class TimelyError extends Error {
   }
 }
 
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } })
+/** Never kept by a browser or on the way: the answers carry names and attendance */
+const json = (body: unknown, status = 200, more: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...more } })
 
 /** One call; Timely answers { success, message, result } */
 async function call(path: string, init: RequestInit = {}) {
@@ -211,15 +213,51 @@ async function daysOf(a: Account, worker: number, range: { from: string; to: str
   }
 }
 
+// The door until the ERP signs people in on the server (docs/decisions.md, 2026-11-04). With ATTENDANCE_CODE set (the
+// test address always sets one, worker/site.js), attendance opens only to a browser that gave the code: it is traded for
+// a 30-day cookie JavaScript cannot read, signed with the code itself, so a new code shuts every door at once. The code
+// is long and random, so guessing it is hopeless. Without it set (the local server) the door stands open.
+const COOKIE = 'erp_att'
+const DAYS30 = 30 * 86_400
+/** Lower case letters and digits only, so dashes, spaces and capitals typed do not matter */
+const plainCode = (v: unknown) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z0-9]/g, '') : '')
+/** Equal, taking as long whichever character differs */
+const same = (a: string, b: string) => a.length === b.length && [...a].reduce((d, c, i) => d | (c.charCodeAt(0) ^ b.charCodeAt(i)), 0) === 0
+
+async function signed(code: string, until: number) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`attendance ${until}`)))
+  return btoa(String.fromCharCode(...mac)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+/** The browser's cookie, still in date and signed with this code */
+async function opened(req: Request, code: string) {
+  const c = new RegExp(`(?:^|;\\s*)${COOKIE}=(\\d+)\\.([\\w-]+)`).exec(req.headers.get('cookie') ?? '')
+  return !!c && Number(c[1]) > Date.now() / 1000 && same(c[2], await signed(code, Number(c[1])))
+}
+
 /**
  * GET /api/attendance: the Timely companies the keys open.
  * GET /api/attendance/month?company=&month=YYYY-MM[&fresh]: everyone's month and leave.
  * GET /api/attendance/days?company=&worker=&month=YYYY-MM[&fresh]: one employee's days.
+ * POST /api/attendance/unlock { code }: the cookie that opens them, where a code is set.
  */
 export async function handleAttendance(req: Request, env: TimelyEnv): Promise<Response> {
-  if (req.method !== 'GET') return json({ error: 'Хүсэлт буруу байна.' }, 405)
   const url = new URL(req.url)
   const what = url.pathname.replace(/^\/api\/attendance\/?/, '')
+  // Set but too short to be safe opens nothing
+  const code = env.ATTENDANCE_CODE === undefined ? null : plainCode(env.ATTENDANCE_CODE)
+  const usable = !!code && code.length >= 16
+  if (what === 'unlock') {
+    if (req.method !== 'POST') return json({ error: 'Хүсэлт буруу байна.' }, 405)
+    if (!usable) return json({ error: 'Ирцийн код тохируулаагүй байна.' }, 503)
+    const given = plainCode((await req.json().catch(() => null))?.code)
+    if (!same(given, code)) return json({ error: 'Код буруу байна. Дахин шалгаад бичнэ үү.' }, 401)
+    const until = Math.floor(Date.now() / 1000) + DAYS30
+    return json({ ok: true }, 200, { 'Set-Cookie': `${COOKIE}=${until}.${await signed(code, until)}; Path=/api/attendance; Max-Age=${DAYS30}; HttpOnly; Secure; SameSite=Strict` })
+  }
+  if (req.method !== 'GET') return json({ error: 'Хүсэлт буруу байна.' }, 405)
+  if (code !== null && !(usable && (await opened(req, code)))) return json({ locked: true, error: 'Ирцийг харахын тулд кодоо бичнэ үү.' }, 401)
   const list = accountsOf(env)
   if (!what) {
     const companies: TimelyCompany[] = []

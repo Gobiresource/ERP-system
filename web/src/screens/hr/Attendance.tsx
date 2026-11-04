@@ -2,13 +2,13 @@
 // department, who is low, everyone's days and hours with their annual leave, and one employee's month day by day.
 // Timely's employees are matched to ours by registration number; those in one system only are listed apart. Without
 // Timely, a made-up month says "Жишээ" (lib/attendance.ts, docs/decisions.md, 2026-10-31).
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, LoaderCircle, RefreshCw, TreePalm, UserRound } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, LoaderCircle, LockKeyhole, RefreshCw, TreePalm, UserRound } from 'lucide-react'
 import '../../styles/screens/attendance.css'
 import type { State, TimelyDay, TimelyEmployee, TimelyMonth } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { usePageEnter } from '../../lib/motion'
-import { DAY_STATE, EVERY, LOW, NO_CAP, avgIn, datesOf, dayStateOf, dayWord, linkOf, loadDays, loadMonth, matchUp, pctOf, sampleDays, sampleMonth, spanOf, sumUp, timelyState, type DayState, type Row, type TimelyState } from '../../lib/attendance'
+import { DAY_STATE, EVERY, LOW, NO_CAP, avgIn, datesOf, dayStateOf, dayWord, linkOf, loadDays, loadMonth, matchUp, pctOf, sampleDays, sampleMonth, spanOf, sumUp, timelyState, unlock, type DayState, type Row, type TimelyState } from '../../lib/attendance'
 import { dots } from '../../lib/hr'
 import { hrView, seer } from '../../lib/access'
 import { monthKey, monthName, prevMonth } from '../../lib/reports'
@@ -176,6 +176,18 @@ function TimelyBar({ a }: { a: Att }) {
     </label>
   )
   const errors = timely.errors.length > 0 && <span className="att-errs">{timely.errors.join(' ')}</span>
+  const demo = a.demo && <span className="att-demo"><b>Жишээ горим:</b> ирц болон ажилтны мэдээлэл зохиомол.</span>
+  const showDemo = !a.demo && <button type="button" className="btn btn--glass btn--sm" onClick={a.showDemo}>Жишээ ирц харах</button>
+  if (timely.locked) {
+    return (
+      <div className="sbar" role="status">
+        <LockKeyhole className="ico" />
+        <span><b>Ирц кодоор хамгаалагдсан.</b> Жинхэнэ ирцийг харахын тулд кодоо бичнэ үү.{demo}</span>
+        <Unlock onOpen={a.check} />
+        {showDemo}
+      </div>
+    )
+  }
   if (link) {
     return (
       <div className="sbar is-on" role="status">
@@ -200,11 +212,35 @@ function TimelyBar({ a }: { a: Att }) {
             ? <><b>Timely-ээс энэ ХХК олдсонгүй.</b> {admin ? 'Timely-ийн байгууллагыг сонгоно уу.' : 'Удирдлагын эрхтэй ажилтанд хандана уу.'}</>
             : <b>Timely-д холбогдож чадсангүй.</b>}
         {errors}
-        {a.demo && <span className="att-demo"><b>Жишээ горим:</b> ирц болон ажилтны мэдээлэл зохиомол.</span>}
+        {demo}
       </span>
       {pick}
-      {!a.demo && <button type="button" className="btn btn--glass btn--sm" onClick={a.showDemo}>Жишээ ирц харах</button>}
+      {showDemo}
     </div>
+  )
+}
+
+/** The code that opens real attendance on the test address (server/timely.ts); the server keeps this browser open 30 days */
+function Unlock({ onOpen }: { onOpen: () => void }) {
+  const [code, setCode] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    if (!code.trim()) return setError('Кодоо бичнэ үү.')
+    setBusy(true)
+    unlock(code).then(onOpen, (err: Error) => setError(err.message)).finally(() => setBusy(false))
+  }
+  return (
+    <form className="att-code" onSubmit={submit} noValidate>
+      <label className="att-pick">
+        <span>Ирцийн код</span>
+        <input id="att-code" value={code} onChange={e => (setCode(e.target.value), setError(null))} autoComplete="off" autoCapitalize="none" spellCheck={false}
+          aria-invalid={!!error} aria-describedby={error ? 'att-code-err' : undefined} />
+      </label>
+      <button type="submit" className="btn btn--glass btn--sm" disabled={busy}>Нээх</button>
+      {error && <span className="att-errs" id="att-code-err" role="alert">{error}</span>}
+    </form>
   )
 }
 
@@ -229,7 +265,10 @@ function Waiting({ a }: { a: Att }) {
   }
   return (
     <section className="card glass" data-enter>
-      <Empty icon={<UserRound className="ico" />} title="Ирцийн мэдээлэл алга" text="Timely холбогдсоны дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана." />
+      <Empty icon={<UserRound className="ico" />} title="Ирцийн мэдээлэл алга"
+        text={a.timely.locked
+          ? 'Кодоо бичсэний дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана.'
+          : 'Timely холбогдсоны дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана.'} />
     </section>
   )
 }
