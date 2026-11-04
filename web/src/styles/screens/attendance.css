@@ -34,6 +34,8 @@
 .att-table .efiles__bar { width: 56px; }
 /* "of 22": smaller, not lighter, so small figures keep 4.5:1 on glass in both modes */
 .att-of { font-size: 12.5px; font-weight: 450; }
+/* A new employee's first day, under their days: smaller, not lighter, like "of 22" */
+.att-since { display: block; font-size: 12px; font-weight: 450; }
 .att-days tr.is-rest th, .att-days tr.is-rest td { color: var(--text-2); }
 .att-days tbody tr { cursor: default; }
 /* Timely's words for a day can be long ("Томилолт, Амралтаар ажилласан"): on a phone they wrap, as the employee list's status does */
@@ -55,7 +57,9 @@
 .acal__wd { padding: 0 0 4px; font-size: 12px; font-weight: 650; text-align: center; color: var(--text-2); }
 .acal__day { display: grid; align-content: space-between; gap: 2px; min-height: 56px; padding: 6px 8px; border-radius: 10px; background: var(--fill); font-variant-numeric: tabular-nums; }
 .acal__n { font-size: 12.5px; font-weight: 650; color: var(--text-2); }
-.acal__t { display: flex; align-items: center; gap: 4px; min-height: 18px; font-size: 13px; font-weight: 620; }
+.acal__t { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; min-height: 18px; font-size: 13px; font-weight: 620; }
+/* The clock-out under the clock-in */
+.acal__out { flex-basis: 100%; font-weight: 500; }
 .acal__t .ico { flex: none; width: 14px; height: 14px; }
 .acal__day.is-in { background: color-mix(in srgb, var(--green) 16%, var(--glass-solid)); }
 .acal__day.is-in .acal__t { color: var(--ok-ink); }

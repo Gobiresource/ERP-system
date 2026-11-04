@@ -355,6 +355,11 @@ export interface TimelyEmployee {
   supposedHours: number
   workedDays: number
   workedHours: number
+  /**
+   * Counted from this day: the first clock-in of someone who started within the month, with no work in the year before
+   * it; after the month's last day counted when they have not started. The days before it are not theirs to work.
+   */
+  since?: string
 }
 export interface TimelyMonth { month: string; from: string; to: string; updated: string; employees: TimelyEmployee[] }
 /** What Timely's words settle about a day without clocks (server/timely.ts kindOf; lib/attendance.ts DayState) */
