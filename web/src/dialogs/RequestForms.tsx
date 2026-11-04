@@ -7,7 +7,7 @@ import type { Employee, HireRequest, HrRequest, HrRequestKind, Id, LeaveRequest,
 import { actions, getState, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
 import { DID, HR_KIND, STEPS, STEP_WHO, WILL, actorsOf, doOf, doneAt, firstStep, hoursText, involves, mayAct, mayCancel, mayReturn, spanMinutes, stepOf, totalOf, workDays } from '../lib/hrRequests'
-import { linkOf, loadDays, loadMonth, rowOf, sampleFor, timelyState } from '../lib/attendance'
+import { NO_CAP, linkOf, loadDays, loadMonth, rowOf, sampleFor, timelyState } from '../lib/attendance'
 import { empOf, managerOf } from '../lib/reports'
 import { rolesOf } from '../lib/contracts'
 import { current, dots, hrScoped } from '../lib/hr'
@@ -206,15 +206,17 @@ function LeaveForm({ old }: { old?: LeaveRequest }) {
         <section className="field--wide rbal" aria-labelledby="lv-bal">
           <div className="rbal__head">
             <h3 id="lv-bal">Ээлжийн амралт</h3>
-            <span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : leave ? `${leave.year} оны эрх · Timely` : 'Timely'}</span>
+            <span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : leave && leave.left !== null ? `${leave.year} оны эрх · Timely` : 'Timely'}</span>
           </div>
-          {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : leave ? (
+          {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : !leave ? (
+            <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>
+          ) : leave.left === null ? <p className="rbal__none">{NO_CAP}</p> : (
             <dl>
               <div><dt>Эрх</dt><dd className="tnum">{leave.earned}<small> хоног</small></dd></div>
               <div><dt>Ашигласан</dt><dd className="tnum">{leave.used}<small> хоног</small></dd></div>
               <div><dt>Үлдсэн</dt><dd className="tnum">{leave.left}<small> хоног</small></dd></div>
             </dl>
-          ) : <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>}
+          )}
         </section>
       )}
       <Field id="lv-from" label="Эхлэх өдөр" error={errors['lv-from']}>
@@ -227,7 +229,9 @@ function LeaveForm({ old }: { old?: LeaveRequest }) {
         <input type="number" inputMode="numeric" min={1} max={60} {...fieldAria('lv-days', errors['lv-days'], true)} value={f.days} onChange={e => { setF({ ...f, days: e.target.value }); drop('lv-days') }} />
       </Field>
       <div className="field rq__sum" role="status">
-        {leave && days >= 1 ? (leave.left >= days
+        {leave && days >= 1 ? (leave.left === null
+          ? <b>Ажлын {days} өдөр</b>
+          : leave.left >= days
           ? <><b>Ажлын {days} өдөр</b><small>Амралтын үлдэгдэл {leave.left - days} хоног болно.</small></>
           : <><b>Ажлын {days} өдөр</b><small className="rq__over">Үлдэгдлээс {days - leave.left} өдөр хэтэрсэн байна.</small></>) : null}
       </div>
@@ -638,12 +642,14 @@ function LeaveContext({ r, e }: { r: LeaveRequest; e?: Employee }) {
       {e && (
         <section className="rbal" aria-labelledby="rq-bal">
           <div className="rbal__head"><h3 id="rq-bal">Амралтын үлдэгдэл</h3><span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : 'Timely'}</span></div>
-          {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : leave ? (
+          {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : !leave ? (
+            <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>
+          ) : leave.left === null ? <p className="rbal__none">{NO_CAP}</p> : (
             <dl>
               <div><dt>Одоо</dt><dd className="tnum">{leave.left}<small> хоног</small></dd></div>
               <div><dt>Батлагдвал</dt><dd className="tnum">{leave.left - r.days}<small> хоног</small></dd></div>
             </dl>
-          ) : <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>}
+          )}
         </section>
       )}
       <div className={`rq__away${away.length ? ' is-some' : ''}`}>

@@ -5,7 +5,7 @@
 // lasts an hour, and answers are kept 5 minutes, as the HR plan asks. Read only, and only what the screens show: the
 // salary and bank details Timely also has (/employees/info) are never asked for (docs/decisions.md, 2026-10-31).
 // Web-standard Request and Response only, like scan.ts.
-import type { TimelyCompany, TimelyDay, TimelyEmployee, TimelyMonth } from '../src/lib/types.ts'
+import type { DayKind, TimelyCompany, TimelyDay, TimelyEmployee, TimelyMonth } from '../src/lib/types.ts'
 
 const API = 'https://api.timely.mn/openapi'
 /** How long an answer is kept before Timely is asked again */
@@ -15,7 +15,7 @@ const FRESH = 30_000
 
 export interface TimelyEnv { TIMELY_API_KEYS?: string }
 
-interface Account { key: string; token?: string; until?: number; scopes?: string[]; company?: TimelyCompany }
+interface Account { key: string; token?: string; until?: number; scopes?: string[]; company?: TimelyCompany; groups?: Map<string, string> }
 const accounts = new Map<string, Account>()
 const kept = new Map<string, { at: number; value: object }>()
 
@@ -93,6 +93,8 @@ async function keep<T extends object>(key: string, again: boolean, make: () => P
 
 /** Today in Ulaanbaatar (UTC+8 all year) */
 const ubToday = () => new Date(Date.now() + 8 * 3_600_000).toISOString().slice(0, 10)
+/** The day before YYYY-MM-DD */
+const dayBefore = (d: string) => new Date(Date.parse(d) - 86_400_000).toISOString().slice(0, 10)
 
 /** The month's first day to its last, or to today; null for a month still to come */
 export function rangeOf(month: string) {
@@ -105,23 +107,45 @@ export function rangeOf(month: string) {
 }
 
 /** Timely's own shapes, as far as they are read here; anything may be missing */
-interface RawLeave { year?: number; earnedDays?: number; usedDays?: number; remainingDays?: number; used?: { begDate?: string; endDate?: string; days?: number }[] }
+interface RawLeave { year?: number; earnedDays?: number; usedDays?: number; remainingDays?: number; uncapped?: boolean; used?: { begDate?: string; endDate?: string; days?: number }[] }
 interface RawEmployee { workerId?: number; firstname?: string | null; lastname?: string | null; register?: string | null; position?: string | null; division?: { name?: string | null } | null; annualLeave?: RawLeave | null }
 interface RawSummary { supposedWorkDays?: number; supposedWorkHours?: number; workedDays?: number; workedHours?: number }
-interface RawDay { date?: string; clockIn?: string | null; clockOut?: string | null }
+interface RawDay { date?: string; clockIn?: string | null; clockOut?: string | null; statusDetail?: { code?: string; name?: string }[] | null }
+interface RawRequestType { code?: string; group?: { code?: string } | null; subTypes?: { code?: string }[] | null }
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
-/** HH:MM in Ulaanbaatar time, from "08:52", "2026-07-01 08:52:13" or a time with its zone */
+/**
+ * HH:MM as Timely writes it: "08:52", "2026-07-01 08:52:13" or "2026-11-04T08:52:13.000Z". Its times are Ulaanbaatar
+ * time, as its docs say, though they end in the "Z" of UTC: real clock-ins came as T07–T09…Z (2026-11-04). Nothing is added.
+ */
 export function hm(v: unknown): string | null {
-  if (typeof v !== 'string' || !v) return null
-  if (/T.*(Z|[+-]\d\d:?\d\d)$/.test(v)) {
-    const d = new Date(v)
-    return Number.isNaN(+d) ? null : new Date(+d + 8 * 3_600_000).toISOString().slice(11, 16)
-  }
-  const m = /(\d{1,2}):(\d{2})/.exec(v)
+  const m = typeof v === 'string' ? /(\d{1,2}):(\d{2})/.exec(v) : null
   return m ? `${m[1].padStart(2, '0')}:${m[2]}` : null
+}
+
+/** Each request code's group ("worked", "unworked"…), from the request types, which Timely's docs say decode its days */
+async function groupsOf(a: Account) {
+  if (!a.groups) {
+    const r = await get(a, '/request-types')
+    const types: RawRequestType[] = Array.isArray(r) ? r : []
+    a.groups = new Map(types.flatMap(t => [t, ...(t.subTypes ?? [])].map(x => [str(x.code), str(t.group?.code)] as [string, string])))
+  }
+  return a.groups
+}
+
+/**
+ * What Timely's day words settle for a day without clocks: absent (Тасалсан; Timely ranks it first), away on leave,
+ * sickness or time off (group "unworked", "overtime_rest"), at work elsewhere (group "worked": Томилолт, Зайнаас ажиллах),
+ * or a day off by the schedule or a holiday (Амралт, Чөлөөт). Null leaves it to the browser's guess.
+ */
+function kindOf(codes: string[], groups: Map<string, string>): DayKind | null {
+  const g = codes.map(c => groups.get(c))
+  if (codes.includes('absent')) return 'none'
+  if (g.includes('unworked') || g.includes('overtime_rest')) return 'leave'
+  if (g.includes('worked')) return 'in'
+  return codes.includes('rest') || codes.includes('free') ? 'rest' : null
 }
 
 function employeeOf(e: RawEmployee, s: RawSummary | null): TimelyEmployee {
@@ -133,9 +157,10 @@ function employeeOf(e: RawEmployee, s: RawSummary | null): TimelyEmployee {
     register: str(e.register).toUpperCase(),
     position: str(e.position),
     division: str(e.division?.name),
+    // Without a cap Timely counts nothing earned or left (both 0, for all 20 on 2026-11-04): null, not none left
     leave: l
       ? {
-          year: num(l.year), earned: num(l.earnedDays), used: num(l.usedDays), left: num(l.remainingDays),
+          year: num(l.year), earned: l.uncapped ? null : num(l.earnedDays), used: num(l.usedDays), left: l.uncapped ? null : num(l.remainingDays),
           taken: (Array.isArray(l.used) ? l.used : []).map(u => ({ from: str(u.begDate).slice(0, 10), to: str(u.endDate).slice(0, 10), days: num(u.days) })),
         }
       : null,
@@ -146,8 +171,13 @@ function employeeOf(e: RawEmployee, s: RawSummary | null): TimelyEmployee {
   }
 }
 
-/** Everyone active, with their leave, and each one's month: four at a time, since only the one-employee summary is documented */
+/**
+ * Everyone active, with their leave, and each one's month: four at a time, since only the one-employee summary is
+ * documented. Today is still being worked, yet Timely counts all its hours to work, so the month is summed to yesterday;
+ * on the 1st nothing is over yet.
+ */
 async function monthOf(a: Account, month: string, range: { from: string; to: string }): Promise<Omit<TimelyMonth, 'updated'>> {
+  const to = range.to === ubToday() ? dayBefore(range.to) : range.to
   const list = await get(a, '/employees')
   const people: RawEmployee[] = Array.isArray(list) ? list : []
   const employees: TimelyEmployee[] = []
@@ -155,7 +185,7 @@ async function monthOf(a: Account, month: string, range: { from: string; to: str
     employees.push(
       ...(await Promise.all(
         people.slice(i, i + 4).map(async e => {
-          const s: RawSummary | null = await get(a, `/employees/attendance-summary?workerId=${num(e.workerId)}&dateFrom=${range.from}&dateTo=${range.to}`).catch(err => {
+          const s: RawSummary | null = to < range.from ? null : await get(a, `/employees/attendance-summary?workerId=${num(e.workerId)}&dateFrom=${range.from}&dateTo=${to}`).catch(err => {
             if (err instanceof TimelyError && err.code === 404) return null
             throw err
           })
@@ -164,13 +194,21 @@ async function monthOf(a: Account, month: string, range: { from: string; to: str
       )),
     )
   }
-  return { month, ...range, employees }
+  return { month, from: range.from, to, employees }
 }
 
+/** One employee's days with Timely's own words for each; without the request types, the words still come */
 async function daysOf(a: Account, worker: number, range: { from: string; to: string }): Promise<{ days: TimelyDay[] }> {
+  const groups = await groupsOf(a).catch(() => new Map<string, string>())
   const r = await get(a, `/employees/attendance?workerId=${worker}&dateFrom=${range.from}&dateTo=${range.to}`)
   const days: RawDay[] = Array.isArray(r?.attendance) ? r.attendance : []
-  return { days: days.map(d => ({ date: str(d.date).slice(0, 10), in: hm(d.clockIn), out: hm(d.clockOut) })) }
+  return {
+    days: days.map(d => {
+      const st = Array.isArray(d.statusDetail) ? d.statusDetail : []
+      const status = [...new Set(st.map(x => str(x.name)).filter(Boolean))]
+      return { date: str(d.date).slice(0, 10), in: hm(d.clockIn), out: hm(d.clockOut), status, kind: kindOf(st.map(x => str(x.code)), groups) }
+    }),
+  }
 }
 
 /**

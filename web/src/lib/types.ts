@@ -339,8 +339,8 @@ export interface ScanReading {
 
 /** A Timely company the server's keys open, with what each key may read */
 export interface TimelyCompany { id: number; name: string; register: string | null; scopes: string[] }
-/** The current leave year's annual leave, in days, and the leave taken */
-export interface TimelyLeave { year: number; earned: number; used: number; left: number; taken: { from: string; to: string; days: number }[] }
+/** The current leave year's annual leave, in days, and the leave taken; earned and left are null when Timely sets no cap and counts neither */
+export interface TimelyLeave { year: number; earned: number | null; used: number; left: number | null; taken: { from: string; to: string; days: number }[] }
 export interface TimelyEmployee {
   workerId: number
   family: string
@@ -350,15 +350,17 @@ export interface TimelyEmployee {
   position: string
   division: string
   leave: TimelyLeave | null
-  /** From the month's first day to its last, or to today in the current month */
+  /** From the month's first day to its last, or to yesterday in the current month (today is still being worked) */
   supposedDays: number
   supposedHours: number
   workedDays: number
   workedHours: number
 }
 export interface TimelyMonth { month: string; from: string; to: string; updated: string; employees: TimelyEmployee[] }
-/** A day's clock-in and clock-out, HH:MM in Ulaanbaatar time */
-export interface TimelyDay { date: string; in: string | null; out: string | null }
+/** What Timely's words settle about a day without clocks (server/timely.ts kindOf; lib/attendance.ts DayState) */
+export type DayKind = 'in' | 'leave' | 'rest' | 'none'
+/** A day's clock-in and clock-out, HH:MM in Ulaanbaatar time; Timely's words for it ("Хоцорсон", "Томилолт") and what they settle */
+export interface TimelyDay { date: string; in: string | null; out: string | null; status?: string[]; kind?: DayKind | null }
 
 /** What the office files a scan as: the reading, with their changes. Text fields as typed; `amount` in figures. */
 export interface ScanFields { company: Id; kind: DocKind; title: string; number: string; date: string; party: string; amount: string }

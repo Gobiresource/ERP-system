@@ -28,6 +28,8 @@
 .att-of { font-size: 12.5px; font-weight: 450; }
 .att-days tr.is-rest th, .att-days tr.is-rest td { color: var(--text-2); }
 .att-days tbody tr { cursor: default; }
+/* Timely's words for a day can be long ("Томилолт, Амралтаар ажилласан"): on a phone they wrap, as the employee list's status does */
+.att-days .apill { padding-block: 3px; line-height: 1.25; white-space: normal; }
 
 /* In one system only */
 .att-un { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }

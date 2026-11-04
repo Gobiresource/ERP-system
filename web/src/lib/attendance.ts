@@ -79,17 +79,27 @@ export function sumUp(rows: Row[]) {
 }
 
 export type DayState = 'in' | 'part' | 'none' | 'rest' | 'leave' | 'later'
-export const DAY_STATE: Record<Exclude<DayState, 'later'>, string> = { in: 'Ирсэн', part: 'Бүртгэл дутуу', none: 'Бүртгэлгүй', leave: 'Ээлжийн амралт', rest: 'Амралтын өдөр' }
+export const DAY_STATE: Record<Exclude<DayState, 'later'>, string> = { in: 'Ирсэн', part: 'Бүртгэл дутуу', none: 'Бүртгэлгүй', leave: 'Чөлөө, ээлжийн амралт', rest: 'Амралтын өдөр' }
+/** Said where Timely sets no cap on annual leave (TimelyLeave earned and left are null) */
+export const NO_CAP = 'Timely-д ээлжийн амралтын хоногийг хязгаарлаагүй тул эрх, үлдэгдэл тооцогдохгүй.'
 
-/** What a day was: today's clock-in without a clock-out yet is a day at work; Saturdays and Sundays are days off, in leave too */
+/**
+ * What a day was. Clocks first: today's clock-in without a clock-out yet is a day at work. Then Timely's words, which
+ * know the schedule, holidays and requests, though no one is absent before today is over. Without them, Saturdays and
+ * Sundays are days off and the annual leave listed is leave.
+ */
 export function dayStateOf(date: string, d: TimelyDay | undefined, leave: TimelyLeave | null, today: string): DayState {
   if (date > today) return 'later'
   if (d?.in && (d.out || date === today)) return 'in'
   if (d?.in || d?.out) return 'part'
+  if (d?.kind && !(d.kind === 'none' && date === today)) return d.kind
   if (parse(date).getDay() % 6 === 0) return 'rest'
   if (leave?.taken.some(x => x.from <= date && date <= x.to)) return 'leave'
   return date === today ? 'later' : 'none'
 }
+
+/** The day in words: Timely's own ("Хоцорсон, Эрт тарсан") where it has them, ours otherwise */
+export const dayWord = (st: Exclude<DayState, 'later'>, d?: TimelyDay) => (d?.status?.length ? d.status.join(', ') : DAY_STATE[st])
 
 const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 const clock = (m: number) => {
