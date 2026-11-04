@@ -93,6 +93,9 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
 cd web && CLOUDFLARE_ACCOUNT_ID=$(curl -s -H "Authorization: Bearer via-proxy" https://api.cloudflare.com/client/v4/accounts | python3 -c "import json,sys; print(json.load(sys.stdin)['result'][0]['id'])") CLOUDFLARE_API_TOKEN=via-proxy npm run deploy
 ```
 
+- **Өөр session-ий хувилбарыг бүү дар.** Хэд хэдэн session зэрэг ажилладаг. Байршуулахын өмнө `git fetch` хийж, бусад салбарын шинэ commit-ийг харна. Мөн `…/workers/scripts/gobi-erp/deployments`-ээс сүүлийн байршуулалтыг шалгана. Тэр нь таных биш бол тухайн салбарыг эхлээд нэгтгэнэ. 2026-11-04-нд нэг session нөгөөгийнхөө ирцийн хэсгийг ингэж санамсаргүй дарсан.
+- Туршилтын хаягийг Python-оор шалгахдаа `User-Agent` тавина. Үгүй бол Cloudflare «error code: 1010» гэж хаадаг. curl, хөтөч хэвийн ажиллана.
+
 **Яагаад KV.** Cloudflare static assets файлыг тусгай түр түлхүүрээр илгээдэг. Прокси тэр түлхүүрийг солидог тул энэ орчинд static assets ажиллахгүй. Иймээс файлыг Workers KV-ээс жижиг Worker (`web/worker/site.js`) харуулдаг.
 
 ## Ирц (Timely)
