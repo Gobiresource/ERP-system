@@ -1,10 +1,12 @@
 // Cloudflare: serves the built app (dist) from Workers KV (wrangler.jsonc "site"). The app keeps its pages in the address
 // hash, so every page is index.html. /api/scan is the scan reader (server/scan.ts) with the OpenRouter key the user put in
-// the Worker's secrets; the Timely server still waits for sign-in on the server (docs/decisions.md, 2026-11-02).
+// the Worker's secrets. /api/attendance is Ирц from Timely (server/timely.ts), always behind its code here: the Worker's
+// secrets TIMELY_API_KEYS and ATTENDANCE_CODE; without the code it stays shut (docs/decisions.md, 2026-11-04).
 // Not Workers static assets: the session's network proxy puts the API token on every api.cloudflare.com request, which
 // replaces the one-off token static-asset uploads need; KV is written with the API token itself.
 import manifestJSON from '__STATIC_CONTENT_MANIFEST'
 import { handleScan } from '../server/scan.ts'
+import { handleAttendance } from '../server/timely.ts'
 
 const manifest = JSON.parse(manifestJSON)
 const TYPES = {
@@ -16,6 +18,7 @@ export default {
   async fetch(request, env) {
     const path = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, '') || 'index.html'
     if (path === 'api/scan') return handleScan(request, env)
+    if (path === 'api/attendance' || path.startsWith('api/attendance/')) return handleAttendance(request, { ...env, ATTENDANCE_CODE: env.ATTENDANCE_CODE ?? '' })
     if (path.startsWith('api/')) return new Response('Сервер хараахан байхгүй.', { status: 404 })
     const file = manifest[path] ? path : 'index.html'
     const body = await env.__STATIC_CONTENT.get(manifest[file], 'arrayBuffer')

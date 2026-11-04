@@ -5,6 +5,14 @@
 .att-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
 .att-pick select { min-height: 32px; max-width: 16em; padding: 4px 28px 4px 10px; font-size: 13.5px; color: var(--text); }
 .att-errs { display: block; margin-top: 2px; color: var(--bad-ink); }
+/* The test address's code (Attendance.tsx Unlock): the error goes under the field */
+.att-code { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.att-code .att-pick { min-width: 0; max-width: 100%; }
+/* Room for a whole code ("xxxxx-xxxxx-xxxxx-xxxxx"); narrower on a phone rather than past the edge */
+.att-code input { width: 16em; min-width: 0; max-width: 100%; min-height: 32px; padding: 4px 10px; border: 1px solid var(--sep); border-radius: 8px; background: var(--glass-solid); color: var(--text); font-size: 13.5px; letter-spacing: .02em; }
+.att-code input:focus { outline: none; box-shadow: 0 0 0 2.5px var(--accent-ink); }
+.att-code input[aria-invalid="true"] { box-shadow: 0 0 0 2px var(--danger); }
+.att-code .att-errs { flex-basis: 100%; margin: 0; }
 .att-demo { display: block; margin-top: 2px; }
 .att-stranger { display: inline-grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--fill); color: var(--text-2); }
 .att-stranger .ico { width: 17px; height: 17px; }
@@ -28,6 +36,8 @@
 .att-of { font-size: 12.5px; font-weight: 450; }
 .att-days tr.is-rest th, .att-days tr.is-rest td { color: var(--text-2); }
 .att-days tbody tr { cursor: default; }
+/* Timely's words for a day can be long ("Томилолт, Амралтаар ажилласан"): on a phone they wrap, as the employee list's status does */
+.att-days .apill { padding-block: 3px; line-height: 1.25; white-space: normal; }
 
 /* In one system only */
 .att-un { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }

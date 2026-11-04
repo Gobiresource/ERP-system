@@ -11,21 +11,28 @@ export const LOW = 80
 /** How often an open page reads Timely again; the server keeps answers as long */
 export const EVERY = 5 * 60_000
 
-export interface TimelyState { ready: boolean; companies: TimelyCompany[]; errors: string[] }
+/** `locked`: the server wants its code first (server/timely.ts, the test address) */
+export interface TimelyState { ready: boolean; companies: TimelyCompany[]; errors: string[]; locked?: boolean }
 
 /** The Timely companies our server's keys open: none without the server (the preview page) or its keys */
 export async function timelyState(): Promise<TimelyState> {
   try {
     const r = await fetch(API, { signal: AbortSignal.timeout(10_000) })
     const j = r.ok ? await r.json() : null
-    return { ready: !!j?.ready, companies: j?.companies ?? [], errors: j?.errors ?? [] }
+    return { ready: !!j?.ready, companies: j?.companies ?? [], errors: j?.errors ?? [], locked: r.status === 401 }
   } catch {
     return { ready: false, companies: [], errors: [] }
   }
 }
 
-/** Timely counts no leave entitlement ("uncapped"): why no balance shows (Gemini 43) */
-export const NO_RIGHT = 'Timely-д эрх тохируулаагүй'
+/** Gives the server the code that opens attendance; it keeps the browser open for 30 days. Throws what went wrong. */
+export async function unlock(code: string) {
+  const r = await fetch(`${API}/unlock`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }), signal: AbortSignal.timeout(10_000) })
+    .catch(() => {
+      throw new Error('Сервертэй холбогдож чадсангүй. Интернэтээ шалгаад дахин оролдоно уу.')
+    })
+  if (!r.ok) throw new Error((await r.json().catch(() => null))?.error ?? 'Код буруу байна. Дахин шалгаад бичнэ үү.')
+}
 
 /** Names without "ХХК", quotes and case, to find an ХХК's Timely company */
 const plain = (name: string) => name.toLowerCase().replace(/ххк|«|»|"|'|\./g, '').replace(/\s+/g, ' ').trim()
@@ -82,17 +89,27 @@ export function sumUp(rows: Row[]) {
 }
 
 export type DayState = 'in' | 'part' | 'none' | 'rest' | 'leave' | 'later'
-export const DAY_STATE: Record<Exclude<DayState, 'later'>, string> = { in: 'Ирсэн', part: 'Бүртгэл дутуу', none: 'Бүртгэлгүй', leave: 'Ээлжийн амралт', rest: 'Амралтын өдөр' }
+export const DAY_STATE: Record<Exclude<DayState, 'later'>, string> = { in: 'Ирсэн', part: 'Бүртгэл дутуу', none: 'Бүртгэлгүй', leave: 'Чөлөө, ээлжийн амралт', rest: 'Амралтын өдөр' }
+/** Timely counts no leave entitlement ("uncapped"; TimelyLeave earned and left are null): why no balance shows (Gemini 43) */
+export const NO_CAP = 'Timely-д эрх тохируулаагүй'
 
-/** What a day was: today's clock-in without a clock-out yet is a day at work; Saturdays and Sundays are days off, in leave too */
+/**
+ * What a day was. Clocks first: today's clock-in without a clock-out yet is a day at work. Then Timely's words, which
+ * know the schedule, holidays and requests, though no one is absent before today is over. Without them, Saturdays and
+ * Sundays are days off and the annual leave listed is leave.
+ */
 export function dayStateOf(date: string, d: TimelyDay | undefined, leave: TimelyLeave | null, today: string): DayState {
   if (date > today) return 'later'
   if (d?.in && (d.out || date === today)) return 'in'
   if (d?.in || d?.out) return 'part'
+  if (d?.kind && !(d.kind === 'none' && date === today)) return d.kind
   if (parse(date).getDay() % 6 === 0) return 'rest'
   if (leave?.taken.some(x => x.from <= date && date <= x.to)) return 'leave'
   return date === today ? 'later' : 'none'
 }
+
+/** The day in words: Timely's own ("Хоцорсон, Эрт тарсан") where it has them, ours otherwise */
+export const dayWord = (st: Exclude<DayState, 'later'>, d?: TimelyDay) => (d?.status?.length ? d.status.join(', ') : DAY_STATE[st])
 
 const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 const clock = (m: number) => {

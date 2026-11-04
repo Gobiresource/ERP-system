@@ -19,11 +19,8 @@ createServer(async (req, res) => {
       res.writeHead(out.status, Object.fromEntries(out.headers))
       res.end(Buffer.from(await out.arrayBuffer()))
     }
-    if (url.pathname === '/api/attendance' || url.pathname.startsWith('/api/attendance/')) {
-      await send(await handleAttendance(new Request(url, { method: req.method }), process.env))
-      return
-    }
-    if (url.pathname !== '/api/scan') {
+    const attendance = url.pathname === '/api/attendance' || url.pathname.startsWith('/api/attendance/')
+    if (!attendance && url.pathname !== '/api/scan') {
       res.writeHead(404).end()
       return
     }
@@ -37,7 +34,9 @@ createServer(async (req, res) => {
       }
       chunks.push(chunk)
     }
-    await send(await handleScan(new Request(url, { method: req.method, body: req.method === 'POST' ? Buffer.concat(chunks) : undefined }), process.env))
+    // The cookie carries Ирц's door (timely.ts)
+    const request = new Request(url, { method: req.method, headers: { cookie: req.headers.cookie ?? '' }, body: req.method === 'POST' ? Buffer.concat(chunks) : undefined })
+    await send(await (attendance ? handleAttendance(request, process.env) : handleScan(request, process.env)))
   } catch {
     if (!res.headersSent) res.writeHead(400)
     res.end()
