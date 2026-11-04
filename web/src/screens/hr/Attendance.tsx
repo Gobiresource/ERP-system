@@ -407,7 +407,7 @@ function Everyone({ rows }: { rows: Row[] }) {
                       <span className="efiles__bar" aria-hidden="true"><i style={{ transform: `scaleX(${(p ?? 0) / 100})` }} /></span>
                     </span>
                   </td>
-                  <td className="num tnum hide-sm">{r.t.leave && r.t.leave.left !== null ? `${r.t.leave.left} хоног` : <span className="muted">—</span>}</td>
+                  <td className="num tnum hide-sm">{r.t.leave && r.t.leave.left !== null ? `${r.t.leave.left} хоног` : <span className="muted" title={r.t.leave ? NO_CAP : undefined}>—{r.t.leave && <span className="sr-only"> {NO_CAP}</span>}</span>}</td>
                 </tr>
               )
             })}
@@ -604,9 +604,9 @@ function Leave({ t }: { t: TimelyEmployee }) {
       {l ? (
         <>
           <dl className="att-leave">
-            <div><dt>Эрх</dt><dd className="tnum">{l.earned ?? '—'}{l.earned !== null && <small> хоног</small>}</dd></div>
+            {l.earned !== null && <div><dt>Эрх</dt><dd className="tnum">{l.earned}<small> хоног</small></dd></div>}
             <div><dt>Ашигласан</dt><dd className="tnum">{l.used}<small> хоног</small></dd></div>
-            <div><dt>Үлдсэн</dt><dd className="tnum">{l.left ?? '—'}{l.left !== null && <small> хоног</small>}</dd></div>
+            {l.left !== null && <div><dt>Үлдсэн</dt><dd className="tnum">{l.left}<small> хоног</small></dd></div>}
           </dl>
           {l.taken.length > 0 ? (
             <ul className="att-taken">

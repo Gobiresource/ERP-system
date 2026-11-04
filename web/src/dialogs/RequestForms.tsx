@@ -206,15 +206,15 @@ function LeaveForm({ old }: { old?: LeaveRequest }) {
         <section className="field--wide rbal" aria-labelledby="lv-bal">
           <div className="rbal__head">
             <h3 id="lv-bal">Ээлжийн амралт</h3>
-            <span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : leave && leave.left !== null ? `${leave.year} оны эрх · Timely` : 'Timely'}</span>
+            <span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : leave ? (leave.left === null ? NO_CAP : `${leave.year} оны эрх · Timely`) : 'Timely'}</span>
           </div>
           {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : !leave ? (
             <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>
-          ) : leave.left === null ? <p className="rbal__none">{NO_CAP}</p> : (
+          ) : (
             <dl>
-              <div><dt>Эрх</dt><dd className="tnum">{leave.earned}<small> хоног</small></dd></div>
+              {leave.earned !== null && <div><dt>Эрх</dt><dd className="tnum">{leave.earned}<small> хоног</small></dd></div>}
               <div><dt>Ашигласан</dt><dd className="tnum">{leave.used}<small> хоног</small></dd></div>
-              <div><dt>Үлдсэн</dt><dd className="tnum">{leave.left}<small> хоног</small></dd></div>
+              {leave.left !== null && <div><dt>Үлдсэн</dt><dd className="tnum">{leave.left}<small> хоног</small></dd></div>}
             </dl>
           )}
         </section>
@@ -641,10 +641,12 @@ function LeaveContext({ r, e }: { r: LeaveRequest; e?: Employee }) {
     <>
       {e && (
         <section className="rbal" aria-labelledby="rq-bal">
-          <div className="rbal__head"><h3 id="rq-bal">Амралтын үлдэгдэл</h3><span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : 'Timely'}</span></div>
+          <div className="rbal__head"><h3 id="rq-bal">Амралтын үлдэгдэл</h3><span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : leave?.left === null ? NO_CAP : 'Timely'}</span></div>
           {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : !leave ? (
             <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>
-          ) : leave.left === null ? <p className="rbal__none">{NO_CAP}</p> : (
+          ) : leave.left === null ? (
+            <dl><div><dt>Ашигласан</dt><dd className="tnum">{leave.used}<small> хоног</small></dd></div></dl>
+          ) : (
             <dl>
               <div><dt>Одоо</dt><dd className="tnum">{leave.left}<small> хоног</small></dd></div>
               <div><dt>Батлагдвал</dt><dd className="tnum">{leave.left - r.days}<small> хоног</small></dd></div>

@@ -90,8 +90,8 @@ export function sumUp(rows: Row[]) {
 
 export type DayState = 'in' | 'part' | 'none' | 'rest' | 'leave' | 'later'
 export const DAY_STATE: Record<Exclude<DayState, 'later'>, string> = { in: 'Ирсэн', part: 'Бүртгэл дутуу', none: 'Бүртгэлгүй', leave: 'Чөлөө, ээлжийн амралт', rest: 'Амралтын өдөр' }
-/** Said where Timely sets no cap on annual leave (TimelyLeave earned and left are null) */
-export const NO_CAP = 'Timely-д ээлжийн амралтын хоногийг хязгаарлаагүй тул эрх, үлдэгдэл тооцогдохгүй.'
+/** Timely counts no leave entitlement ("uncapped"; TimelyLeave earned and left are null): why no balance shows (Gemini 43) */
+export const NO_CAP = 'Timely-д эрх тохируулаагүй'
 
 /**
  * What a day was. Clocks first: today's clock-in without a clock-out yet is a day at work. Then Timely's words, which
