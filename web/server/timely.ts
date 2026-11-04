@@ -123,14 +123,14 @@ interface RawDay { date?: string; clockIn?: string | null; clockOut?: string | n
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
-/** HH:MM in Ulaanbaatar time, from "08:52", "2026-07-01 08:52:13" or a time with its zone */
+/**
+ * HH:MM as Timely writes it, from "08:52", "2026-07-01 08:52:13" or "2026-10-03T08:51:00.000Z". Timely's times are
+ * Ulaanbaatar time (its docs) even with a "Z" at the end: real clock-ins come as 07–09 and clock-outs as 18 (2026-11-04),
+ * so the digits are read as written; turning the "Z" into +8 hours showed 16:51 and 01:58.
+ */
 export function hm(v: unknown): string | null {
   if (typeof v !== 'string' || !v) return null
-  if (/T.*(Z|[+-]\d\d:?\d\d)$/.test(v)) {
-    const d = new Date(v)
-    return Number.isNaN(+d) ? null : new Date(+d + 8 * 3_600_000).toISOString().slice(11, 16)
-  }
-  const m = /(\d{1,2}):(\d{2})/.exec(v)
+  const m = /(\d{1,2}):(\d{2})/.exec(v.replace(/^\d{4}-\d{2}-\d{2}[T ]?/, ''))
   return m ? `${m[1].padStart(2, '0')}:${m[2]}` : null
 }
 
