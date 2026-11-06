@@ -1,7 +1,7 @@
 // Cloudflare: the built app (dist) served by a small Worker from Workers KV (worker/site.js, docs/decisions.md,
 // 2026-11-02). The scan reader runs here with its own OpenRouter key, a Worker secret the user set, whose workspace budget
-// caps what anyone with the link can spend; the Timely server waits for sign-in on the server. Deploy: npm run deploy
-// (Wrangler, with its usage statistics turned off).
+// caps what anyone with the link can spend. Ирц runs here behind its code (Worker secrets TIMELY_API_KEYS and
+// ATTENDANCE_CODE, docs/decisions.md, 2026-11-04). Deploy: npm run deploy (Wrangler, with its usage statistics turned off).
 {
   "name": "gobi-erp",
   "main": "worker/site.js",

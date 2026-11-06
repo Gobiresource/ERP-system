@@ -2,13 +2,13 @@
 // department, who is low, everyone's days and hours with their annual leave, and one employee's month day by day.
 // Timely's employees are matched to ours by registration number; those in one system only are listed apart. Without
 // Timely, a made-up month says "Жишээ" (lib/attendance.ts, docs/decisions.md, 2026-10-31).
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, LoaderCircle, RefreshCw, TreePalm, UserRound } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, LoaderCircle, LockKeyhole, RefreshCw, TreePalm, UserRound } from 'lucide-react'
 import '../../styles/screens/attendance.css'
 import type { State, TimelyDay, TimelyEmployee, TimelyMonth } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { usePageEnter } from '../../lib/motion'
-import { DAY_STATE, EVERY, LOW, NO_RIGHT, avgIn, datesOf, dayStateOf, linkOf, loadDays, loadMonth, matchUp, pctOf, sampleDays, sampleMonth, spanOf, sumUp, timelyState, type DayState, type Row, type TimelyState } from '../../lib/attendance'
+import { DAY_STATE, EVERY, LOW, NO_CAP, avgIn, datesOf, dayStateOf, dayWord, linkOf, loadDays, loadMonth, matchUp, pctOf, sampleDays, sampleMonth, spanOf, sumUp, timelyState, unlock, type DayState, type Row, type TimelyState } from '../../lib/attendance'
 import { dots } from '../../lib/hr'
 import { hrView, seer } from '../../lib/access'
 import { monthKey, monthName, prevMonth } from '../../lib/reports'
@@ -176,6 +176,18 @@ function TimelyBar({ a }: { a: Att }) {
     </label>
   )
   const errors = timely.errors.length > 0 && <span className="att-errs">{timely.errors.join(' ')}</span>
+  const demo = a.demo && <span className="att-demo"><b>Жишээ горим:</b> ирц болон ажилтны мэдээлэл зохиомол.</span>
+  const showDemo = !a.demo && <button type="button" className="btn btn--glass btn--sm" onClick={a.showDemo}>Жишээ ирц харах</button>
+  if (timely.locked) {
+    return (
+      <div className="sbar" role="status">
+        <LockKeyhole className="ico" />
+        <span><b>Ирц кодоор хамгаалагдсан.</b> Жинхэнэ ирцийг харахын тулд кодоо бичнэ үү.{demo}</span>
+        <Unlock onOpen={a.check} />
+        {showDemo}
+      </div>
+    )
+  }
   if (link) {
     return (
       <div className="sbar is-on" role="status">
@@ -200,11 +212,35 @@ function TimelyBar({ a }: { a: Att }) {
             ? <><b>Timely-ээс энэ ХХК олдсонгүй.</b> {admin ? 'Timely-ийн байгууллагыг сонгоно уу.' : 'Удирдлагын эрхтэй ажилтанд хандана уу.'}</>
             : <b>Timely-д холбогдож чадсангүй.</b>}
         {errors}
-        {a.demo && <span className="att-demo"><b>Жишээ горим:</b> ирц болон ажилтны мэдээлэл зохиомол.</span>}
+        {demo}
       </span>
       {pick}
-      {!a.demo && <button type="button" className="btn btn--glass btn--sm" onClick={a.showDemo}>Жишээ ирц харах</button>}
+      {showDemo}
     </div>
+  )
+}
+
+/** The code that opens real attendance on the test address (server/timely.ts); the server keeps this browser open 30 days */
+function Unlock({ onOpen }: { onOpen: () => void }) {
+  const [code, setCode] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    if (!code.trim()) return setError('Кодоо бичнэ үү.')
+    setBusy(true)
+    unlock(code).then(onOpen, (err: Error) => setError(err.message)).finally(() => setBusy(false))
+  }
+  return (
+    <form className="att-code" onSubmit={submit} noValidate>
+      <label className="att-pick">
+        <span>Ирцийн код</span>
+        <input id="att-code" value={code} onChange={e => (setCode(e.target.value), setError(null))} autoComplete="off" autoCapitalize="none" spellCheck={false}
+          aria-invalid={!!error} aria-describedby={error ? 'att-code-err' : undefined} />
+      </label>
+      <button type="submit" className="btn btn--glass btn--sm" disabled={busy}>Нээх</button>
+      {error && <span className="att-errs" id="att-code-err" role="alert">{error}</span>}
+    </form>
   )
 }
 
@@ -229,7 +265,10 @@ function Waiting({ a }: { a: Att }) {
   }
   return (
     <section className="card glass" data-enter>
-      <Empty icon={<UserRound className="ico" />} title="Ирцийн мэдээлэл алга" text="Timely холбогдсоны дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана." />
+      <Empty icon={<UserRound className="ico" />} title="Ирцийн мэдээлэл алга"
+        text={a.timely.locked
+          ? 'Кодоо бичсэний дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана.'
+          : 'Timely холбогдсоны дараа ажилтан бүрийн ажилласан өдөр, цаг, ээлжийн амралтын үлдэгдэл энд харагдана.'} />
     </section>
   )
 }
@@ -368,7 +407,7 @@ function Everyone({ rows }: { rows: Row[] }) {
                       <span className="efiles__bar" aria-hidden="true"><i style={{ transform: `scaleX(${(p ?? 0) / 100})` }} /></span>
                     </span>
                   </td>
-                  <td className="num tnum hide-sm">{r.t.leave && !r.t.leave.uncapped ? `${r.t.leave.left} хоног` : <span className="muted" title={r.t.leave ? NO_RIGHT : undefined}>—{r.t.leave && <span className="sr-only"> {NO_RIGHT}</span>}</span>}</td>
+                  <td className="num tnum hide-sm">{r.t.leave && r.t.leave.left !== null ? `${r.t.leave.left} хоног` : <span className="muted" title={r.t.leave ? NO_CAP : undefined}>—{r.t.leave && <span className="sr-only"> {NO_CAP}</span>}</span>}</td>
                 </tr>
               )
             })}
@@ -462,6 +501,7 @@ export function AttendanceOne({ id }: { id: string }) {
   const back = <a className="ibtn ibtn--glass head__back" href="#hr-attendance" aria-label="Ирц рүү буцах"><ChevronLeft className="ico" /></a>
   const p = row ? pctOf(row.t) : null
   const avg = days ? avgIn(days) : null
+  const left = row?.t.leave?.left ?? null
 
   return (
     <div ref={ref}>
@@ -474,7 +514,7 @@ export function AttendanceOne({ id }: { id: string }) {
           { label: 'Ирц', value: p ?? '—', unit: p === null ? undefined : '%', alert: p !== null && p < LOW },
           { label: 'Ажилласан өдөр', value: row.t.workedDays, unit: `/ ${row.t.supposedDays}` },
           { label: 'Дундаж ирсэн цаг', value: avg ?? '—' },
-          { label: 'Амралтын үлдэгдэл', value: row.t.leave && !row.t.leave.uncapped ? row.t.leave.left : '—', unit: row.t.leave && !row.t.leave.uncapped ? 'хоног' : undefined },
+          { label: 'Амралтын үлдэгдэл', value: left ?? '—', unit: left === null ? undefined : 'хоног' },
         ] : undefined}
         actions={<MonthTools a={{ ...a, load: (fresh: boolean) => (a.load(fresh), setAgain(n => n + 1)) }} />}
       />
@@ -508,7 +548,7 @@ function Month({ days, error, t, month }: { days: TimelyDay[] | null; error: str
   const dates = datesOf(month)
   const lead = (parse(dates[0]).getDay() + 6) % 7
   const label = (date: string, st: DayState, d?: TimelyDay) =>
-    `${Number(date.slice(8))}, ${weekdayShort(parse(date))}: ${st === 'later' ? 'дараа' : DAY_STATE[st]}${d?.in ? `, ирсэн ${d.in}` : ''}${d?.out ? `, явсан ${d.out}` : ''}`
+    `${Number(date.slice(8))}, ${weekdayShort(parse(date))}: ${st === 'later' ? 'дараа' : dayWord(st, d)}${d?.in ? `, ирсэн ${d.in}` : ''}${d?.out ? `, явсан ${d.out}` : ''}`
   return (
     <section className="card glass span-7" aria-labelledby="atm-t" data-enter>
       <div className="card__head">
@@ -558,15 +598,15 @@ function Leave({ t }: { t: TimelyEmployee }) {
       <div className="card__head">
         <div>
           <h2 className="card__title" id="atv-t">Ээлжийн амралт</h2>
-          <p className="card__sub">{l ? (l.uncapped ? NO_RIGHT : `${l.year} оны эрх`) : 'Timely-д бүртгэлгүй'}</p>
+          <p className="card__sub">{!l ? 'Timely-д бүртгэлгүй' : l.left === null ? NO_CAP : `${l.year} оны эрх`}</p>
         </div>
       </div>
       {l ? (
         <>
           <dl className="att-leave">
-            {!l.uncapped && <div><dt>Эрх</dt><dd className="tnum">{l.earned}<small> хоног</small></dd></div>}
+            {l.earned !== null && <div><dt>Эрх</dt><dd className="tnum">{l.earned}<small> хоног</small></dd></div>}
             <div><dt>Ашигласан</dt><dd className="tnum">{l.used}<small> хоног</small></dd></div>
-            {!l.uncapped && <div><dt>Үлдсэн</dt><dd className="tnum">{l.left}<small> хоног</small></dd></div>}
+            {l.left !== null && <div><dt>Үлдсэн</dt><dd className="tnum">{l.left}<small> хоног</small></dd></div>}
           </dl>
           {l.taken.length > 0 ? (
             <ul className="att-taken">
@@ -618,7 +658,7 @@ function Days({ days, t, month }: { days: TimelyDay[]; t: TimelyEmployee; month:
                   <td className="num tnum">{d?.in ?? '—'}</td>
                   <td className="num tnum">{d?.out ?? '—'}</td>
                   <td className="num tnum hide-sm">{d ? spanOf(d) ?? '—' : '—'}</td>
-                  <td>{st !== 'later' && <span className={`apill is-${st}`}>{DAY_STATE[st]}</span>}</td>
+                  <td>{st !== 'later' && <span className={`apill is-${st}`}>{dayWord(st, d)}</span>}</td>
                 </tr>
               )
             })}
