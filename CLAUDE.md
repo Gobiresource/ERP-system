@@ -63,7 +63,8 @@ ERP-ийн дэлгэц, компонент дээр ажиллахдаа:
   ```
   - URL-ийг хэрэглэгчид явуулна. Хэрэглэгч нэвтэрч, хуудсан дээр гарсан кодыг чатаар өгнө. Код хэдэн минутын дараа хүчингүй болно.
   - `tmux send-keys -t agy -l '<КОД>'`, дараа нь `tmux send-keys -t agy Enter`.
-  - Өнгө → Enter. «Interactions data»-г асаалгүй [ ] үлдээнэ (Enter нь асааж, унтраадаг). Down → Right-аар «Done» → Enter. «Trust this folder» → Enter.
+  - Өнгө → Enter. «Interactions data» [ ] байх ёстой. Enter нь асааж, унтраадаг. 1.5.4 хувилбарт анхнаасаа [x] байсан тул Enter дарж унтраасан (2026-11-10). Down → Right-аар «Done» → Enter. «Trust this folder» → Enter.
+  - Google AI Pro-той бүртгэлээр нэвтэрнэ. Үнэгүй бүртгэл «Verify your account» гэж хаагдсан, баталгаажуулсны дараа ч нээгдээгүй (2026-11-10).
   - `$S/agy/agy models`-оор шалгана. `/config`-д «Enable Telemetry» ба «Use AI Credits» унтраастай байгааг шалгана.
   - Токен `~/.gemini/antigravity-cli/antigravity-oauth-token`-д хадгалагдана. Түүнийг хэвлэхгүй, repo-д хийхгүй.
 - **Ашиглах.** Хоосон `$S/agy-run`-аас ажиллуулна. Prompt-ын эхэнд "Do NOT use run_command. Do not read or write any files." гэж бичнэ. 60–95 мөртэй багц 3.5–4.5 минут болно. Багцуудыг зэрэг биш, дараалан ажиллуулна. Хариу файлыг agy дуусахаас өмнө уншихгүй, хагас бичигдсэн байдаг.
