@@ -1,0 +1,18 @@
+{
+ "name": "Архивын илтгэл",
+ "font": "Golos Text",
+ "colors": {
+  "dk1": "0F1017",
+  "lt1": "FFFFFF",
+  "dk2": "4F5262",
+  "lt2": "E9EBF1",
+  "accent1": "B9440C",
+  "accent2": "0EA5A4",
+  "accent3": "2F7CF6",
+  "accent4": "5B5BD6",
+  "accent5": "F2711C",
+  "accent6": "22A559",
+  "hlink": "0A58C4",
+  "folHlink": "6A2BD0"
+ }
+}

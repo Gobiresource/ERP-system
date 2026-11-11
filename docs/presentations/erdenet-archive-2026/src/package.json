@@ -1,0 +1,15 @@
+{
+  "name": "erdenet-archive-deck",
+  "private": true,
+  "description": "Builds the conference deck (pptx) from build.js",
+  "scripts": {
+    "build": "node build.js out/raw.pptx && python3 post.py out/raw.pptx ../Erdenet-arhiv-AI-iltgel-2026.pptx ../fonts/GolosText-Regular.ttf ../fonts/GolosText-Bold.ttf"
+  },
+  "dependencies": {
+    "pptxgenjs": "4.0.1"
+  },
+  "devDependencies": {
+    "lucide-static": "1.72.0",
+    "sharp": "0.35.5"
+  }
+}
