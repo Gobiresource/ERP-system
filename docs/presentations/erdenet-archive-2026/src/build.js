@@ -5,7 +5,7 @@
 'use strict'
 const fs = require('fs')
 const path = require('path')
-const { pres, SH, A, W, MX, CW, TOP, K, HUE, tw, lineCount, lineH, defLsm, textH, txt, glass, solid, icon, iconTile, badge, pill, chips, rows, stack, arrowDot, arrowLine, sourceLine, content, dark, issues, unknown, usedIcons } = require('./lib')
+const { pres, SH, A, W, MX, CW, TOP, K, HUE, tw, lineCount, lineH, defLsm, textH, txt, glass, solid, icon, iconTile, badge, pill, chips, rows, stack, cap, arrowDot, arrowLine, sourceLine, content, dark, issues, unknown, usedIcons } = require('./lib')
 
 const OUT = process.argv[2] || path.join(__dirname, 'out', 'deck.pptx')
 const N = JSON.parse(fs.readFileSync(A('notes.json'), 'utf8'))
@@ -65,9 +65,9 @@ pres.addSection({ title: SEC.intro })
   const y2 = y + tH + 0.2, h2 = 2.3, sw = 4.5
   glass(s, MX, y2, sw, h2)
   label(s, 'Сан хөмрөг', MX + 0.3, y2 + 0.26, 2.6)
-  txt(s, '35 тонн', { x: MX + 0.3, y: y2 + 0.52, w: 2.75, h: 0.72, pt: 42, bold: true, wrap: false, spacing: -0.8, name: 'Тоо' })
-  txt(s, 'гаруй зураг төсөл, техник эдийн засгийн баримт, кино, гэрэл зураг, дуу авианы баримт [6]', { x: MX + 0.3, y: y2 + 1.26, w: 2.78, h: 0.96, pt: 13, color: K.text2 })
-  s.addImage({ path: A('folder-teal.png'), x: MX + 3.06, y: y2 + 0.5, w: 1.22, h: 1.147, altText: 'Баримт бичигтэй шилэн хавтас', objectName: 'Шилэн хавтас' })
+  txt(s, [{ text: '35 тонн', options: { fontSize: 40, bold: true, charSpacing: -0.8 } }, { text: ' гаруй', options: { fontSize: 20, bold: true, color: K.text2 } }], { x: MX + 0.3, y: y2 + 0.5, w: sw - 0.6, h: 0.68, pt: 40, wrap: false, name: 'Тоо' })
+  txt(s, 'Зураг төсөл, техник эдийн засгийн баримт, кино, гэрэл зураг, дуу авианы баримт [6]', { x: MX + 0.3, y: y2 + 1.24, w: 2.62, h: 0.96, pt: 13, color: K.text2 })
+  s.addImage({ path: A('folder-teal.png'), x: MX + 3.1, y: y2 + 1.14, w: 1.14, h: 1.072, altText: 'Баримт бичигтэй шилэн хавтас', objectName: 'Шилэн хавтас' })
 
   const cx2 = MX + sw + 0.22, cw2 = W - MX - cx2
   glass(s, cx2, y2, cw2, h2)
@@ -112,7 +112,7 @@ pres.addSection({ title: SEC.why })
     heading(s, o.title, x + 1.06, y + 0.3, 4.3)
     const y2 = rows(s, o.points, { x: x + 0.3, y: y + 1.14, w: cw - 0.6, pt: 14 })
     label(s, o.label, x + 0.3, y + 2.58, cw - 0.6)
-    chips(s, ['өгүүлбэр', 'хүснэгт', 'инженерийн штамп', 'гар бичмэл тэмдэглэгээ'], { x: x + 0.3, y: y + 2.9, w: cw - 0.6, tone: o.chip })
+    chips(s, ['Өгүүлбэр', 'Хүснэгт', 'Инженерийн штамп', 'Гар бичмэл тэмдэглэгээ'], { x: x + 0.3, y: y + 2.9, w: cw - 0.6, tone: o.chip })
     pill(s, o.result, x + 0.3, y + ch - 0.74, { tone: o.tone, solid: true, bold: true, pt: 13, h: 0.44 })
     if (y2 > y + 2.42) issues.push(`${o.title}: the points run into the label`)
   }
@@ -257,7 +257,7 @@ const STAGES = [
   })
   const by = y + ch + 0.2
   glass(s, MX, by, CW, 0.7, { r: 0.22 })
-  const IN = 'цаасан баримт, сканнердсан зураг, PDF файл', OUT_ = 'уншигдах, хайгдах, ангилагдах ухаалаг сан'
+  const IN = 'Цаасан баримт, сканнердсан зураг, PDF файл', OUT_ = 'Уншигдах, хайгдах, ангилагдах ухаалаг сан'
   let x = MX + 0.24
   x += pill(s, 'Оролт', x, by + 0.17, { tone: 'quiet', bold: true }) + 0.16
   txt(s, IN, { x, y: by, w: tw(IN, 13.5, false) + 0.05, h: 0.7, pt: 13.5, valign: 'middle', wrap: false })
@@ -283,7 +283,7 @@ const STAGES = [
     txt(s, text, { x: sx + 0.4, y: y + 0.84, w: sw - 0.44, h: 0.52, pt: 13.5 })
     if (i < 2) icon(s, 'arrow-right', 'mute', sx + sw + 0.12, y + 0.94, 0.24, 'Сум')
   })
-  chips(s, ['толгой хэсэг', 'тушаалын дугаар', 'үндсэн заалтууд', 'тоон хүснэгт', 'булангийн штамп', 'гарын үсэг', 'тамга тэмдэг'], { x: MX + 0.3, y: y + 1.5, w: CW - 0.6, tone: 'teal', pt: 12, h: 0.34, gap: 0.09 })
+  chips(s, ['Толгой хэсэг', 'Тушаалын дугаар', 'Үндсэн заалтууд', 'Тоон хүснэгт', 'Булангийн штамп', 'Гарын үсэг', 'Тамга тэмдэг'], { x: MX + 0.3, y: y + 1.5, w: CW - 0.6, tone: 'teal', pt: 12, h: 0.34, gap: 0.09 })
 
   // 2-р шат: two levels of classes, side by side
   const y2 = y + h1 + 0.2, h2 = 2.58
@@ -370,7 +370,7 @@ pres.addSection({ title: SEC.pilot })
     iconTile(s, ic, hue, x + 0.2, y + 0.2, 0.46, name)
     txt(s, name, { x: x + 0.78, y: y + 0.18, w: cw - 0.94, h: 0.5, pt: 13.5, bold: true, valign: 'middle' })
     txt(s, text, { x: x + 0.2, y: y + 0.8, w: cw - 0.38, h: 0.7, pt: 12.5, color: K.text2 })
-    txt(s, key, { x: x + 0.2, y: y + ch - 0.34, w: cw - 0.3, h: 0.22, pt: 10.5, color: K.text3, wrap: false, lang: 'en-US', name: 'JSON түлхүүр' })
+    txt(s, key, { x: x + 0.2, y: y + ch - 0.34, w: cw - 0.3, h: 0.22, pt: 10.5, color: K.text3, wrap: false, lang: 'en-US', code: true, name: 'JSON түлхүүр' })
   })
 }
 
@@ -460,7 +460,7 @@ const HOLES = [[33.5 / 1040, 259.5 / 800], [33.5 / 1040, 539.5 / 800]]
   s.addShape(SH.roundRect, { x: MX + 0.26, y: my + 0.28, w: tw3, h: mnH, rectRadius: 0.14, fill: { color: HUE.purple.base, transparency: 89 }, line: { color: HUE.purple.base, width: 0.75, transparency: 55 }, objectName: 'Орчуулга' })
   txt(s, marked(mn), { x: MX + 0.46, y: my + 0.43, w: inner, h: mnH - 0.28, pt: 13.5, name: 'Орчуулга' })
   const fy0 = my + 0.28 + mnH + 0.18
-  const META = [['Огноо', meta.date], ['Дугаар', meta.document_number], ['Эх хэл', { ru: 'орос', mn: 'монгол', mixed: 'холимог' }[meta.original_language]], ['Төлөв', READ.verification.status], ['Хандалт', READ.access_level]]
+  const META = [['Огноо', meta.date], ['Дугаар', meta.document_number], ['Эх хэл', { ru: 'Орос', mn: 'Монгол', mixed: 'Холимог' }[meta.original_language]], ['Төлөв', cap(READ.verification.status)], ['Хандалт', cap(READ.access_level)]]
   let mx = MX + 0.26
   META.forEach(([k, v]) => {
     const mw = Math.max(tw(v, 13, true), tw(k, 11, false)) + 0.06
@@ -482,7 +482,7 @@ const HOLES = [[33.5 / 1040, 259.5 / 800], [33.5 / 1040, 539.5 / 800]]
   label(s, 'Давхар хамаарах чиглэл', rx + 0.26, y + 1.72, rw - 0.52)
   const fy = chips(s, fields, { x: rx + 0.26, y: y + 2.0, w: rw - 0.52, tone: 'blue', pt: 12, h: 0.34, gap: 0.09 })
   label(s, 'Түлхүүр үг', rx + 0.26, fy + 0.2, rw - 0.52)
-  const ky = chips(s, words, { x: rx + 0.26, y: fy + 0.48, w: rw - 0.52, tone: 'quiet', pt: 12, h: 0.34, gap: 0.09 })
+  const ky = chips(s, words.map(cap), { x: rx + 0.26, y: fy + 0.48, w: rw - 0.52, tone: 'quiet', pt: 12, h: 0.34, gap: 0.09 })
   const ent = READ.extracted_entities_and_metrics[0]
   txt(s, 'Объект ба тоон үзүүлэлт', { x: rx + 0.26, y: ky + 0.18, w: rw - 0.52, h: 0.22, pt: 11, color: K.text3, wrap: false, name: 'Талбар' })
   txt(s, `${ent.entity_or_metric.replace(/\s*\(.*\)/, '')}, ${ent.value}, ${ent.related_unit}`, { x: rx + 0.26, y: ky + 0.4, w: rw - 0.52, h: 0.26, pt: 13, bold: true, wrap: false, name: 'Утга' })

@@ -72,12 +72,20 @@ let current = '' // the slide being drawn, for the warnings
 /** A list item given as bare words or runs becomes { text }. (A string's own .bold is a method, so never read options off one.) */
 const item = it => (typeof it === 'string' || Array.isArray(it) ? { text: it } : it)
 const plain = text => (Array.isArray(text) ? text.map(r => r.text + (r.options && r.options.breakLine ? '\n' : '')).join('') : String(text))
+/** The first letter made capital, for words that come from data (the reading) */
+const cap = text => text.charAt(0).toUpperCase() + text.slice(1)
+/** The user's rule (2026-11-12): every text on a slide begins with a capital letter: list lines, pills, captions.
+ *  `code: true` exempts what must stay as written, such as a JSON key. */
+function capital(text, o) {
+  if (!(o && o.code) && /^\p{Ll}/u.test(plain(text))) issues.push(`${current}: "${plain(text).slice(0, 40)}" begins with a small letter`)
+}
 
 /** A text box with no inner margin. `text` is a string or runs; mixed weights go on the runs, never on `o.bold`. */
 function txt(s, text, o) {
   const pt = o.pt ?? 14
   const lsm = o.lsm ?? defLsm(pt)
   const str = plain(text)
+  capital(text, o)
   const bold = !!o.bold || (Array.isArray(text) && text.some(r => r.options && r.options.bold))
   if (o.wrap === false) {
     if (o.w && tw(str, pt, bold) > o.w + 0.01) issues.push(`${current}: "${str.slice(0, 40)}" is ${tw(str, pt, bold).toFixed(2)} wide in ${o.w.toFixed(2)}`)
@@ -154,6 +162,7 @@ const PILL = {
 /** A pill sized to its words. Returns its width. `tone` is a PILL name or a hue (tinted, with the hue's outline). */
 function pill(s, label, x, y, o = {}) {
   const pt = o.pt ?? 12.5, h = o.h ?? 0.36, pad = o.pad ?? 0.16, bold = !!o.bold
+  capital(label, o)
   const dot = o.dot ? 0.2 : 0
   const w = o.w ?? tw(label, pt, bold) * 1.03 + pad * 2 + dot
   const tone = PILL[o.tone ?? 'plain']
@@ -191,8 +200,6 @@ function rows(s, items, o) {
     const text = it.text
     const bold = !!it.bold
     const h = textH(plain(text), pt, bold || Array.isArray(text), o.w - indent)
-    // The user's rule (2026-11-12): words that follow an icon begin with a capital letter
-    if (it.icon && /^\p{Ll}/u.test(plain(text))) issues.push(`${current}: "${plain(text).slice(0, 40)}" follows an icon and begins with a small letter`)
     if (it.icon) icon(s, it.icon, it.hue ?? o.hue ?? 'mute', o.x, y + (lineH(pt, defLsm(pt)) - ic) / 2, ic, it.alt)
     else s.addShape(SH.ellipse, { x: o.x + ic / 2 - 0.04, y: y + lineH(pt, defLsm(pt)) / 2 - 0.04, w: 0.08, h: 0.08, fill: { color: o.dotColor ?? K.text3 }, objectName: 'Цэг' })
     txt(s, text, { x: o.x + indent, y, w: o.w - indent, h: h + 0.02, pt, bold, color: it.color ?? o.color ?? K.text, name: 'Мөр' })
@@ -294,5 +301,6 @@ function stack(s, items, o) {
 }
 PILL.island = { fill: '16171D', t: 6, line: K.white, lt: 76, color: K.dText }
 module.exports.stack = stack
+module.exports.cap = cap
 module.exports.usedIcons = usedIcons
 module.exports.plain = plain
