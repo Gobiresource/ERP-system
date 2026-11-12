@@ -84,7 +84,7 @@ pres.addSection({ title: SEC.intro })
   iconTile(s, 'hand', 'mute', MX + 0.3, y + 0.3, 0.58, 'Гар ажиллагаа')
   heading(s, 'Өнөөгийн практик', MX + 1.06, y + 0.3, 4.3)
   txt(s, 'Сканнердаж хадгалсан олон мянган зурган файл, хавтаснаас нэг сэдэвт хамаарах баримтыг архивын ажилтан, судлаачид гар аргаар:', { x: MX + 0.3, y: y + 1.1, w: cw - 0.6, h: 0.82, pt: 14 })
-  rows(s, [{ icon: 'file-search', text: 'ялгаж түүвэрлэнэ', bold: true }, { icon: 'list-ordered', text: 'товъёог үйлдэнэ', bold: true }, { icon: 'layers', text: 'агуулгаар нь багцална', bold: true }], { x: MX + 0.3, y: y + 2.1, w: cw - 0.6, pt: 14, hue: 'mute' })
+  rows(s, [{ icon: 'file-search', text: 'Ялгаж түүвэрлэнэ', bold: true }, { icon: 'list-ordered', text: 'Товъёог үйлдэнэ', bold: true }, { icon: 'layers', text: 'Агуулгаар нь багцална', bold: true }], { x: MX + 0.3, y: y + 2.1, w: cw - 0.6, pt: 14, hue: 'mute' })
 
   arrowDot(s, W / 2, y + ch / 2)
 
@@ -92,7 +92,7 @@ pres.addSection({ title: SEC.intro })
   iconTile(s, 'scan-text', 'copper', bx + 0.3, y + 0.3, 0.58, 'Хиймэл оюун ухаанаар унших')
   heading(s, 'Дэвшүүлж буй шийдэл', bx + 1.06, y + 0.3, 4.3)
   txt(s, 'Цаасан болон цахим файлыг хиймэл оюун ухаанаар автоматаар уншиж, гурван шинжээр ялган ангилж цэгцлэх туршилтын загвар:', { x: bx + 0.3, y: y + 1.1, w: cw - 0.6, h: 0.82, pt: 14 })
-  rows(s, [{ icon: 'book-open', text: 'утга агуулгаар', bold: true }, { icon: 'folder-tree', text: 'салбар чиглэлээр', bold: true }, { icon: 'calendar', text: 'он дарааллаар', bold: true }], { x: bx + 0.3, y: y + 2.1, w: cw - 0.6, pt: 14, hue: 'copper' })
+  rows(s, [{ icon: 'book-open', text: 'Утга агуулгаар', bold: true }, { icon: 'folder-tree', text: 'Салбар чиглэлээр', bold: true }, { icon: 'calendar', text: 'Он дарааллаар', bold: true }], { x: bx + 0.3, y: y + 2.1, w: cw - 0.6, pt: 14, hue: 'copper' })
 
   const qy = y + ch + 0.24
   solid(s, MX, qy, CW, 1.04, { fill: K.island, r: 0.3, name: 'Асуулт' })

@@ -191,6 +191,8 @@ function rows(s, items, o) {
     const text = it.text
     const bold = !!it.bold
     const h = textH(plain(text), pt, bold || Array.isArray(text), o.w - indent)
+    // The user's rule (2026-11-12): words that follow an icon begin with a capital letter
+    if (it.icon && /^\p{Ll}/u.test(plain(text))) issues.push(`${current}: "${plain(text).slice(0, 40)}" follows an icon and begins with a small letter`)
     if (it.icon) icon(s, it.icon, it.hue ?? o.hue ?? 'mute', o.x, y + (lineH(pt, defLsm(pt)) - ic) / 2, ic, it.alt)
     else s.addShape(SH.ellipse, { x: o.x + ic / 2 - 0.04, y: y + lineH(pt, defLsm(pt)) / 2 - 0.04, w: 0.08, h: 0.08, fill: { color: o.dotColor ?? K.text3 }, objectName: 'Цэг' })
     txt(s, text, { x: o.x + indent, y, w: o.w - indent, h: h + 0.02, pt, bold, color: it.color ?? o.color ?? K.text, name: 'Мөр' })
