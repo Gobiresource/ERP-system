@@ -293,7 +293,12 @@ export const actions = {
   // Удирдлага: accounts and rights. Only an admin of the ХХК changes them there; whoever sets the system up, anywhere.
   setMe: (me: Id) => set(s => ({ ...s, me })),
   /** When the person signed in last */
-  signedIn: (who: Id) => editAccount(who, { lastLogin: new Date().toISOString() }),
+  /** Notes the sign-in. True the first time, when the person is to be shown round (lib/auth.ts). */
+  signedIn(who: Id) {
+    const first = !state.people.find(p => p.id === who)?.account?.toured
+    editAccount(who, { lastLogin: new Date().toISOString(), toured: true })
+    return first
+  },
   /**
    * The person's rights in a ХХК. An admin keeps their own Удирдлага right, so the ХХК never loses its last admin. The
    * system admin's are only a system admin's to change.

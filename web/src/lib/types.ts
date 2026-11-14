@@ -69,6 +69,8 @@ export interface Account {
   /** Rights in each ХХК the person belongs to */
   access: Record<Id, Access>
   lastLogin?: string
+  /** The tour of a first sign-in has started for the person once; it does not start by itself again */
+  toured?: boolean
 }
 
 export type TaskStatus = 'todo' | 'doing' | 'review' | 'done'

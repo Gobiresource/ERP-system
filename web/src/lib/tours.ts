@@ -72,6 +72,9 @@ const nothingSaved = 'Энэ зааварт юу ч хадгалахгүй: цо
 
 const START = 'Эхлэл', DAILY = 'Өдөр тутмын ажил', PLAN = 'Төсөл, төлөвлөлт', OFFICE = 'Бичиг хэрэг', HR = 'Хүний нөөц', ADMIN = 'Удирдлага'
 
+/** The tour that starts by itself the first time a person signs in (lib/auth.ts); Алгасах leaves it like any other */
+export const FIRST_TOUR = 'intro'
+
 export const TOURS: Tour[] = [
   {
     id: 'intro', group: START, icon: Compass, title: 'Системтэй танилцах', sub: 'Цэс, хайлт, мэдэгдэл хаана байдгийг үзнэ.',
