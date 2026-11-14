@@ -1,9 +1,9 @@
 import { Fragment, type ReactNode } from 'react'
 
-/** Page title, split into letters for the entrance animation. Screen readers get the plain text. */
-export function Title({ text }: { text: string }) {
+/** A text split into letters for the entrance animation. Screen readers get the plain text. */
+export function Letters({ text }: { text: string }) {
   return (
-    <h1 className="head__title" id="page-title" tabIndex={-1}>
+    <>
       <span className="sr-only">{text}</span>
       <span aria-hidden="true">
         {text.split(' ').map((w, i) => (
@@ -15,8 +15,13 @@ export function Title({ text }: { text: string }) {
           </Fragment>
         ))}
       </span>
-    </h1>
+    </>
   )
+}
+
+/** Page title, its letters rising as the page enters */
+export function Title({ text }: { text: string }) {
+  return <h1 className="head__title" id="page-title" tabIndex={-1}><Letters text={text} /></h1>
 }
 
 export interface StatItem {

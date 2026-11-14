@@ -2,8 +2,7 @@
 // cannot be guessed quickly; the count is kept in this browser (the server will keep it per login).
 import { actions, getState } from './store'
 import { hashOf, loginKey } from './access'
-import { signIn, startTour } from './ui'
-import { FIRST_TOUR } from './tours'
+import { open, signIn } from './ui'
 
 const TRIES = 'erp:tries'
 const FREE = 5
@@ -40,7 +39,7 @@ export async function login(name: string, password: string): Promise<'ok' | 'wro
   if (!p.companies.includes(getState().company)) actions.switchCompany(p.companies[0])
   const first = actions.signedIn(p.id)
   signIn(p.id)
-  // Whoever signs in for the first time is shown round at once (the user's request, docs/decisions.md, 2026-11-14)
-  if (first) startTour(FIRST_TOUR)
+  // Whoever signs in for the first time is welcomed, and from there shown round (the user's request, docs/decisions.md, 2026-11-14)
+  if (first) open({ kind: 'welcome' })
   return 'ok'
 }

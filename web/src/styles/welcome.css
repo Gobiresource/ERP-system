@@ -1,0 +1,41 @@
+/* Тавтай морил (dialogs/Welcome.tsx): the page of a first sign-in. Clean paper, white in the light look, with the
+   person's name as the one large thing on it. The bits of coloured paper above and below are decoration: they keep to
+   their own bands, so no text ever lies over one. */
+.viewer.welcome { overflow: auto; background: var(--paper); color: var(--paper-ink); }
+.welcome .sheet__inner { height: auto; min-height: 100%; display: grid; }
+.welcome__page { display: grid; grid-template-rows: minmax(96px, 1fr) auto minmax(80px, 1fr); }
+.welcome__above, .welcome__below { position: relative; overflow: hidden; }
+.welcome__bit { position: absolute; background: var(--hue); }
+.welcome__bit--pill { width: 9px; height: 26px; border-radius: 5px; }
+.welcome__bit--dot { width: 13px; height: 13px; border-radius: 50%; }
+.welcome__bit--square { width: 14px; height: 14px; border-radius: 4px; }
+.welcome__bit--ring { width: 17px; height: 17px; border: 3.5px solid var(--hue); border-radius: 50%; background: none; }
+/* Not all of one size */
+.welcome__bit:nth-child(3n) { scale: 1.3; }
+.welcome__bit:nth-child(4n) { scale: .8; }
+
+.welcome__body {
+  display: grid; justify-items: center; text-align: center;
+  padding-inline: max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px));
+}
+.welcome__from { display: inline-flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; }
+.welcome__title { display: grid; justify-items: center; max-width: 100%; margin-top: 40px; }
+.welcome__hello { font: 600 clamp(20px, 1vw + 14px, 28px)/1.2 var(--font); color: var(--paper-mute); }
+/* As large as the name's length lets one line be: the page's width over the letters, a letter about .64 of its size */
+.welcome__name {
+  max-width: 100%; margin-top: 4px; letter-spacing: -.035em; overflow-wrap: anywhere;
+  font: 700 clamp(20px, calc((min(100vw, 920px) - 48px) / (var(--n) * .64)), min(128px, 22vw))/1.08 var(--font);
+}
+.welcome__role { margin-top: 12px; font-size: 16px; font-weight: 500; color: var(--paper-mute); }
+.welcome__motto { max-width: 34em; margin-top: 28px; font-size: clamp(17px, .4vw + 15px, 20px); line-height: 1.5; text-wrap: balance; }
+.welcome__team { display: inline-flex; align-items: center; gap: 12px; margin-top: 24px; font-size: 14px; font-weight: 500; color: var(--paper-mute); }
+.welcome__team > span:first-child { display: inline-flex; }
+.welcome__go { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 36px; }
+.welcome__hint { max-width: 34em; margin-top: 12px; font-size: 13.5px; color: var(--paper-mute); text-wrap: balance; }
+
+@media (width <= 760px) {
+  /* A narrow page takes half the bits */
+  .welcome__bit:nth-child(even) { display: none; }
+  .welcome__go { flex-direction: column; width: 100%; max-width: 360px; }
+  .welcome__go .btn { width: 100%; }
+}

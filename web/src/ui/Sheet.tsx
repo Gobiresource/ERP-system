@@ -11,12 +11,14 @@ export const useCloseSheet = () => use(SheetContext)
  * screen (a file to look at). On phones modal and drawer become a sheet from the bottom. Esc, the close button and a
  * click outside close it.
  */
-export function Sheet({ kind = 'modal', label, onClose, children, wide, closeButton = true }: {
+export function Sheet({ kind = 'modal', label, onClose, children, wide, look, closeButton = true }: {
   kind?: 'modal' | 'drawer' | 'full'
   label: string
   onClose: () => void
   children: ReactNode
   wide?: boolean
+  /** Another face for a `full` window: a class beside `viewer` (the welcome page is white paper) */
+  look?: string
   /** Forms draw their own close button in the header */
   closeButton?: boolean
 }) {
@@ -72,7 +74,7 @@ export function Sheet({ kind = 'modal', label, onClose, children, wide, closeBut
   return (
     <dialog
       ref={ref}
-      className={kind === 'full' ? 'viewer' : `${kind}${wide ? ' modal--wide' : ''} glass glass--thick`}
+      className={kind === 'full' ? `viewer${look ? ` ${look}` : ''}` : `${kind}${wide ? ' modal--wide' : ''} glass glass--thick`}
       aria-label={label}
       onCancel={e => { e.preventDefault(); requestClose() }}
       onClick={e => {

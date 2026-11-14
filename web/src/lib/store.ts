@@ -293,7 +293,7 @@ export const actions = {
   // Удирдлага: accounts and rights. Only an admin of the ХХК changes them there; whoever sets the system up, anywhere.
   setMe: (me: Id) => set(s => ({ ...s, me })),
   /** When the person signed in last */
-  /** Notes the sign-in. True the first time, when the person is to be shown round (lib/auth.ts). */
+  /** Notes the sign-in. True the first time, when the person is to be welcomed (lib/auth.ts). */
   signedIn(who: Id) {
     const first = !state.people.find(p => p.id === who)?.account?.toured
     editAccount(who, { lastLogin: new Date().toISOString(), toured: true })

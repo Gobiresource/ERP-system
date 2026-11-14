@@ -42,6 +42,7 @@ export type Dialog =
   | { kind: 'scanSplit'; id: Id; ai: boolean }
   | { kind: 'password'; id: Id }
   | { kind: 'lessonForm'; id?: Id }
+  | { kind: 'welcome' }
   | null
 
 export interface Note {
