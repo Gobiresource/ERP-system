@@ -547,6 +547,27 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
 .bcard.is-lifted { z-index: 5; scale: 1.03; cursor: grabbing; box-shadow: var(--ring), var(--board-lift); }
 .bcard p { color: var(--board-ink-2); font-size: 14px; }
 
+/* The guided tour (tour.js): everything goes dark except the element being taught, and a card beside it says what it
+   does. The layer lies in the browser's top layer (a popover), inside the open window when there is one, so it covers
+   windows and menus too. It lets presses through only at the lit element, and only when the step asks for one. */
+.tour {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  overflow: visible; background: none; color: var(--text); pointer-events: none;
+}
+.tour > * { position: fixed; pointer-events: auto; }
+/* The dark is this ring's shadow, so the hole takes the element's own corners */
+.tour > .tour__ring { pointer-events: none; box-shadow: 0 0 0 2px var(--tour-ring), 0 0 0 6px color-mix(in srgb, var(--tour-ring) 28%, transparent), 0 0 0 200vmax var(--tour-dim); }
+/* A solid card: over the dark layer a see-through one would lose the lightness its small text needs */
+.tour__card { --glass: var(--glass-solid); display: grid; gap: 8px; width: min(360px, calc(100vw - 24px)); padding: 16px 16px 14px; border-radius: var(--r-lg); animation: tour-in .22s var(--ease); }
+.tour__count { font-size: 12.5px; font-weight: 650; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.tour__title { font: 650 17px/1.25 var(--font); letter-spacing: -.01em; }
+.tour__text { font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+.tour__hint { font-size: 14px; font-weight: 600; color: var(--accent-ink); }
+.tour__btns { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.tour__skip { margin-right: auto; }
+@keyframes tour-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .tour__card { animation: none; } }
+
 /* Demo helpers (not part of a product): a soft wallpaper so the glass has something to show */
 .ds-stage {
   display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; padding: 24px; min-height: 100%;

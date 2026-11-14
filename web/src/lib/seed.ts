@@ -5,6 +5,7 @@ import { seedHr } from './seedHr'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
+import { seedLessons } from './training'
 import { seedContracts } from './contracts'
 import { seedReports } from './reports'
 import { seedHrRequests } from './hrRequests'
@@ -241,6 +242,8 @@ export function seed(): State {
     aiSpent: 0,
     scansKept: true,
     timely: {},
+    lessons: seedLessons(now),
+    toursDone: {},
     settings: {
       theme: 'system',
       wall: 'ash',

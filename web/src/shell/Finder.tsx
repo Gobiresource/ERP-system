@@ -1,6 +1,6 @@
 // Search (Ctrl K): pages, tasks, projects, events, people, boards, documents and HR records of the current company in one list.
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { CalendarDays, ChevronRight, FilePen, FileText, FolderOpen, MessagesSquare, NotebookPen, Search } from 'lucide-react'
+import { CalendarDays, ChevronRight, FilePen, FileText, FolderOpen, GraduationCap, MessagesSquare, NotebookPen, Search } from 'lucide-react'
 import { scoped, useApp } from '../lib/store'
 import { chatName, myChats } from '../lib/chat'
 import { open, setFinder, useUi } from '../lib/ui'
@@ -104,6 +104,10 @@ function FinderDialog() {
     // Contracts, also by the other side and the number
     add(s.contracts.filter(c => c.company === s.company && docView(s).contract(c) && has(c.title, c.party, c.number ?? '')).map(c => ({
       id: c.id, group: 'Гэрээ', title: c.title, sub: `${c.party}, ${STAGE[c.stage].pill.toLowerCase()}`, lead: <span className="lead"><FilePen className="ico" /></span>, run: () => go('docs', `contract-${c.id}`),
+    })))
+    // Сургалт: the ХХК's lessons by title and topic
+    add(s.lessons.filter(l => l.company === s.company && has(l.title, l.topic)).map(l => ({
+      id: l.id, group: 'Сургалт', title: l.title, sub: l.topic, lead: <span className="lead"><GraduationCap className="ico" /></span>, run: () => go('training', l.id),
     })))
     // HR records, also by code, registration number and phone
     add(hr.employees.filter(x => has(x.given, x.family, short(x), fullName(x), x.code, x.regNo, x.phone)).map(x => ({

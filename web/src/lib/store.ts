@@ -1,6 +1,6 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
-import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, HrRequest, HrRequestDraft, Id, KpiRules, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, HrRequest, HrRequestDraft, Id, KpiRules, Lesson, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { seed } from './seed'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
@@ -10,6 +10,7 @@ import { bandOf, dueOf, empOf, findReport, kpiOf, managerOf, mayScore, nextMonth
 import { accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
 import { companyMark, today } from './format'
 import { docTypesFor } from './seedHr'
+import { seedLessons, teaches } from './training'
 import { STEPS, firstStep, leaveMove, mayAct, mayCancel, mayReturn, orderLines, ORDER_NAME, seedHrRequests, seedPurchases, stepOf, withMove } from './hrRequests'
 
 const KEY = 'erp:v1'
@@ -60,6 +61,8 @@ function load(): State | null {
     if (!s.scans) s = { ...s, scans: [], aiSpent: 0 }
     // Saved before Ирц existed
     if (!s.timely) s = { ...s, timely: {} }
+    // Saved before Сургалт existed
+    if (!s.lessons) s = { ...s, lessons: seedLessons(new Date()), toursDone: {} }
     // Saved before Хүсэлт had leave, overtime and hiring: their demo requests, the signed leave's order and its history line
     if (!s.hrRequests) s = { ...s, ...seedHrRequests(new Date(), s) }
     // Saved before Хүсэлт had purchases: the supply officer (С.Батзориг where they work, else the director) and the demo ones
@@ -777,6 +780,29 @@ export const actions = {
     set(s => ({ ...s, hrRequests: s.hrRequests.map(x => (x.id === id ? { ...x, status: 'canceled', history: [...x.history, { what: 'canceled', by: who, at }] } : x)) }))
     return true
   },
+
+  // Сургалт
+  /** Into the current ХХК, by whoever keeps its records or runs it */
+  addLesson(l: Pick<Lesson, 'title' | 'topic' | 'text' | 'files'>) {
+    if (!teaches(state, state.me, state.company)) return null
+    const lesson: Lesson = { ...l, id: uid('ls'), company: state.company, by: state.me, added: new Date().toISOString() }
+    set(s => ({ ...s, lessons: [lesson, ...s.lessons] }))
+    return lesson
+  },
+  updateLesson: (id: Id, patch: Pick<Lesson, 'title' | 'topic' | 'text' | 'files'>) =>
+    teaches(state, state.me, state.lessons.find(l => l.id === id)?.company ?? '') &&
+    set(s => ({ ...s, lessons: s.lessons.map(l => (l.id === id ? { ...l, ...patch, updated: new Date().toISOString() } : l)) })),
+  /** Returns a function that puts it back where it was; its files stay in the file store */
+  removeLesson(id: Id) {
+    const i = state.lessons.findIndex(l => l.id === id)
+    const was = state.lessons[i]
+    if (!was || !teaches(state, state.me, was.company)) return undefined
+    set(s => ({ ...s, lessons: s.lessons.filter(l => l.id !== id) }))
+    return () => set(s => ({ ...s, lessons: [...s.lessons.slice(0, i), was, ...s.lessons.slice(i)] }))
+  },
+  /** The signed-in person went through a guided tour to its end */
+  tourDone: (tour: string) =>
+    set(s => (s.toursDone[s.me]?.includes(tour) ? s : { ...s, toursDone: { ...s.toursDone, [s.me]: [...(s.toursDone[s.me] ?? []), tour] } })),
 
   /** Puts back fresh demo data, for the same person, and returns a function that undoes it */
   reset() {

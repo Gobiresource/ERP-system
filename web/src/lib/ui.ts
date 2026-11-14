@@ -41,6 +41,7 @@ export type Dialog =
   | { kind: 'kpiRules' }
   | { kind: 'scanSplit'; id: Id; ai: boolean }
   | { kind: 'password'; id: Id }
+  | { kind: 'lessonForm'; id?: Id }
   | null
 
 export interface Note {
@@ -68,6 +69,8 @@ export interface Ui {
   actAs: Id | null
   /** Who is signed in; null shows the sign-in page */
   session: Id | null
+  /** The guided tour that is running (lib/tours.ts), the step it is at, and the page to go back to when it ends */
+  tour: { id: string; at: number; from: string } | null
 }
 
 // Signed in for 14 days in this browser, or until Гарах; the server will keep sessions once it holds the data
@@ -86,7 +89,7 @@ function readSession(): Id | null {
   }
 }
 
-let ui: Ui = { dialog: null, finder: false, note: null, islandOpen: false, focus: { status: 'idle', total: 0, endsAt: 0, left: 0 }, actAs: null, session: readSession() }
+let ui: Ui = { dialog: null, finder: false, note: null, islandOpen: false, focus: { status: 'idle', total: 0, endsAt: 0, left: 0 }, actAs: null, session: readSession(), tour: null }
 const subs = new Set<() => void>()
 const subscribe = (f: () => void) => (subs.add(f), () => void subs.delete(f))
 const set = (patch: Partial<Ui>) => {
@@ -103,6 +106,20 @@ export const setFinder = (finder: boolean) => set({ finder })
 export const setIslandOpen = (islandOpen: boolean) => set({ islandOpen })
 export const setActAs = (actAs: Id | null) => set({ actAs })
 
+/** Starts a guided tour from where the person is; it comes back here when it ends. A message still showing goes: it would lie over the tour. */
+export function startTour(id: string) {
+  clearNote()
+  set({ tour: { id, at: 0, from: location.hash.slice(1) } })
+}
+export const setTourStep = (at: number) => ui.tour && set({ tour: { ...ui.tour, at } })
+/** Ends the tour: the windows it opened close, and the person is back where they started it */
+export function endTour() {
+  const t = ui.tour
+  if (!t) return
+  set({ tour: null, dialog: null, finder: false })
+  if (location.hash.slice(1) !== t.from) location.hash = t.from
+}
+
 export function signIn(user: Id) {
   try { localStorage.setItem(SESSION, JSON.stringify({ user, until: Date.now() + KEEP })) } catch { /* private window: signed in until the tab closes */ }
   set({ session: user })
@@ -114,7 +131,7 @@ export function signIn(user: Id) {
 export function signOut() {
   focus.end()
   try { localStorage.removeItem(SESSION) } catch { /* nothing kept */ }
-  set({ session: null, dialog: null, actAs: null, finder: false, note: null })
+  set({ session: null, dialog: null, actAs: null, finder: false, note: null, tour: null })
   go('home')
 }
 

@@ -1,4 +1,4 @@
-import { CalendarDays, ChartColumn, Files, Folder, House, IdCard, Inbox, MessagesSquare, NotebookPen, Settings, ShieldCheck, SquareCheck, Users } from 'lucide-react'
+import { CalendarDays, ChartColumn, Files, Folder, GraduationCap, House, IdCard, Inbox, MessagesSquare, NotebookPen, Settings, ShieldCheck, SquareCheck, Users } from 'lucide-react'
 import type { Page } from '../lib/router'
 import type { State } from '../lib/types'
 import { accessOf } from '../lib/access'
@@ -15,6 +15,7 @@ export const NAV: { page: Page; label: string; icon: typeof House; key: string }
   { page: 'team', label: 'Баг', icon: Users, key: 'M' },
   { page: 'hr', label: 'Хүний нөөц', icon: IdCard, key: 'R' },
   { page: 'docs', label: 'Бичиг хэрэг', icon: Files, key: 'B' },
+  { page: 'training', label: 'Сургалт', icon: GraduationCap, key: 'L' },
   { page: 'admin', label: 'Удирдлага', icon: ShieldCheck, key: 'U' },
   { page: 'preferences', label: 'Тохиргоо', icon: Settings, key: 'S' },
 ]

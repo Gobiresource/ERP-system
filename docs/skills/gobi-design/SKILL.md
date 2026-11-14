@@ -1,6 +1,6 @@
 ---
 name: gobi-design
-description: "Gobi-ийн дизайн ба дизайны ажлын арга: Pane-ийн liquid glass загвар (зөөлөн ханын зураг дээрх шилэн гадаргуу, Golos Text, том гарчиг, нэг голлох өнгө, дээд хар арал), хэрэглэгчийн өөрийн шилэн хавтас, цэгэн тортой Ноорог самбар; бэлэн token, CSS, 14 бүрэлдэхүүн хэсэг, хөдөлгөөний утга, лавлагаанаас суралцах, хувилбар үзүүлэх, гэрэл/харанхуй ба компьютер/утсанд зураг авч шалгах арга. Use this skill whenever you build, restyle or review any user interface for this user, in any project: web app screens, dashboards, internal tools, admin pages, websites, landing pages, mobile screens or a single component. Also use it when the user sends a design reference (site, screenshot, Instagram reel, code) to learn from, asks for design variants, or asks for something in 'our style', even if they never name this skill. Triggers include дизайн, дэлгэц, хуудас, загвар, харагдац, товч, карт, өнгө, фонт, хөдөлгөөн, шил, хавтас, сайт, апп, UI, design, screen, page, layout, style."
+description: "Gobi-ийн дизайн ба дизайны ажлын арга: Pane-ийн liquid glass загвар (зөөлөн ханын зураг дээрх шилэн гадаргуу, Golos Text, том гарчиг, нэг голлох өнгө, дээд хар арал), хэрэглэгчийн өөрийн шилэн хавтас, цэгэн тортой Ноорог самбар; бэлэн token, CSS, 15 бүрэлдэхүүн хэсэг, хөдөлгөөний утга, лавлагаанаас суралцах, хувилбар үзүүлэх, гэрэл/харанхуй ба компьютер/утсанд зураг авч шалгах арга. Use this skill whenever you build, restyle or review any user interface for this user, in any project: web app screens, dashboards, internal tools, admin pages, websites, landing pages, mobile screens or a single component. Also use it when the user sends a design reference (site, screenshot, Instagram reel, code) to learn from, asks for design variants, or asks for something in 'our style', even if they never name this skill. Triggers include дизайн, дэлгэц, хуудас, загвар, харагдац, товч, карт, өнгө, фонт, хөдөлгөөн, шил, хавтас, сайт, апп, UI, design, screen, page, layout, style."
 ---
 
 # Gobi дизайн
@@ -23,6 +23,7 @@ description: "Gobi-ийн дизайн ба дизайны ажлын арга: 
    - `assets/components.css`: бүрэлдэхүүн хэсгүүдийн загвар. Golos Text-ийг Google Fonts-оос ачаална.
    - `assets/theme.js`: `<head>` дотор, загварын файлуудаас өмнө inline байдлаар тавина. `<html data-theme="light|dark">`-ийг эхний зурахаас өмнө тохируулна.
    - `assets/glint.js`: шилэн дээгүүр заагчийг дагах гэрэл. Хүсвэл нэмнэ.
+   - `assets/tour.js`: системийг дэлгэц дээр нь алхам алхмаар заах хөтөч. Хүсвэл нэмнэ.
 2. **Бүх зүйлийг нэг дор харна.** `assets/demo.html`-ийг нээж, бүрэлдэхүүн хэсэг бүрийн бэлэн markup-ыг тэндээс хуулна (`#button`, `#glassfolder` гэх мэт хэсгүүд).
 3. **Ханын зураг тавина.** Хуудасны ард `--wall-*` суурь өнгө эсвэл зөөлөн градиент байна. Түүнгүйгээр шил харагдахгүй. Хавтгай өнгө бол `<html data-wall="flat">` гэж тэмдэглэнэ. Тэгвэл картууд blur хийхгүй тул хуудас хурдан ажиллана.
 4. **Төслийн өөрийн сан** (React, Vue, Tailwind, Ant Design гэх мэт) байвал түүнийг солихгүй. Token-уудыг сангийн theme-д тааруулж, харагдах байдлыг нь авна.
@@ -64,7 +65,8 @@ description: "Gobi-ийн дизайн ба дизайны ажлын арга: 
   - дээд хар арал (мэдэгдэл «Буцаах»-тай, төвлөрөх цаг);
   - сегментийн гулсдаг линз;
   - хэрэглэгчийн шилэн хавтас;
-  - цэгэн тортой Ноорог самбар.
+  - цэгэн тортой Ноорог самбар;
+  - дэлгэц дээр заах хөтөч (нэг хэсэг гэрэлтэж, бусад нь бараан болно).
 
 ## Ажлын арга
 
@@ -89,7 +91,7 @@ description: "Gobi-ийн дизайн ба дизайны ажлын арга: 
 |---|---|
 | Өнгө, үсэг, зай, булан, сүүдэр, шил, байршил, харанхуй горим | `references/look.md` |
 | Хөдөлгөөн, шилжилт, чирэх, «хөдөлгөөн багасгах» | `references/motion.md` |
-| Товч, сегмент, карт, форм, цэс, цонх, арал, аватар, шошго, мэдэгдэл, хавтас, самбар | `references/components.md` (+ `assets/demo.html`) |
+| Товч, сегмент, карт, форм, цэс, цонх, арал, аватар, шошго, мэдэгдэл, хавтас, самбар, заах хөтөч | `references/components.md` (+ `assets/demo.html`) |
 | Хэрэглэгчийн жишээнээс суралцах, хувилбар, дэлгэцийн товч бичиг, шийдвэр тэмдэглэх | `references/workflow.md` |
 | Дуусгахаас өмнөх шалгалт, зураг авах | `references/checks.md`, `scripts/shoot.js` |
 

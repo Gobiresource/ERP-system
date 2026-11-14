@@ -659,6 +659,21 @@ export interface MonthReport {
   updated: string
 }
 
+// Сургалт: what the ХХК's people learn from. A lesson holds its text and its pictures, videos and files (in the browser's
+// file store, like a board's). The ERP's own lessons are guided tours over the real screens (lib/tours.ts).
+export interface Lesson {
+  id: Id
+  company: Id
+  title: string
+  /** What it is about, in the adder's own words: lessons are filtered by it */
+  topic: string
+  text: string
+  files: BoardFile[]
+  by: Id
+  added: string // ISO
+  updated?: string // ISO
+}
+
 export interface State {
   version: 1
   me: Id
@@ -693,5 +708,8 @@ export interface State {
   scansKept?: true
   /** The Timely company each ХХК's attendance comes from, when picked by hand (names that differ) */
   timely: Record<Id, number>
+  lessons: Lesson[]
+  /** The ERP's guided tours each person has gone through to the end */
+  toursDone: Record<Id, string[]>
   settings: Settings
 }

@@ -10,6 +10,7 @@ import { Island } from './shell/Island'
 import { TabBar } from './shell/TabBar'
 import { Finder } from './shell/Finder'
 import { Dialogs } from './dialogs/Dialogs'
+import { Tour } from './shell/Tour'
 import { navFor, pageLabel } from './shell/nav'
 import Home from './screens/Home'
 import Tasks from './screens/Tasks'
@@ -22,6 +23,7 @@ import Team from './screens/Team'
 import Hr from './screens/Hr'
 import Docs from './screens/Docs'
 import Requests from './screens/Requests'
+import Training from './screens/Training'
 import Settings from './screens/Settings'
 import Admin from './screens/Admin'
 import Login from './screens/Login'
@@ -29,7 +31,7 @@ import { NoAccess } from './ui/bits'
 
 // All screens ship in one file: a page change never waits for the network (about 100 KB more on first load)
 const SCREENS: Record<Page, ComponentType<{ id?: string }>> = {
-  home: Home, tasks: Tasks, requests: Requests, chat: Chat, calendar: Calendar, projects: Projects, draft: Draft, insights: Insights, team: Team, hr: Hr, docs: Docs, admin: Admin, preferences: Settings,
+  home: Home, tasks: Tasks, requests: Requests, chat: Chat, calendar: Calendar, projects: Projects, draft: Draft, insights: Insights, team: Team, hr: Hr, docs: Docs, training: Training, admin: Admin, preferences: Settings,
 }
 
 export function App() {
@@ -70,6 +72,7 @@ export function App() {
       <TabBar />
       <Dialogs />
       <Finder />
+      <Tour />
     </div>
   )
 }

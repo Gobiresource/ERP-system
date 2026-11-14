@@ -16,6 +16,7 @@ import { KpiRules, ReportPdf, ReportReturn } from './ReportForms'
 import { ScanSplit } from './ScanForms'
 import { PasswordReset } from './AdminForms'
 import { HrRequestForm, HrRequestSheet, NewRequest } from './RequestForms'
+import { LessonForm } from './TrainingForms'
 
 /** Shows the window that is open right now (one at a time). Reads the store itself, so opening one does not redraw the page. */
 export function Dialogs() {
@@ -57,5 +58,6 @@ export function Dialogs() {
     case 'kpiRules': return <KpiRules />
     case 'scanSplit': return <ScanSplit key={dialog.id} id={dialog.id} ai={dialog.ai} />
     case 'password': return <PasswordReset key={dialog.id} id={dialog.id} />
+    case 'lessonForm': return <LessonForm key={dialog.id ?? 'new'} id={dialog.id} />
   }
 }

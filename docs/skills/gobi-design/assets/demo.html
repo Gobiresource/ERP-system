@@ -34,7 +34,7 @@
 </head>
 <body>
 <header class="demo-top"><h1 class="head__title" style="font-size:34px">Gobi design</h1>
-<button class="btn btn--glass btn--sm" type="button" id="theme">Гэрэл / Харанхуй</button></header>
+<span class="row"><button class="btn btn--accent btn--sm" type="button" id="tour-go">Заавар үзэх</button><button class="btn btn--glass btn--sm" type="button" id="theme">Гэрэл / Харанхуй</button></span></header>
 <section class="demo-sec" id="button">
 <h2 class="demo-h">Button<small>Голлох, шилэн, ghost, plain, аюул; жижиг ба дүрстэй товч</small></h2>
 <div class="ds-stage">
@@ -183,11 +183,32 @@
 </div>
 </div>
 </section>
+<section class="demo-sec" id="tour">
+<h2 class="demo-h">Tour<small>Дэлгэц дээр заах хөтөч: нэг хэсэг гэрэлтэж, бусад нь бараан болно. Дээрх «Заавар үзэх» товчоор ажиллуулна</small></h2>
+<div class="ds-stage">
+<div class="ds-col" style="max-width:420px">
+  <div class="tour__card glass glass--thick" style="position:static;animation:none" role="group" aria-label="Зааврын картын жишээ">
+    <p class="tour__count">Ажил нэмэх, 2 / 8</p>
+    <h3 class="tour__title">Шинэ ажил</h3>
+    <p class="tour__text">Ажил нэмэхдээ энэ товчийг дарна.</p>
+    <p class="tour__hint">Гэрэлтсэн хэсэг дээр дарна уу.</p>
+    <div class="tour__btns"><button class="btn btn--ghost btn--sm tour__skip" type="button">Алгасах</button><button class="btn btn--glass btn--sm" type="button">Буцах</button><button class="btn btn--accent btn--sm" type="button">Үргэлжлүүлэх</button></div>
+  </div>
+</div>
+</div>
+</section>
+<script src="tour.js"></script>
 <script>
 for (const seg of document.querySelectorAll('.seg')) {
   const on = seg.querySelector('[aria-pressed="true"]'), pill = seg.querySelector('.seg__pill')
   Object.assign(pill.style, { left: on.offsetLeft + 'px', top: on.offsetTop + 'px', width: on.offsetWidth + 'px', height: on.offsetHeight + 'px' })
 }
+document.getElementById('tour-go').addEventListener('click', () => startTour([
+  { at: '#button .btn--accent', title: 'Голлох товч', text: 'Дэлгэцийн гол үйлдэл. Нэг хэсэгт нэг л байна.' },
+  { at: '#segmented .seg', title: 'Сегмент', text: 'Харагдац солино. Идэвхтэй сонголтын ард линз гулсана.' },
+  { at: '#theme', click: true, title: 'Горим', text: 'Гэрэл, харанхуй горимыг эндээс солино.' },
+  { at: '#glassfolder .folder', title: 'Шилэн хавтас', text: 'Заахад цааснууд нь сөхөгдөнө.' },
+], { title: 'Жишээ заавар' }))
 document.getElementById('theme').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
   document.documentElement.dataset.theme = next
