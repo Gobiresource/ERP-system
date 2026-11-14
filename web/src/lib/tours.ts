@@ -273,7 +273,7 @@ export const TOURS: Tour[] = [
     can: st => accessOf(st, st.me, st.company).hr === 'all',
     steps: [
       { page: 'hr-structure', at: '.head__stats', title: 'Орон тоо', text: 'Нийт орон тоо, бүрдсэн болон сул орон тоог харуулна.' },
-      { at: '.dcard', optional: true, title: 'Хэлтэс', text: 'Хэлтэс бүрийн албан тушаал, орон тоог харуулна. Албан тушаал бүрд хэдэн хүн ажиллаж байгаа нь харагдана.' },
+      { at: '.dcard', optional: true, title: 'Хэлтэс', text: 'Хэлтэс бүрийн албан тушаал, орон тоог харуулна. Албан тушаал бүрт хэдэн хүн ажиллаж байгаа нь харагдана.' },
       { at: '.head__actions .btn--accent', optional: true, title: 'Хэлтэс нэмэх', text: 'Засах эрхтэй хүн шинэ хэлтэс, албан тушаалыг нэмнэ.' },
     ],
   },
