@@ -355,6 +355,14 @@ export interface TimelyEmployee {
   supposedHours: number
   workedDays: number
   workedHours: number
+  /**
+   * Counted from this day, taken as the day they started work (the user's rule, 2026-11-04): Timely's first record of
+   * someone who started within the month, with no work in the year before it; after the month's last day counted when
+   * they have not started. The days before it are not theirs to work.
+   */
+  since?: string
+  /** Days of annual leave, unpaid leave or sickness, taken off the days and hours to work above (the user's decision, 2026-11-04) */
+  offDays?: number
 }
 export interface TimelyMonth { month: string; from: string; to: string; updated: string; employees: TimelyEmployee[] }
 /** What Timely's words settle about a day without clocks (server/timely.ts kindOf; lib/attendance.ts DayState) */

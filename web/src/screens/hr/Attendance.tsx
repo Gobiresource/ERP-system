@@ -399,7 +399,11 @@ function Everyone({ rows }: { rows: Row[] }) {
                 <tr key={keyOf(r)} onClick={ev => { if (!(ev.target as HTMLElement).closest('a')) location.hash = `hr-attendance-${keyOf(r)}` }}>
                   <th scope="row"><Who r={r} /></th>
                   <td className="hide-md">{deptOf(r)}</td>
-                  <td className="num tnum">{r.t.workedDays}<small className="att-of"> / {r.t.supposedDays}</small></td>
+                  <td className="num tnum">
+                    {r.t.workedDays}<small className="att-of"> / {r.t.supposedDays}</small>
+                    {r.t.since && r.t.supposedDays > 0 && <small className="att-note">Ажилд орсон: {dots(r.t.since).slice(5)}</small>}
+                    {r.t.offDays && <small className="att-note">Чөлөө, ээлжийн амралт: {r.t.offDays} хоног</small>}
+                  </td>
                   <td className="num tnum hide-sm">{Math.round(r.t.workedHours)}<small className="att-of"> / {Math.round(r.t.supposedHours)}</small></td>
                   <td className="num">
                     <span className={`efiles att-pct${p !== null && p < LOW ? ' is-short' : ''}`}>
@@ -508,7 +512,11 @@ export function AttendanceOne({ id }: { id: string }) {
       <HrNav at="attendance" />
       <PageHead
         title={name}
-        sub={row ? [row.e ? hr.position(row.e.position)?.name : row.t.position, row.e ? hr.dept(row.e.dept)?.name : row.t.division].filter(Boolean).join(', ') : undefined}
+        sub={row ? [
+          row.e ? hr.position(row.e.position)?.name : row.t.position,
+          row.e ? hr.dept(row.e.dept)?.name : row.t.division,
+          row.t.since && row.t.supposedDays > 0 && `Ажилд орсон: ${dots(row.t.since).slice(5)}`,
+        ].filter(Boolean).join(', ') : undefined}
         lead={<>{back}{!outside && (row?.e || ours) ? <span className="head__icon"><EmpAvatar e={(row?.e ?? ours)!} size="xl" /></span> : null}</>}
         stats={row ? [
           { label: 'Ирц', value: p ?? '—', unit: p === null ? undefined : '%', alert: p !== null && p < LOW },
@@ -548,7 +556,7 @@ function Month({ days, error, t, month }: { days: TimelyDay[] | null; error: str
   const dates = datesOf(month)
   const lead = (parse(dates[0]).getDay() + 6) % 7
   const label = (date: string, st: DayState, d?: TimelyDay) =>
-    `${Number(date.slice(8))}, ${weekdayShort(parse(date))}: ${st === 'later' ? 'дараа' : dayWord(st, d)}${d?.in ? `, ирсэн ${d.in}` : ''}${d?.out ? `, явсан ${d.out}` : ''}`
+    `${Number(date.slice(8))}, ${weekdayShort(parse(date))}: ${st !== 'later' ? dayWord(st, d) : date < now ? 'ажилд ороогүй' : 'дараа'}${d?.in ? `, ирсэн ${d.in}` : ''}${d?.out ? `, явсан ${d.out}` : ''}`
   return (
     <section className="card glass span-7" aria-labelledby="atm-t" data-enter>
       <div className="card__head">
@@ -568,14 +576,15 @@ function Month({ days, error, t, month }: { days: TimelyDay[] | null; error: str
             {Array.from({ length: lead }, (_, i) => <li key={`b${i}`} className="acal__blank" aria-hidden="true" />)}
             {dates.map(date => {
               const d = byDate.get(date)
-              const st = dayStateOf(date, d, t.leave, now)
+              // Before a new employee's first day: nothing, as for days to come
+              const st = t.since && date < t.since ? 'later' : dayStateOf(date, d, t.leave, now)
               const Icon = ICON[st]
               return (
                 <li key={date} className={`acal__day is-${st}${date === now ? ' is-today' : ''}`} aria-label={label(date, st, d)}>
                   <span className="acal__n" aria-hidden="true">{Number(date.slice(8))}</span>
                   <span className="acal__t" aria-hidden="true">
                     {Icon && <Icon className="ico" />}
-                    {st === 'in' || st === 'part' ? d?.in ?? '—' : st === 'none' ? '—' : ''}
+                    {st === 'in' || st === 'part' ? <>{d?.in ?? '—'}{d?.out && <span className="acal__out">{d.out}</span>}</> : st === 'none' ? '—' : ''}
                   </span>
                 </li>
               )
@@ -627,7 +636,7 @@ function Leave({ t }: { t: TimelyEmployee }) {
 function Days({ days, t, month }: { days: TimelyDay[]; t: TimelyEmployee; month: string }) {
   const now = today()
   const byDate = new Map(days.map(d => [d.date, d]))
-  const rows = datesOf(month).filter(d => d <= now).reverse()
+  const rows = datesOf(month).filter(d => d <= now && !(t.since && d < t.since)).reverse()
   return (
     <section className="card glass span-12 etable-card" aria-labelledby="atday-t" data-enter>
       <div className="card__head">

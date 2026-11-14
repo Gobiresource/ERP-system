@@ -18,9 +18,11 @@ export interface TimelyEnv { TIMELY_API_KEYS?: string; ATTENDANCE_CODE?: string 
 interface Account { key: string; token?: string; until?: number; scopes?: string[]; company?: TimelyCompany; groups?: Map<string, string> }
 const accounts = new Map<string, Account>()
 const kept = new Map<string, { at: number; value: object }>()
+/** Whether someone worked in the year before a month (startOf): past days do not change, so it is asked once */
+const workedBefore = new Map<string, boolean>()
 
 /** Forgets tokens and answers; for the tests */
-export const forget = () => (accounts.clear(), kept.clear())
+export const forget = () => (accounts.clear(), kept.clear(), workedBefore.clear())
 
 const SAID: Record<number, string> = {
   401: 'Timely-ийн түлхүүр буруу эсвэл идэвхгүй байна. Timely-ийн тохиргооноос шалгана уу.',
@@ -95,8 +97,8 @@ async function keep<T extends object>(key: string, again: boolean, make: () => P
 
 /** Today in Ulaanbaatar (UTC+8 all year) */
 const ubToday = () => new Date(Date.now() + 8 * 3_600_000).toISOString().slice(0, 10)
-/** The day before YYYY-MM-DD */
-const dayBefore = (d: string) => new Date(Date.parse(d) - 86_400_000).toISOString().slice(0, 10)
+/** YYYY-MM-DD so many days later (earlier when negative) */
+const addDays = (d: string, n: number) => new Date(Date.parse(d) + n * 86_400_000).toISOString().slice(0, 10)
 
 /** The month's first day to its last, or to today; null for a month still to come */
 export function rangeOf(month: string) {
@@ -112,7 +114,9 @@ export function rangeOf(month: string) {
 interface RawLeave { year?: number; earnedDays?: number; usedDays?: number; remainingDays?: number; uncapped?: boolean; used?: { begDate?: string; endDate?: string; days?: number }[] }
 interface RawEmployee { workerId?: number; firstname?: string | null; lastname?: string | null; register?: string | null; position?: string | null; division?: { name?: string | null } | null; annualLeave?: RawLeave | null }
 interface RawSummary { supposedWorkDays?: number; supposedWorkHours?: number; workedDays?: number; workedHours?: number }
-interface RawDay { date?: string; clockIn?: string | null; clockOut?: string | null; statusDetail?: { code?: string; name?: string }[] | null }
+interface RawDay { date?: string; clockIn?: string | null; clockOut?: string | null; statusDetail?: { code?: string; name?: string }[] | null; requests?: unknown[] | null }
+/** One employee's line in the all-employee totals; only the time off Timely does not count as worked is read */
+interface RawTotal { workerId?: number; total?: { groupRequestData?: { unworked?: { day?: number; time?: number } | null } | null } | null }
 interface RawRequestType { code?: string; group?: { code?: string } | null; subTypes?: { code?: string }[] | null }
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
@@ -150,8 +154,10 @@ function kindOf(codes: string[], groups: Map<string, string>): DayKind | null {
   return codes.includes('rest') || codes.includes('free') ? 'rest' : null
 }
 
-function employeeOf(e: RawEmployee, s: RawSummary | null): TimelyEmployee {
+function employeeOf(e: RawEmployee, s: RawSummary | null, since?: string, off?: { days: number; hours: number }): TimelyEmployee {
   const l = e.annualLeave
+  // A day with an hour off and the rest worked is a day worked: the days to work never go below those worked
+  const offDays = Math.min(off?.days ?? 0, Math.max(0, num(s?.supposedWorkDays) - num(s?.workedDays)))
   return {
     workerId: num(e.workerId),
     family: str(e.lastname),
@@ -166,37 +172,85 @@ function employeeOf(e: RawEmployee, s: RawSummary | null): TimelyEmployee {
           taken: (Array.isArray(l.used) ? l.used : []).map(u => ({ from: str(u.begDate).slice(0, 10), to: str(u.endDate).slice(0, 10), days: num(u.days) })),
         }
       : null,
-    supposedDays: num(s?.supposedWorkDays),
-    supposedHours: num(s?.supposedWorkHours),
+    supposedDays: num(s?.supposedWorkDays) - offDays,
+    supposedHours: Math.max(0, num(s?.supposedWorkHours) - (off?.hours ?? 0)),
     workedDays: num(s?.workedDays),
     workedHours: num(s?.workedHours),
+    offDays: off?.days || undefined,
+    since,
   }
+}
+
+/** One employee's sums over the days; null when Timely has none for them */
+const summaryOf = (a: Account, worker: number, from: string, to: string): Promise<RawSummary | null> =>
+  get(a, `/employees/attendance-summary?workerId=${worker}&dateFrom=${from}&dateTo=${to}`).catch(err => {
+    if (err instanceof TimelyError && err.code === 404) return null
+    throw err
+  })
+
+/**
+ * Where a new employee's month starts. Timely gives everyone the schedule from the day the company began with it, so the
+ * days before someone's first clock-in read as absent (Тасалсан) and a new employee's month as low (2026-11-04: three
+ * at 23–41%). Whoever worked no day in the year before the month is counted from their first clock-in in it; with none,
+ * nothing of the month is theirs (null). Undefined: they worked before, so the days stand. Only those short of their
+ * days are asked about, so a month stays within Cloudflare's 50 requests (docs/decisions.md, 2026-11-04).
+ */
+async function startOf(a: Account, worker: number, from: string, to: string): Promise<string | null | undefined> {
+  const k = `${worker}:${from}`
+  if (!workedBefore.has(k)) workedBefore.set(k, num((await summaryOf(a, worker, addDays(from, -365), addDays(from, -1)))?.workedDays) > 0)
+  if (workedBefore.get(k)) return undefined
+  const r = await get(a, `/employees/attendance?workerId=${worker}&dateFrom=${from}&dateTo=${to}`)
+  const days: RawDay[] = Array.isArray(r?.attendance) ? r.attendance : []
+  return days.filter(d => d.clockIn || d.clockOut || (Array.isArray(d.requests) && d.requests.length)).map(d => str(d.date).slice(0, 10)).sort()[0] ?? null
+}
+
+/** Four at a time, so Timely is not flooded; the answers in order */
+async function inFours<T, R>(items: T[], f: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = []
+  for (let i = 0; i < items.length; i += 4) out.push(...(await Promise.all(items.slice(i, i + 4).map(f))))
+  return out
+}
+
+/** Cloudflare's free plan stops a request at 50 calls out: less the token, the company, the list, the totals and two to spare */
+const CALLS = 44
+
+/**
+ * Each one's time off that Timely approved and does not count as worked (its group "unworked": annual leave, unpaid
+ * leave, sickness), in days and hours: the user had it taken off the days and hours to work (2026-11-04). Paid leave,
+ * trips and remote work Timely already counts as worked. From the all-employee totals, one call; their inner shape is
+ * Timely's own and may change, and then nothing is taken off.
+ */
+async function offOf(a: Account, from: string, to: string) {
+  const r = await get(a, `/attendance/total?dateFrom=${from}&dateTo=${to}`).catch(() => null)
+  const rows: RawTotal[] = Array.isArray(r) ? r : []
+  return new Map(rows.map(x => [num(x.workerId), { days: num(x.total?.groupRequestData?.unworked?.day), hours: num(x.total?.groupRequestData?.unworked?.time) }]))
 }
 
 /**
  * Everyone active, with their leave, and each one's month: four at a time, since only the one-employee summary is
  * documented. Today is still being worked, yet Timely counts all its hours to work, so the month is summed to yesterday;
- * on the 1st nothing is over yet.
+ * on the 1st nothing is over yet. Time off is taken off (offOf). Then those still short of their days, the most short
+ * first, are checked for days from before they started (startOf): up to three calls each, so those beyond the calls left
+ * keep Timely's count.
  */
 async function monthOf(a: Account, month: string, range: { from: string; to: string }): Promise<Omit<TimelyMonth, 'updated'>> {
-  const to = range.to === ubToday() ? dayBefore(range.to) : range.to
+  const to = range.to === ubToday() ? addDays(range.to, -1) : range.to
   const list = await get(a, '/employees')
   const people: RawEmployee[] = Array.isArray(list) ? list : []
-  const employees: TimelyEmployee[] = []
-  for (let i = 0; i < people.length; i += 4) {
-    employees.push(
-      ...(await Promise.all(
-        people.slice(i, i + 4).map(async e => {
-          const s: RawSummary | null = to < range.from ? null : await get(a, `/employees/attendance-summary?workerId=${num(e.workerId)}&dateFrom=${range.from}&dateTo=${to}`).catch(err => {
-            if (err instanceof TimelyError && err.code === 404) return null
-            throw err
-          })
-          return employeeOf(e, s)
-        }),
-      )),
-    )
-  }
-  return { month, from: range.from, to, employees }
+  const sums = await inFours(people, async e => (to < range.from ? null : summaryOf(a, num(e.workerId), range.from, to)))
+  const off = to < range.from ? new Map<number, { days: number; hours: number }>() : await offOf(a, range.from, to)
+  const since: (string | undefined)[] = []
+  const short = people
+    .map((e, i) => ({ id: num(e.workerId), i, gap: num(sums[i]?.supposedWorkDays) - (off.get(num(e.workerId))?.days ?? 0) - num(sums[i]?.workedDays) }))
+    .filter(x => x.gap > 0)
+    .sort((x, y) => y.gap - x.gap)
+    .slice(0, Math.max(0, Math.floor((CALLS - people.length) / 3)))
+  await inFours(short, async ({ id, i }) => {
+    const start = await startOf(a, id, range.from, to)
+    if (start === null) [sums[i], since[i]] = [null, addDays(to, 1)]
+    else if (start && start > range.from) [sums[i], since[i]] = [await summaryOf(a, id, start, to), start]
+  })
+  return { month, from: range.from, to, employees: people.map((e, i) => employeeOf(e, sums[i], since[i], sums[i] ? off.get(num(e.workerId)) : undefined)) }
 }
 
 /** One employee's days with Timely's own words for each; without the request types, the words still come */
