@@ -1,12 +1,12 @@
 // Cloudflare: serves the built app (dist) from Workers KV (wrangler.jsonc "site"). The app keeps its pages in the address
-// hash, so every page is index.html. /api/scan is the scan reader (server/scan.ts) with the OpenRouter key the user put in
-// the Worker's secrets. /api/attendance is Ирц from Timely (server/timely.ts), always behind its code here: the Worker's
-// secrets TIMELY_API_KEYS and ATTENDANCE_CODE; without the code it stays shut (docs/decisions.md, 2026-11-04).
+// hash, so every page is index.html. /api is the ERP's server (server/api.ts): sign-in and the data everyone shares, in
+// the D1 database bound as DB (docs/decisions.md, 2026-11-15); the scan reader with the OpenRouter key and Ирц with the
+// Timely keys the user put in the Worker's secrets, for whoever is signed in. ATTENDANCE_CODE, also a secret, is asked
+// for once, when the system is set up; without it nobody can set it up here.
 // Not Workers static assets: the session's network proxy puts the API token on every api.cloudflare.com request, which
 // replaces the one-off token static-asset uploads need; KV is written with the API token itself.
 import manifestJSON from '__STATIC_CONTENT_MANIFEST'
-import { handleScan } from '../server/scan.ts'
-import { handleAttendance } from '../server/timely.ts'
+import { handleApi } from '../server/api.ts'
 
 const manifest = JSON.parse(manifestJSON)
 const TYPES = {
@@ -17,12 +17,13 @@ const TYPES = {
 export default {
   async fetch(request, env) {
     const path = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, '') || 'index.html'
-    if (path === 'api/scan') return handleScan(request, env)
-    if (path === 'api/attendance' || path.startsWith('api/attendance/')) return handleAttendance(request, { ...env, ATTENDANCE_CODE: env.ATTENDANCE_CODE ?? '' })
-    if (path.startsWith('api/')) return new Response('Сервер хараахан байхгүй.', { status: 404 })
+    if (path.startsWith('api/')) return (await handleApi(request, { ...env, ATTENDANCE_CODE: env.ATTENDANCE_CODE ?? '' })) ?? new Response('Олдсонгүй.', { status: 404 })
     const file = manifest[path] ? path : 'index.html'
-    const body = await env.__STATIC_CONTENT.get(manifest[file], 'arrayBuffer')
+    let body = await env.__STATIC_CONTENT.get(manifest[file], file === 'index.html' ? 'text' : 'arrayBuffer')
     if (!body) return new Response('Олдсонгүй.', { status: 404 })
+    // The page is told that a server stands behind it: it then never falls back to keeping data in the browser alone
+    // when the server cannot be reached for a moment (src/lib/sync.ts)
+    if (file === 'index.html' && env.DB) body = body.replace('<html', '<html data-server')
     return new Response(body, {
       headers: {
         'content-type': TYPES[file.split('.').pop()] ?? 'application/octet-stream',

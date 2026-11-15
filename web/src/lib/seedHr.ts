@@ -1,7 +1,7 @@
 // Demo HR data: departments, positions, the personal-file checklist and employees for the three demo ХХК.
 // Everyone is made up. Registration numbers start with "ЖШ" (жишээ) and phone numbers count up, so none is real.
-import type { ContractKind, Department, DocType, EmpStatus, Employee, FileItem, Hue, Id, Move, MoveKind, Person, Position } from './types'
-import { addDays, ymd } from './format'
+import type { ContractKind, Department, DocType, EmpStatus, Employee, FileItem, Hue, Id, Move, MoveKind, Person, Position } from './types.ts'
+import { addDays, ymd } from './format.ts'
 
 /** The personal-file list every ХХК starts with: 12 required documents and 2 that depend on the job */
 const DOCS: [name: string, required: boolean, expires: boolean][] = [

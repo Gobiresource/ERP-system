@@ -1,12 +1,12 @@
 // Сарын тайлан: by the last day of each month an employee writes what they did, their problems and ideas, and next month's
 // plan; their direct manager scores it on the ХХК's KPI criteria, and the score's grade sets the bonus share
 // (docs/decisions.md, 2026-10-30). The user gave no criteria yet, so these are common ones that each ХХК can change.
-import type { Band, Criterion, Employee, Id, KpiRules, MonthReport, ReportLine, ReportStatus, State } from './types'
-import { daysFromToday, parse, ymd, ymdhm } from './format'
-import { current } from './hr'
-import { rolesOf, STAGE } from './contracts'
-import { cid } from './draft'
-import { rng } from './seedHr'
+import type { Band, Criterion, Employee, Id, KpiRules, MonthReport, ReportLine, ReportStatus, State } from './types.ts'
+import { daysFromToday, parse, ymd, ymdhm } from './format.ts'
+import { current } from './hr.ts'
+import { rolesOf, STAGE } from './contracts.ts'
+import { cid } from './draft.ts'
+import { rng } from './seedHr.ts'
 
 export const DEFAULT_KPI: KpiRules = {
   criteria: [

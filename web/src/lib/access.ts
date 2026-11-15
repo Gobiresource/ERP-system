@@ -1,11 +1,12 @@
 // Who may see and do what (Удирдлага). Each person signs in with their own account and has rights in each ХХК they
 // belong to. Хүний нөөц, Ирц and Бичиг хэрэг reach everyone in the ХХК, or only the people under the person by Шууд
 // удирдлага: a branch director's or a department head's own people (docs/decisions.md, 2026-10-31). Screens and actions
-// check these; in this preview everything lives in the browser, so the server checks them again once it holds the data.
-import type { Access, Account, Contract, Doc, Employee, Id, Person, Scope, State } from './types'
-import { current, hrScoped, type HrScoped } from './hr'
-import { bossOf } from './reports'
-import { ROLES, rolesOf } from './contracts'
+// check these, and a server that holds the data asks them again itself (server/rules.ts), so this file must load on Node
+// as it is: imports with their .ts ending, and nothing of the browser.
+import type { Access, Account, Contract, Doc, Employee, Id, Person, Scope, State } from './types.ts'
+import { current, hrScoped, type HrScoped } from './hr.ts'
+import { bossOf } from './reports.ts'
+import { ROLES, rolesOf } from './contracts.ts'
 
 export const NO_ACCESS: Access = { admin: false, hr: 'none', hrEdit: false, attendance: 'none', docs: 'none', docsEdit: false }
 
@@ -132,7 +133,8 @@ export function docView(s: State): DocView {
   return v
 }
 
-// Passwords: PBKDF2-SHA256 with a salt of its own, 600,000 rounds (OWASP 2023). The server will use scrypt.
+// Passwords: PBKDF2-SHA256 with a salt of its own, 600,000 rounds (OWASP 2023), worked out in the browser. A server
+// behind the app keeps SHA-256 of the result and never the result itself (server/api.ts).
 const ROUNDS = 600_000
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes))
 const unb64 = (s: string) => Uint8Array.from(atob(s), c => c.charCodeAt(0))

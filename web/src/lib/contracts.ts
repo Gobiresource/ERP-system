@@ -2,8 +2,8 @@
 // office, the director, then gets its number and goes to the other side. As in the user's HR system (WF_STAGE), the stages
 // are set here only: the list, the progress and the buttons all read them. Everyone works in one text, kept with each
 // person's version (docs/decisions.md, 2026-10-29).
-import type { Clause, Company, Contract, ContractEvent, ContractType, ContractStage, ContractVersion, Id, ProcessRole, State } from './types'
-import { num } from './format'
+import type { Clause, Company, Contract, ContractEvent, ContractType, ContractStage, ContractVersion, Id, ProcessRole, State } from './types.ts'
+import { num } from './format.ts'
 
 /** The stages in order; canceled stands outside */
 export const FLOW: ContractStage[] = ['draft', 'review', 'clerk', 'director', 'register', 'deliver', 'done']

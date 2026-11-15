@@ -267,16 +267,17 @@ async function daysOf(a: Account, worker: number, range: { from: string; to: str
   }
 }
 
-// The door until the ERP signs people in on the server (docs/decisions.md, 2026-11-04). With ATTENDANCE_CODE set (the
-// test address always sets one, worker/site.js), attendance opens only to a browser that gave the code: it is traded for
+// The door of a deployment without a database, where nobody signs in (docs/decisions.md, 2026-11-04; with sign-in the
+// person's rights are the door, handleAttendance's `gate`). With ATTENDANCE_CODE set (the test address always sets
+// one, worker/site.js), attendance opens only to a browser that gave the code: it is traded for
 // a 30-day cookie JavaScript cannot read, signed with the code itself, so a new code shuts every door at once. The code
 // is long and random, so guessing it is hopeless. Without it set (the local server) the door stands open.
 const COOKIE = 'erp_att'
 const DAYS30 = 30 * 86_400
 /** Lower case letters and digits only, so dashes, spaces and capitals typed do not matter */
-const plainCode = (v: unknown) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z0-9]/g, '') : '')
+export const plainCode = (v: unknown) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z0-9]/g, '') : '')
 /** Equal, taking as long whichever character differs */
-const same = (a: string, b: string) => a.length === b.length && [...a].reduce((d, c, i) => d | (c.charCodeAt(0) ^ b.charCodeAt(i)), 0) === 0
+export const same = (a: string, b: string) => a.length === b.length && [...a].reduce((d, c, i) => d | (c.charCodeAt(0) ^ b.charCodeAt(i)), 0) === 0
 
 async function signed(code: string, until: number) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
@@ -291,18 +292,32 @@ async function opened(req: Request, code: string) {
 }
 
 /**
+ * With the ERP's own sign-in (server/api.ts): what the signed-in person may see of a Timely company. Null: nothing of
+ * it. Else what becomes of each employee's row: as it is, with less in it, or null when it is not theirs to see.
+ */
+export type Gate = (company: TimelyCompany, companies: TimelyCompany[]) => ((t: TimelyEmployee) => TimelyEmployee | null) | null
+
+/** Each employee's registration number by Timely's id: whose days are asked for, when not everyone's may be seen */
+const registersOf = (a: Account, id: number) =>
+  keep(`e:${id}`, false, async () => {
+    const list = await get(a, '/employees')
+    return { of: Object.fromEntries((Array.isArray(list) ? (list as RawEmployee[]) : []).map(e => [num(e.workerId), str(e.register).toUpperCase()])) as Record<number, string> }
+  })
+
+/**
  * GET /api/attendance: the Timely companies the keys open.
  * GET /api/attendance/month?company=&month=YYYY-MM[&fresh]: everyone's month and leave.
  * GET /api/attendance/days?company=&worker=&month=YYYY-MM[&fresh]: one employee's days.
  * POST /api/attendance/unlock { code }: the cookie that opens them, where a code is set.
+ * With `gate` the person is signed in, and sees what their rights reach; the code is not asked for.
  */
-export async function handleAttendance(req: Request, env: TimelyEnv): Promise<Response> {
+export async function handleAttendance(req: Request, env: TimelyEnv, gate?: Gate): Promise<Response> {
   const url = new URL(req.url)
   const what = url.pathname.replace(/^\/api\/attendance\/?/, '')
   // Set but too short to be safe opens nothing
-  const code = env.ATTENDANCE_CODE === undefined ? null : plainCode(env.ATTENDANCE_CODE)
+  const code = env.ATTENDANCE_CODE === undefined || gate ? null : plainCode(env.ATTENDANCE_CODE)
   const usable = !!code && code.length >= 16
-  if (what === 'unlock') {
+  if (what === 'unlock' && !gate) {
     if (req.method !== 'POST') return json({ error: 'Хүсэлт буруу байна.' }, 405)
     if (!usable) return json({ error: 'Ирцийн код тохируулаагүй байна.' }, 503)
     const given = plainCode((await req.json().catch(() => null))?.code)
@@ -330,16 +345,26 @@ export async function handleAttendance(req: Request, env: TimelyEnv): Promise<Re
   try {
     let a: Account | undefined
     let failed: Error | undefined
+    const companies: TimelyCompany[] = []
     for (const x of list) {
       const c = await companyOf(x).catch((e: Error) => void (failed = e))
+      if (c) companies.push(c)
       if (c?.id === id) a = x
     }
     // Not found because Timely did not answer is not the same as not connected
     if (!a) return failed ? json({ error: failed.message }, 502) : json({ error: 'Энэ ХХК Timely-тэй холбогдоогүй байна.' }, 404)
     const account = a
-    return json(what === 'month'
-      ? await keep(`m:${id}:${month}`, again, () => monthOf(account, month, range))
-      : await keep(`d:${id}:${worker}:${month}`, again, () => daysOf(account, worker, range)))
+    const view = gate?.(account.company!, companies)
+    if (gate && !view) return json({ error: 'Танд энэ ирцийг харах эрх алга.' }, 403)
+    if (what === 'month') {
+      const m = await keep(`m:${id}:${month}`, again, () => monthOf(account, month, range))
+      return json(view ? { ...m, employees: m.employees.flatMap(t => view(t) ?? []) } : m)
+    }
+    if (view) {
+      const register = (await registersOf(account, id)).of[worker]
+      if (register === undefined || !view({ register } as TimelyEmployee)) return json({ error: 'Танд энэ ирцийг харах эрх алга.' }, 403)
+    }
+    return json(await keep(`d:${id}:${worker}:${month}`, again, () => daysOf(account, worker, range)))
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : SILENT }, 502)
   }

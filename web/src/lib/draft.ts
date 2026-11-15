@@ -1,5 +1,5 @@
 // Ноорог: card sizes, paper colours, ready-made boards and the demo boards.
-import type { CardKind, Draft, DraftCard, Hue, Subtask } from './types'
+import type { CardKind, Draft, DraftCard, Hue, Subtask } from './types.ts'
 
 export const KIND: Record<CardKind, string> = { note: 'Тэмдэглэл', todo: 'Жагсаалт', title: 'Гарчиг', image: 'Зураг', link: 'Холбоос', file: 'Файл' }
 

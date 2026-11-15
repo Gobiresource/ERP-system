@@ -9,7 +9,7 @@ import { applyAppearance } from '../lib/theme'
 import { DEMO } from '../lib/demo'
 import { gsap, reduced, useLens, usePageEnter } from '../lib/motion'
 import { downloadCsv } from '../lib/insights'
-import { hashOf, strongEnough } from '../lib/access'
+import { strongEnough } from '../lib/access'
 import { PageHead } from '../ui/PageHead'
 import { Seg } from '../ui/Seg'
 import { Avatar, PRIO, STATUS } from '../ui/bits'
@@ -113,12 +113,12 @@ function SignIn() {
     setErrors(err)
     if (Object.keys(err).length) return
     setBusy(true)
-    if ((await hashOf(f.now, acc.salt)) !== acc.hash) {
+    // Checked where the password is kept: in this browser, or on the server
+    if (!(await actions.setPassword(s.me, f.next, f.now))) {
       setBusy(false)
       setErrors({ now: 'Одоогийн нууц үг буруу байна.' })
       return
     }
-    await actions.setPassword(s.me, f.next)
     setBusy(false)
     setF({ now: '', next: '', again: '' })
     toast('Нууц үг солигдлоо.')

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ComponentType } from 'react'
 import { useApp } from './lib/store'
 import { useUi } from './lib/ui'
+import { link } from './lib/sync'
 import { useRoute, type Page } from './lib/router'
 import { applyAppearance } from './lib/theme'
 import { Wallpaper } from './shell/Wallpaper'
@@ -11,6 +12,7 @@ import { TabBar } from './shell/TabBar'
 import { Finder } from './shell/Finder'
 import { Dialogs } from './dialogs/Dialogs'
 import { Tour } from './shell/Tour'
+import { Saving } from './shell/Saving'
 import { navFor, pageLabel } from './shell/nav'
 import Home from './screens/Home'
 import Tasks from './screens/Tasks'
@@ -42,8 +44,8 @@ export function App() {
   const main = useRef<HTMLElement>(null)
   const first = useRef(true)
 
-  // Somebody can sign in: the system has been set up
-  const started = s.people.some(p => p.account)
+  // Somebody can sign in: the system has been set up. With a server it says so; signed out, no people are here.
+  const started = link.on ? link.started : s.people.some(p => p.account)
 
   useEffect(() => applyAppearance(s.settings), [s.settings])
 
@@ -77,6 +79,7 @@ export function App() {
       <Dialogs />
       <Finder />
       <Tour />
+      <Saving />
     </div>
   )
 }

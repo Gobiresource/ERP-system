@@ -46,7 +46,7 @@ export function Invite() {
     if (Object.keys(e).length) return false
     const access = PRESETS.find(p => p.key === f.preset)!.access
     actions.invite({ given: f.given.trim(), family: f.family.trim(), email: f.email.trim(), role: f.role.trim() || 'Ажилтан', team }, login, f.password, { ...access })
-      .then(p => (p ? toast(`${short(p)} нэмэгдлээ. «${login}» нэрээр нэвтэрнэ.`) : toast('Танд хэрэглэгч нэмэх эрх алга.', { kind: 'warn' })))
+      .then(p => (!p ? toast('Танд хэрэглэгч нэмэх эрх алга.', { kind: 'warn' }) : 'error' in p ? toast(p.error, { kind: 'warn' }) : toast(`${short(p)} нэмэгдлээ. «${login}» нэрээр нэвтэрнэ.`)))
     return true
   }
 

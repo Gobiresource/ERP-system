@@ -1,12 +1,12 @@
 // Хүсэлт: ээлжийн амралт, илүү цаг, шинэ ажилтан авах (docs/decisions.md, 2026-11-01), худалдан авах (2026-11-02). Each kind's steps, who acts at a
 // step, the words for where a request stands, a leave's work days, the order a signed leave becomes, and the demo
 // requests. Requests to the office for a document stay in lib/docs.ts; the «Хүсэлт» page lists both.
-import type { Doc, HireRequest, HrRequest, HrRequestKind, HrStep, Id, LeaveRequest, Move, OvertimeRequest, PurchaseItem, PurchaseRequest, State } from './types'
-import { accessOf } from './access'
-import { rolesOf } from './contracts'
-import { empOf, managerOf } from './reports'
-import { addDays, parse, short, today, ymd } from './format'
-import { dots } from './hr'
+import type { Doc, HireRequest, HrRequest, HrRequestKind, HrStep, Id, LeaveRequest, Move, OvertimeRequest, PurchaseItem, PurchaseRequest, State } from './types.ts'
+import { accessOf } from './access.ts'
+import { rolesOf } from './contracts.ts'
+import { empOf, managerOf } from './reports.ts'
+import { addDays, parse, short, today, ymd } from './format.ts'
+import { dots } from './hr.ts'
 
 export const HR_KIND: Record<HrRequestKind, string> = { leave: 'Ээлжийн амралт', overtime: 'Илүү цаг', hire: 'Шинэ ажилтан авах', purchase: 'Худалдан авах' }
 /** A purchase: the director approves, then it is on the supply officer's list until they buy it (the user's flow, 2026-11-02) */

@@ -1,7 +1,7 @@
 // Сургалт: what each ХХК's people learn from (a text with pictures, videos and files), and who may add to it.
 // The ERP's own lessons are guided tours over the real screens: lib/tours.ts.
-import type { BoardFile, Id, Lesson, State } from './types'
-import { accessOf } from './access'
+import type { BoardFile, Id, Lesson, State } from './types.ts'
+import { accessOf } from './access.ts'
 
 /** Whoever keeps the ХХК's employee records or runs it adds and changes what its people learn from */
 export function teaches(s: Pick<State, 'people'>, who: Id, company: Id) {

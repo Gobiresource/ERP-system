@@ -2,12 +2,13 @@
 // at its ends; Caps Lock and a Mongolian keyboard are pointed out, the usual reasons a right password fails. With the
 // example data (lib/demo.ts) its accounts are offered while they still have the example password.
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { Eye, EyeOff, LoaderCircle, LogIn, TriangleAlert } from 'lucide-react'
+import { Eye, EyeOff, Info, LoaderCircle, LogIn, TriangleAlert } from 'lucide-react'
 import '../styles/screens/login.css'
 import { useApp } from '../lib/store'
 import { DEMO_PASSWORD, NO_ACCESS, isDemo, presetOf } from '../lib/access'
 import { login, waitLeft } from '../lib/auth'
 import { DEMO } from '../lib/demo'
+import { useUi } from '../lib/ui'
 import { short } from '../lib/format'
 import { Wallpaper } from '../shell/Wallpaper'
 import { Avatar } from '../ui/bits'
@@ -18,6 +19,7 @@ const EXAMPLES = ['u1', 'u12', 'u16', 'u10', 'u14']
 
 export default function Login() {
   const s = useApp()
+  const { ended } = useUi()
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -46,7 +48,7 @@ export default function Login() {
     setBusy(false)
     setPassword('')
     if (r === 'wait') setWait(waitLeft())
-    else setError(r === 'inactive' ? 'Таны бүртгэл идэвхгүй байна. Удирдлагадаа хандана уу.' : 'Нэвтрэх нэр эсвэл нууц үг буруу байна.')
+    else setError(r === 'inactive' ? 'Таны бүртгэл идэвхгүй байна. Удирдлагадаа хандана уу.' : r === 'down' ? 'Сервертэй холбогдож чадсангүй. Интернэтээ шалгаад дахин оролдоно уу.' : 'Нэвтрэх нэр эсвэл нууц үг буруу байна.')
   }
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -63,6 +65,7 @@ export default function Login() {
           <span className="login__icon" aria-hidden="true"><LogIn className="ico" /></span>
           <h1 className="login__title" id="login-t">Нэвтрэх</h1>
           <p className="login__sub">Нэвтрэх нэр, нууц үгээ бичнэ үү.</p>
+          {ended && !error && !wait && <p className="login__ended" role="status"><Info className="ico" />Та системээс гарсан байна. Дахин нэвтэрнэ үү.</p>}
           {(error || wait > 0) && (
             <p className="login__error" role="alert">
               <TriangleAlert className="ico" />

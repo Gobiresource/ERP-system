@@ -4,6 +4,7 @@ import type { BoardFile, HrRequestKind, Id, Task, CalEvent } from './types'
 import { actions, getState, takeSaved } from './store'
 import { go } from './router'
 import { seed } from './seed'
+import { link, signOutRemote, tell } from './sync'
 
 export type Dialog =
   | { kind: 'task'; id: Id }
@@ -72,9 +73,11 @@ export interface Ui {
   session: Id | null
   /** The guided tour that is running (lib/tours.ts), the step it is at, and the page to go back to when it ends */
   tour: { id: string; at: number; from: string } | null
+  /** The server ended the sign-in (it ran out, the password changed, the account was stopped): the sign-in page says so */
+  ended?: boolean
 }
 
-// Signed in for 14 days in this browser, or until Гарах; the server will keep sessions once it holds the data
+// Without a server: signed in for 14 days in this browser, or until Гарах. With one, its cookie does the same (signIn).
 const SESSION = 'erp:session'
 const KEEP = 14 * 864e5
 function readSession(): Id | null {
@@ -121,9 +124,21 @@ export function endTour() {
   if (location.hash.slice(1) !== t.from) location.hash = t.from
 }
 
+/**
+ * With a server (lib/sync.ts): whoever its cookie signed in when the page opened, their data already here, or nobody.
+ * Not a new sign-in, so nothing is noted and nobody welcomed.
+ */
+export function resume(user: Id | null) {
+  const p = getState().people.find(x => x.id === user)
+  if (p) actions.setMe(p.id)
+  if (p && !p.companies.includes(getState().company)) actions.switchCompany(p.companies[0])
+  set({ session: p ? p.id : null })
+}
+
+/** With a server (lib/sync.ts) its cookie keeps the person signed in; without one, this browser does */
 export function signIn(user: Id) {
-  try { localStorage.setItem(SESSION, JSON.stringify({ user, until: Date.now() + KEEP })) } catch { /* private window: signed in until the tab closes */ }
-  set({ session: user })
+  if (!link.on) try { localStorage.setItem(SESSION, JSON.stringify({ user, until: Date.now() + KEEP })) } catch { /* private window: signed in until the tab closes */ }
+  set({ session: user, ended: false })
 }
 /**
  * Ends a running focus timer (its minutes count for the person), drops the message and its undo, and opens Нүүр for
@@ -133,7 +148,17 @@ export function signOut() {
   focus.end()
   try { localStorage.removeItem(SESSION) } catch { /* nothing kept */ }
   set({ session: null, dialog: null, actAs: null, finder: false, note: null, tour: null })
+  // After the session is gone from the screen: the shared data leaves this browser with it
+  signOutRemote()
   go('home')
+}
+
+// What the server tells the person through lib/sync.ts
+// Each reason is a whole message of the server's own (server/rules.ts, server/data.ts): nothing is joined to it here
+tell.refused = why => toast(why, { kind: 'warn' })
+tell.lost = () => {
+  signOut()
+  set({ ended: true })
 }
 
 // Another tab saved or signed out. This tab takes in the data, and signs out too when the other tab signed out or its

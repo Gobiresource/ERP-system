@@ -7,7 +7,8 @@
     <script>
       // Paint the right background before the app loads: dark only when the person chose it, light otherwise.
       try {
-        var s = JSON.parse(localStorage.getItem(localStorage.getItem('erp:demo') === '1' ? 'erp:v1' : 'erp:data') || 'null');
+        // With a server behind the app (the mark it puts on this page), the look is kept apart from the data
+        var s = JSON.parse(localStorage.getItem(localStorage.getItem('erp:demo') === '1' ? 'erp:v1' : 'server' in document.documentElement.dataset ? 'erp:prefs' : 'erp:data') || 'null');
         document.documentElement.dataset.mode = s && s.settings && s.settings.theme === 'dark' ? 'dark' : 'light';
       } catch (e) {}
     </script>

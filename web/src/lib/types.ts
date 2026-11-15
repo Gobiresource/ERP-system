@@ -1,5 +1,5 @@
-// Data model. Phase 1 keeps everything in the browser (localStorage), like the Pane demo.
-// When the server arrives, these shapes become the API's.
+// Data model. With a server behind the app these records are what it keeps and sends (server/db.ts, lib/tables.ts);
+// without one, the browser keeps them all itself (localStorage), like the Pane demo.
 
 export type Id = string
 export type Hue = 'blue' | 'purple' | 'pink' | 'orange' | 'green' | 'teal' | 'indigo' | 'yellow'
@@ -60,7 +60,11 @@ export interface Access {
 export interface Account {
   /** Нэвтрэх нэр, lower case */
   login: string
-  /** PBKDF2-SHA256 of the password with the salt, both base64; the password itself is never kept */
+  /**
+   * PBKDF2-SHA256 of the password with the salt, both base64; the password itself is never kept. With a server behind
+   * the app neither is here: the server keeps what signs a person in apart from their record (server/api.ts), and
+   * both are empty.
+   */
   hash: string
   salt: string
   active: boolean
@@ -268,6 +272,11 @@ export interface Employee {
   manager?: Id | 'none'
   /** On a day the status changed, the status the day began with: a second change that day replaces the first (store.ts) */
   dayStart?: { date: string; status: EmpStatus }
+  /**
+   * From the server, for someone Хүний нөөц's rights do not reach: only the employee's place in the structure came, and
+   * the personal fields above are empty (server/rules.ts)
+   */
+  card?: true
 }
 
 // Drafts (Ноорог): free boards where an employee pins notes, checklists, pictures, links and files.
@@ -350,6 +359,11 @@ export interface TimelyEmployee {
   given: string
   /** Регистрийн дугаар, upper case: what ties the employee to ours */
   register: string
+  /**
+   * Our employee's id, when the server matched them itself (server/api.ts): it then sends the registration number on
+   * only to those Хүний нөөц's rights reach
+   */
+  emp?: Id
   position: string
   division: string
   leave: TimelyLeave | null

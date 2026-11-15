@@ -95,6 +95,10 @@
   box-shadow: 0 10px 30px -10px rgb(0 0 0 / .5);
 }
 .island :focus-visible { outline-color: #fff; }
+/* The connection to the server is down (shell/Saving.tsx): black like the island, at the foot of the page, out of the way of the work */
+.offline { position: fixed; z-index: 90; left: 0; right: 0; bottom: 16px; display: grid; justify-items: center; padding-inline: 16px; pointer-events: none; }
+.offline__pill { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 10px 16px; border-radius: 22px; background: #000; color: #fff; font-size: 14px; font-weight: 600; line-height: 1.3; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .5); }
+.offline__pill .ico { flex: none; width: 18px; height: 18px; color: #ffb340; }
 .island__compact { display: flex; align-items: center; gap: 8px; width: 100%; height: 100%; padding: 0 14px 0 8px; color: #fff; font-size: 14px; font-weight: 600; text-align: left; }
 .island__label { flex: 1; white-space: nowrap; }
 .island__time { color: #ffb340; font-weight: 650; font-variant-numeric: tabular-nums; }
@@ -290,6 +294,8 @@ dialog::backdrop { background: var(--scrim); animation: backdrop-in .28s var(--e
   .toolbar__tools .tbtn--theme { display: none; }
   .main { padding: calc(74px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(128px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
   .island { top: calc(6px + env(safe-area-inset-top, 0px)); }
+  /* Above the tab bar */
+  .offline { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
 
   .tabbar {
     position: fixed; z-index: 30; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px));

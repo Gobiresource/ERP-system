@@ -15,7 +15,9 @@
 .login__title { font-size: 28px; font-weight: 650; line-height: 1.2; letter-spacing: -.01em; }
 .login__sub { margin-top: -8px; font-size: 14.5px; line-height: 1.5; color: var(--text-2); }
 .login__error { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--danger) 12%, var(--glass-solid)); color: var(--bad-ink); font-size: 14px; font-weight: 560; line-height: 1.45; }
-.login__error .ico { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.login__error .ico, .login__ended .ico { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+/* Why the person is back at the sign-in page (the server ended their sign-in): told plainly, not as an error of theirs */
+.login__ended { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); font-size: 14px; font-weight: 560; line-height: 1.45; }
 .login__pass { position: relative; display: block; }
 .login__pass input { width: 100%; padding-right: 48px; }
 .login__pass .ibtn { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); }

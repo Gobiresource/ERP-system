@@ -1,9 +1,9 @@
 // Ирц (Хүний нөөц → Ирц): each ХХК's attendance from Timely through our server (server/timely.ts), matched to our
 // employees by registration number. Without the server or its keys, a made-up month shows the screens; it says "Жишээ"
 // wherever it shows (docs/decisions.md, 2026-10-31).
-import type { Employee, Id, State, TimelyCompany, TimelyDay, TimelyEmployee, TimelyLeave, TimelyMonth } from './types'
-import { current } from './hr'
-import { parse, ymd } from './format'
+import type { Employee, Id, State, TimelyCompany, TimelyDay, TimelyEmployee, TimelyLeave, TimelyMonth } from './types.ts'
+import { current } from './hr.ts'
+import { parse, ymd } from './format.ts'
 
 const API = '/api/attendance'
 /** Below this share of the hours to work, an employee is listed as low */
@@ -66,10 +66,15 @@ export interface Row { t: TimelyEmployee; e?: Employee }
 
 const regKey = (r: string) => r.replace(/\s/g, '').toUpperCase()
 
-/** Timely's employees matched to ours by registration number; those in one system only are listed apart */
+/**
+ * Timely's employees matched to ours by registration number; those in one system only are listed apart. A server that
+ * signs people in matches them itself (`emp`, server/api.ts), since it keeps the number back from whoever Хүний нөөц's
+ * rights do not reach.
+ */
 export function matchUp(ours: Employee[], theirs: TimelyEmployee[]) {
-  const byReg = new Map(ours.map(e => [regKey(e.regNo), e]))
-  const rows: Row[] = theirs.map(t => ({ t, e: t.register ? byReg.get(regKey(t.register)) : undefined }))
+  const byReg = new Map(ours.filter(e => e.regNo).map(e => [regKey(e.regNo), e]))
+  const byId = new Map(ours.map(e => [e.id, e]))
+  const rows: Row[] = theirs.map(t => ({ t, e: t.emp ? byId.get(t.emp) : t.register ? byReg.get(regKey(t.register)) : undefined }))
   const seen = new Set(rows.flatMap(r => (r.e ? [r.e.id] : [])))
   return { rows, onlyTimely: rows.filter(r => !r.e).map(r => r.t), onlyErp: ours.filter(e => current(e) && !seen.has(e.id)) }
 }
@@ -218,7 +223,7 @@ export function sampleFor(s: State, e: Employee, month: string): TimelyEmployee 
 }
 
 /** The employee's row in a Timely month, by registration number */
-export const rowOf = (m: TimelyMonth, e: Employee) => m.employees.find(t => t.register && regKey(t.register) === regKey(e.regNo)) ?? null
+export const rowOf = (m: TimelyMonth, e: Employee) => m.employees.find(t => (t.emp ? t.emp === e.id : !!t.register && !!e.regNo && regKey(t.register) === regKey(e.regNo))) ?? null
 
 /** The example days of the employee above, the same ones its month was summed from */
 export function sampleDays(s: State, t: TimelyEmployee, month: string): TimelyDay[] {

@@ -1,8 +1,10 @@
 // Signing in. Five wrong tries in a row make the next one wait 30 seconds, then twice as long each time, so a password
-// cannot be guessed quickly; the count is kept in this browser (the server will keep it per login).
+// cannot be guessed quickly. With a server behind the app (lib/sync.ts) it checks the password and keeps the count for
+// each login; without one, this browser does both.
 import type { Id } from './types'
 import { actions, getState } from './store'
 import { hashOf, loginKey } from './access'
+import { link, signInRemote } from './sync'
 import { open, signIn } from './ui'
 
 const TRIES = 'erp:tries'
@@ -23,8 +25,19 @@ const keepTries = (t: { n: number; until: number }) => {
 export const waitLeft = () => Math.max(0, Math.ceil((tries().until - Date.now()) / 1000))
 
 /** Signs the person in, or says why not: a wrong login or password look the same, so neither gives the other away */
-export async function login(name: string, password: string): Promise<'ok' | 'wrong' | 'inactive' | 'wait'> {
+export async function login(name: string, password: string): Promise<'ok' | 'wrong' | 'inactive' | 'wait' | 'down'> {
   if (waitLeft()) return 'wait'
+  if (link.on) {
+    // The server checks the password and counts the wrong tries for the login, wherever they come from
+    const r = await signInRemote(loginKey(name), password)
+    if (typeof r === 'string') return r
+    if ('wait' in r) {
+      keepTries({ n: FREE, until: Date.now() + r.wait * 1000 })
+      return 'wait'
+    }
+    enter(r.me)
+    return 'ok'
+  }
   const p = getState().people.find(x => x.account?.login === loginKey(name))
   // Hash even when there is no such login, so the answer takes as long either way
   const hash = await hashOf(password, p?.account?.salt ?? 'AAAAAAAAAAAAAAAAAAAAAA==')

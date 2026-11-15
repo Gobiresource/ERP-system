@@ -1,12 +1,15 @@
 // Системийг эхлүүлэх: shown instead of Нэвтрэх while nobody can sign in. The first person names the ХХК and makes
 // their own account, which holds every right; they are signed in at once and welcomed like anyone at a first sign-in.
-// The system starts with nothing made up (the user's decision, docs/decisions.md, 2026-11-15).
+// The system starts with nothing made up (the user's decision, docs/decisions.md, 2026-11-15). With a server behind the
+// app (lib/sync.ts) the system is founded there, for everyone: on a public address only with the code its owner put in
+// the server's settings, so that no stranger takes every right first.
 import { useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { LoaderCircle, Rocket } from 'lucide-react'
 import '../styles/screens/login.css'
 import { actions } from '../lib/store'
 import { loginKey, strongEnough } from '../lib/access'
 import { enter } from '../lib/auth'
+import { link } from '../lib/sync'
 import { Wallpaper } from '../shell/Wallpaper'
 import { Field, fieldAria, type Errors } from '../ui/FormSheet'
 
@@ -14,7 +17,7 @@ import { Field, fieldAria, type Errors } from '../ui/FormSheet'
 const LOGIN = /^[a-z0-9._-]{3,32}$/
 
 export default function Setup() {
-  const [f, setF] = useState({ company: '', family: '', given: '', role: '', login: '', password: '', again: '' })
+  const [f, setF] = useState({ company: '', family: '', given: '', role: '', login: '', password: '', again: '', code: '' })
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const summary = useRef<HTMLDivElement>(null)
@@ -40,12 +43,21 @@ export default function Setup() {
     if (!f.password) err['su-password'] = 'Нууц үгээ бичнэ үү.'
     else if (!strongEnough(f.password)) err['su-password'] = 'Нууц үг 8-аас доошгүй тэмдэгттэй, үсэг, тоо хоёулаа орсон байх ёстой.'
     else if (f.again !== f.password) err['su-again'] = 'Нууц үг таарахгүй байна.'
+    if (link.code && !f.code.trim()) err['su-code'] = 'Ирцийн кодоо бичнэ үү.'
     setErrors(err)
     if (Object.keys(err).length) return setShown(n => n + 1)
     setBusy(true)
-    const me = await actions.setUp(f.company.trim(), { given: f.given.trim(), family: f.family.trim(), role: f.role.trim() || 'Захирал' }, name, f.password)
+    const me = await actions.setUp(f.company.trim(), { given: f.given.trim(), family: f.family.trim(), role: f.role.trim() || 'Захирал' }, name, f.password, f.code)
+    if (me && 'error' in me) {
+      // The server said no: a wrong code is the code field's to fix, anything else the form's
+      setBusy(false)
+      setErrors({ [me.field === 'code' ? 'su-code' : 'su-company']: me.error })
+      return setShown(n => n + 1)
+    }
     // In at once, the way everyone comes in: the first sign-in is noted and the welcome page opens
     if (me) enter(me.id)
+    // Someone else set the system up meanwhile: the sign-in page is next
+    else location.reload()
   }
 
   return (
@@ -88,12 +100,21 @@ export default function Setup() {
             <Field id="su-again" label="Нууц үгээ давтах" error={errors['su-again']}>
               <input {...fieldAria('su-again', errors['su-again'])} type="password" value={f.again} onChange={put('again')} autoComplete="new-password" spellCheck={false} />
             </Field>
+            {link.code && (
+              <Field id="su-code" label="Ирцийн код" hint="Өмнө нь ирцийг нээхэд хэрэглэж байсан код. Системийг танихгүй хүн эхлүүлэхээс хамгаална." error={errors['su-code']} wide>
+                <input {...fieldAria('su-code', errors['su-code'], true)} value={f.code} onChange={put('code')} autoComplete="off" autoCapitalize="none" spellCheck={false} />
+              </Field>
+            )}
           </div>
           {/* aria-disabled, not disabled: a disabled button would drop the keyboard focus while the account is made */}
           <button type="submit" className="btn btn--accent login__go" aria-disabled={busy || undefined}>
             {busy ? <><LoaderCircle className="ico spin" />Үүсгэж байна…</> : 'Эхлүүлэх'}
           </button>
-          <p className="login__note">Туршилтын хувилбарт өгөгдөл зөвхөн энэ хөтөч дээр хадгалагдана. Өөр компьютер, утсан дээр харагдахгүй.</p>
+          <p className="login__note">
+            {link.on
+              ? 'Өгөгдөл сервер дээр хадгалагдана. Таны нэмсэн хүн бүр өөрийн нэвтрэх нэр, нууц үгээр аль ч компьютер, утаснаас нэвтэрнэ.'
+              : 'Туршилтын хувилбарт өгөгдөл зөвхөн энэ хөтөч дээр хадгалагдана. Өөр компьютер, утсан дээр харагдахгүй.'}
+          </p>
         </form>
       </main>
     </div>

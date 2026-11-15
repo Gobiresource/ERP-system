@@ -1,6 +1,6 @@
 // Human resources: labels, the registration number (РД), and the numbers the HR screens show.
-import type { ContractKind, DocType, EmpStatus, Employee, FileItem, Hue, Id, MoveKind, State } from './types'
-import { daysFromToday, parse, today } from './format'
+import type { ContractKind, DocType, EmpStatus, Employee, FileItem, Hue, Id, MoveKind, State } from './types.ts'
+import { daysFromToday, parse, today } from './format.ts'
 
 export const EMP_STATUS: Record<EmpStatus, string> = {
   active: 'Ажиллаж буй', probation: 'Туршилтаар', leave: 'Чөлөөтэй', childcare: 'Хүүхэд асрах чөлөөтэй', left: 'Ажлаас гарсан',

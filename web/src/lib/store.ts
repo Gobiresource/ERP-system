@@ -1,4 +1,5 @@
-// App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
+// App state: one object. Components read it with useApp() and change it with the actions below. It is saved in the
+// browser, or, with a server behind the app, shared through it (lib/sync.ts): the actions are the same either way.
 import { useSyncExternalStore } from 'react'
 import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, HrRequest, HrRequestDraft, Id, KpiRules, Lesson, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
 import { blank, seed } from './seed'
@@ -13,6 +14,7 @@ import { companyMark, today } from './format'
 import { docTypesFor } from './seedHr'
 import { seedLessons, teaches } from './training'
 import { STEPS, firstStep, leaveMove, mayAct, mayCancel, mayReturn, orderLines, ORDER_NAME, seedHrRequests, seedPurchases, stepOf, withMove } from './hrRequests'
+import { attach, changed, found, inviteRemote, link, passwordRemote } from './sync'
 
 /** The system's own data, and apart from it the example data of checks and demonstrations (lib/demo.ts) */
 const KEY = DEMO ? 'erp:v1' : 'erp:data'
@@ -122,14 +124,42 @@ const subs = new Set<() => void>()
 const subscribe = (f: () => void) => (subs.add(f), () => void subs.delete(f))
 let saveTimer = 0
 
+/**
+ * With a server behind the app (lib/sync.ts) the shared data lives there, and this browser keeps only what is the
+ * device's own: which ХХК is open and how the app looks
+ */
+const PREFS = 'erp:prefs'
+
 function set(fn: (s: State) => State) {
   state = fn(state)
   clearTimeout(saveTimer)
   saveTimer = window.setTimeout(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)) } catch { /* private window: keep working without saving */ }
+    try {
+      if (link.on) localStorage.setItem(PREFS, JSON.stringify({ company: state.company, settings: state.settings }))
+      else localStorage.setItem(KEY, JSON.stringify(state))
+    } catch { /* private window: keep working without saving */ }
   }, 150)
+  if (link.on) changed()
   subs.forEach(f => f())
 }
+
+attach({
+  get: () => state,
+  /** The state as the server's answer left it: nothing in it is a change of this browser's to send. The ХХК stays one the person works in. */
+  adopt(next) {
+    const me = next.people.find(p => p.id === next.me)
+    state = me && !me.companies.includes(next.company) ? { ...next, company: me.companies[0] } : next
+    subs.forEach(f => f())
+  },
+  /** Nothing of the shared data here (the server is found, or the person signed out): only the device's own, kept */
+  empty() {
+    clearTimeout(saveTimer)
+    let prefs: Partial<Pick<State, 'company' | 'settings'>> = {}
+    try { prefs = JSON.parse(localStorage.getItem(PREFS) ?? '{}') ?? {} } catch { /* none kept */ }
+    state = { ...blank(), company: prefs.company ?? '', settings: { ...blank().settings, ...prefs.settings } }
+    subs.forEach(f => f())
+  },
+})
 
 /**
  * `s` as the person signed in here sees it: still them, in the same ХХК while they work in it. ui.ts signs out someone
@@ -146,7 +176,7 @@ function asMe(s: State): State {
  * a person who is no longer in it.
  */
 export function takeSaved(e: StorageEvent) {
-  if (e.key !== KEY || !e.newValue) return
+  if (link.on || e.key !== KEY || !e.newValue) return
   const next = load()
   if (!next) return
   clearTimeout(saveTimer)
@@ -217,13 +247,23 @@ export const actions = {
    * The system's first ХХК and the person who sets it up: they hold every right in it, as whoever sets the system up
    * does anywhere. Only while nobody can sign in yet (screens/Setup.tsx).
    */
-  async setUp(company: string, p: Pick<Person, 'given' | 'family' | 'role'>, login: string, password: string): Promise<Person | null> {
-    if (state.people.some(x => x.account)) return null
+  async setUp(company: string, p: Pick<Person, 'given' | 'family' | 'role'>, login: string, password: string, code = ''): Promise<Person | { error: string; field?: string } | null> {
+    if (link.on ? link.started : state.people.some(x => x.account)) return null
     const c: Company = { id: uid('c'), name: company, hue: 'blue', code: companyMark(company) }
+    const rights = { login: loginKey(login), active: true, sysadmin: true, access: { [c.id]: { ...PRESETS.find(x => x.key === 'director')!.access } } }
+    const person = { ...p, id: uid('u'), team: 'Удирдлага', email: '', companies: [c.id], presence: 'online' as const, hue: 'indigo' as const, capacity: 40 }
+    const first = (s: State, me: Person): State => ({ ...s, me: me.id, company: c.id, companies: [c], people: [me], docTypes: docTypesFor(c.id), roles: { [c.id]: { finance: me.id, legal: me.id, clerk: me.id, director: me.id, supply: me.id } } })
+    if (link.on) {
+      // On the server (lib/sync.ts): it keeps what signs the person in, apart from their record, and sends the data back
+      const me = { ...person, account: rights } as Person
+      const bad = await found(first(blank(), me), rights.login, password, code)
+      if (bad) return bad
+      set(s => ({ ...s, me: me.id, company: c.id }))
+      return state.people.find(x => x.id === me.id) ?? null
+    }
     const salt = newSalt()
-    const account: Account = { login: loginKey(login), salt, hash: await hashOf(password, salt), active: true, sysadmin: true, access: { [c.id]: { ...PRESETS.find(x => x.key === 'director')!.access } } }
-    const me: Person = { ...p, id: uid('u'), team: 'Удирдлага', email: '', companies: [c.id], presence: 'online', hue: 'indigo', capacity: 40, account }
-    set(s => ({ ...s, me: me.id, company: c.id, companies: [c], people: [me], docTypes: docTypesFor(c.id), roles: { [c.id]: { finance: me.id, legal: me.id, clerk: me.id, director: me.id, supply: me.id } } }))
+    const me: Person = { ...person, account: { ...rights, salt, hash: await hashOf(password, salt) } }
+    set(s => first(s, me))
     return me
   },
   switchCompany: (company: Id) => set(s => ({ ...s, company })),
@@ -301,14 +341,20 @@ export const actions = {
 
   setPresence: (id: Id, presence: Presence) => set(s => ({ ...s, people: s.people.map(p => (p.id === id ? { ...p, presence } : p)) })),
   /** A new person in the ХХК, who signs in with the login and password given; only an admin adds people */
-  async invite(p: Pick<Person, 'given' | 'family' | 'email' | 'role' | 'team'>, login: string, password: string, access: Access): Promise<Person | null> {
+  async invite(p: Pick<Person, 'given' | 'family' | 'email' | 'role' | 'team'>, login: string, password: string, access: Access): Promise<Person | { error: string } | null> {
     if (!accessOf(state, state.me, state.company).admin || !loginFree(login)) return null
     const hues = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'indigo'] as const
+    const rights = { login: loginKey(login), active: true, access: { [state.company]: access } }
+    const person = { ...p, id: uid('u'), companies: [state.company], presence: 'away' as const, hue: hues[state.people.length % hues.length], capacity: 40 }
+    if (link.on) {
+      // The server makes the person with what signs them in, or says why not (a login taken in a ХХК not seen from here)
+      const bad = await inviteRemote({ ...person, account: rights } as Person, password)
+      return bad ?? state.people.find(x => x.id === person.id) ?? null
+    }
     const salt = newSalt()
-    const account: Account = { login: loginKey(login), salt, hash: await hashOf(password, salt), active: true, access: { [state.company]: access } }
-    const person: Person = { ...p, id: uid('u'), companies: [state.company], presence: 'away', hue: hues[state.people.length % hues.length], capacity: 40, account }
-    set(s => ({ ...s, people: [...s.people, person] }))
-    return person
+    const made: Person = { ...person, account: { ...rights, salt, hash: await hashOf(password, salt) } }
+    set(s => ({ ...s, people: [...s.people, made] }))
+    return made
   },
 
   // Удирдлага: accounts and rights. Only an admin of the ХХК changes them there; whoever sets the system up, anywhere.
@@ -340,9 +386,16 @@ export const actions = {
     editAccount(who, { ...patch, ...(patch.login !== undefined ? { login: loginKey(patch.login) } : {}) })
     return null
   },
-  /** A new password: the person's own, or one an admin sets for them to change later */
-  async setPassword(who: Id, password: string) {
+  /**
+   * A new password: the person's own, with the present one (`now`), or one an admin sets for them to change later.
+   * False when it may not be set, or the present one is wrong.
+   */
+  async setPassword(who: Id, password: string, now?: string) {
     if (who !== state.me && !manages(who)) return false
+    const a = state.people.find(p => p.id === who)?.account
+    if (!a) return false
+    if (link.on) return !(await passwordRemote(who, a.login, password, who === state.me ? now ?? '' : undefined))
+    if (now !== undefined && (await hashOf(now, a.salt)) !== a.hash) return false
     const salt = newSalt()
     const hash = await hashOf(password, salt)
     editAccount(who, { salt, hash })
@@ -490,13 +543,13 @@ export const actions = {
     return chat
   },
   updateChat: (id: Id, patch: Pick<Chat, 'name' | 'members'>) => set(s => ({ ...s, chats: s.chats.map(c => (c.id === id ? { ...c, ...patch } : c)) })),
-  /** Sending also marks the chat read up to now. Demo: the people who are on (Идэвхтэй) read it 3 seconds later. */
+  /** Sending also marks the chat read up to now. With the example data only, the people who are on (Идэвхтэй) read it 3 seconds later. */
   sendMessage(chat: Id, m: Pick<Message, 'text' | 'refs' | 'files'>) {
     const at = new Date().toISOString()
     const msg: Message = { ...m, id: uid('cm'), chat, by: state.me, at }
     set(s => ({ ...s, messages: [...s.messages, msg], chats: s.chats.map(c => (c.id === chat ? { ...c, read: { ...c.read, [s.me]: at } } : c)) }))
     const on = state.chats.find(c => c.id === chat)?.members.filter(id => id !== state.me && state.people.find(p => p.id === id)?.presence === 'online') ?? []
-    if (on.length) setTimeout(() => on.forEach(id => actions.readChat(chat, id)), 3000)
+    if (DEMO && on.length) setTimeout(() => on.forEach(id => actions.readChat(chat, id)), 3000)
     return msg
   },
   readChat: (chat: Id, who = state.me) => set(s => ({ ...s, chats: s.chats.map(c => (c.id === chat ? { ...c, read: { ...c.read, [who]: new Date().toISOString() } } : c)) })),
@@ -781,7 +834,8 @@ export const actions = {
       next = { ...next, order: doc.id }
     }
     const e = doc && empOf(state, r.company, r.by)
-    const line = e && next.kind === 'leave' ? leaveMove(next, uid('mv'), doc!.id) : undefined
+    // Not on a record whose history the server kept back from whoever signs (types.ts Employee.card): it would write over it
+    const line = e && !e.card && next.kind === 'leave' ? leaveMove(next, uid('mv'), doc!.id) : undefined
     set(s => ({
       ...s,
       hrRequests: s.hrRequests.map(x => (x.id === id ? next : x)),
