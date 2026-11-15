@@ -168,6 +168,16 @@ async function up(url) {
   const tried = await b.p.evaluate(async id => (await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ since: 0, scope: '', changes: [{ c: 'people', id, ops: [[['account', 'sysadmin'], true]] }] }) })).json(), staffId);
   ok(tried.refused.length === 1 && !(await b.rows()).people[staffId].account.sysadmin, 'asking the server directly for more rights is refused');
 
+  // ---- A second ХХК
+  await a.go('docs'); await a.p.locator('button.folder-add').click(); await a.wait(600);
+  await a.p.locator('#co-name').fill('Хоёрдугаар ХХК'); await a.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await a.wait(2500);
+  rows = await a.rows();
+  const co2 = Object.keys(rows.companies).find(id => id !== co);
+  ok(!!co2 && rows.people[me.id].companies.includes(co2) && rows.roles[co2]?.director === me.id && Object.values(rows.docTypes).filter(t => t.company === co2).length >= 12, 'whoever set the system up adds a second ХХК in Бичиг хэрэг: the server holds it, its personal-file list and its roles, and they work in it');
+  await b.go('docs');
+  rows = await b.rows();
+  ok(Object.keys(rows.companies).join() === co && Object.values(rows).every(t => Object.values(t).every(v => v !== null)) && await b.p.locator('button.folder-add').count() === 0, 'someone of the first ХХК is not told of it, not even by a record\'s number, and cannot add one');
+
   // ---- A file added by one opens for the other
   const paper = Buffer.from('%PDF-1.4\n' + 'Дотоод журмын туршилтын файл. '.repeat(400));
   await a.go(`docs-folder-${co}`);

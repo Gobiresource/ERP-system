@@ -309,6 +309,8 @@ async function main() {
   await second.login('second', 'pass1234')
   await second.pull()
   ok(second.ids('companies').join() === 'c2' && second.ids('tasks').join() === 't2' && second.ids('people').sort().join() === 'u1,u8' && second.ids('employees').length === 0, 'someone of the second ХХК gets it, its task and its people, and nothing of the first')
+  r = await second.call('GET', 'sync?since=0&scope=')
+  ok(r.j.full && r.j.rows.length === 5 && (r.j.rows as Row[]).every(([c, id, , v]) => v !== null && !(c === 'companies' && id === 'c1')), 'and an answer with everything does not so much as name a record beyond their reach')
   await staff.pull()
   ok(!staff.get('companies', 'c2') && !staff.get('tasks', 't2') && !staff.get('people', 'u8'), 'and the first one\'s people get nothing of the second')
   r = await staff.push([{ c: 'companies', id: 'c3', ops: [[[], { id: 'c3', name: 'Гурав', hue: 'pink', code: 'ГУ' }]] }])

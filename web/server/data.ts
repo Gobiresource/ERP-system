@@ -41,13 +41,17 @@ export const ctxFor = (w: World, me: Id) => ctxOf(w.org, me, (c, id) => w.recs.g
 const QUIET: Table[] = ['messages', 'notices', 'drafts', 'focusLog', 'toursDone']
 const reach = (x: Ctx, c: Table, r: Row) => (c === 'messages' ? x.chats.has(r.k) : c === 'toursDone' ? r.id === x.me : r.k === x.me)
 
-/** A row as the browser gets it: [table, id, place in its list, the record or null when it is gone or not theirs] */
-function line(x: Ctx, r: Row, always = false): string | null {
+/**
+ * A row as the browser gets it: [table, id, place in its list, the record or null when it is gone or not theirs]. In an
+ * answer with everything (`full`) what is not theirs is left out: the browser drops whatever such an answer does not
+ * name, and nobody need learn which records there are beyond their reach.
+ */
+function line(x: Ctx, r: Row, always = false, full = false): string | null {
   const c = r.c as Table
   let v: string | null = null
   // A record the rules cannot read must not stop everyone's work
   try { v = see(x, c, r) } catch { /* not sent */ }
-  if (v === null && !always && QUIET.includes(c) && !(r.data === null && reach(x, c, r))) return null
+  if (v === null && !always && (full || QUIET.includes(c)) && !(r.data === null && reach(x, c, r))) return null
   return `[${JSON.stringify(c)},${JSON.stringify(r.id)},${r.pos},${v ?? 'null'}]`
 }
 
@@ -70,7 +74,7 @@ export async function pull(db: Db, w: World, x: Ctx, since: number, scope: strin
   const seq = Number((now.results[0] as { v: number } | undefined)?.v ?? 0)
   const full = !since || scope !== key || Number((again.results[0] as { v: number } | undefined)?.v ?? 0) > since
   const rows = await all<Row>(db, `SELECT c, id, co, k, pos, data, seq FROM rows WHERE c IN (${named(TABLES)}) AND ${full ? 'data IS NOT NULL' : 'seq > ?'}`, ...(full ? [] : [since]))
-  const lines = rows.map(r => line(x, r)).filter(l => l !== null)
+  const lines = rows.map(r => line(x, r, false, full)).filter(l => l !== null)
   if (refused.length) {
     const back = await all<Row>(db, `SELECT r.c, r.id, r.co, r.k, r.pos, r.data, r.seq FROM json_each(?) AS j JOIN rows AS r ON r.c = j.value->>0 AND r.id = j.value->>1`, JSON.stringify(refused))
     // Last, so that they are what the browser ends with; a refused new record has no row, and goes
