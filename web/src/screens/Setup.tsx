@@ -6,7 +6,7 @@ import { LoaderCircle, Rocket } from 'lucide-react'
 import '../styles/screens/login.css'
 import { actions } from '../lib/store'
 import { loginKey, strongEnough } from '../lib/access'
-import { login } from '../lib/auth'
+import { enter } from '../lib/auth'
 import { Wallpaper } from '../shell/Wallpaper'
 import { Field, fieldAria, type Errors } from '../ui/FormSheet'
 
@@ -43,9 +43,9 @@ export default function Setup() {
     setErrors(err)
     if (Object.keys(err).length) return setShown(n => n + 1)
     setBusy(true)
-    await actions.setUp(f.company.trim(), { given: f.given.trim(), family: f.family.trim(), role: f.role.trim() || 'Захирал' }, name, f.password)
-    // Signed in the way everyone is, so the first sign-in is noted and the welcome page opens
-    await login(name, f.password)
+    const me = await actions.setUp(f.company.trim(), { given: f.given.trim(), family: f.family.trim(), role: f.role.trim() || 'Захирал' }, name, f.password)
+    // In at once, the way everyone comes in: the first sign-in is noted and the welcome page opens
+    if (me) enter(me.id)
   }
 
   return (

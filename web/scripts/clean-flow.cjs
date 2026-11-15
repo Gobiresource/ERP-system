@@ -96,6 +96,8 @@ const TWO = [...ONE, { id: 78, name: 'Хоёр дахь байгууллага �
   const welcomed = await p.waitForSelector('dialog.welcome[open] .welcome__name', { timeout: 15000 }).then(() => true, () => false);
   await wait(1300);
   ok(welcomed && (await p.locator('dialog.welcome .welcome__name').innerText()).includes('Саруул') && await p.locator('.welcome__team').count() === 0, 'set up: the welcome page greets the admin by name, with no colleagues yet');
+  const letter = () => p.evaluate(() => [...document.querySelectorAll('dialog.welcome .welcome__letter p .sr-only')].map(e => e.textContent).join(' | '));
+  ok((await p.locator('dialog.welcome .welcome__hello').innerText()) === 'Эрхэм хүндэт' && (await p.locator('dialog.welcome .welcome__cheer').innerText()) === 'танд баяр хүргэе!' && (await letter()).startsWith('Туршилт ХХК-ийн хамт олны нэг болсонд тань баяр хүргэж,') && (await letter()).endsWith('Манай багт тавтай морилно уу!'), 'with the letter to a new colleague, in the ХХК\'s own name');
   await p.locator('.welcome__skip').click(); await wait(900);
   ok((await p.locator('#page-title').innerText()).includes('Саруул') && p.url().includes('#home') || (await p.locator('#page-title').innerText()).includes('Саруул'), 'then Нүүр, signed in');
   let s = await st();
@@ -255,9 +257,10 @@ const TWO = [...ONE, { id: 78, name: 'Хоёр дахь байгууллага �
   const q = await old.newPage(); const qerr = []; q.on('pageerror', e => qerr.push(e.message));
   await q.goto(BASE, { waitUntil: 'networkidle' }); await q.waitForTimeout(800);
   ok(await q.title() === 'Системийг эхлүүлэх' && qerr.length === 0, 'a browser with the example data and its old sign-in opens the set-up page, without an error');
-  await q.locator('#su-company').fill('Жинхэнэ ХХК'); await q.locator('#su-family').fill('Бат'); await q.locator('#su-given').fill('Эрдэнэ'); await q.locator('#su-login').fill('erdene'); await q.locator('#su-password').fill('Turshilt2026'); await q.locator('#su-again').fill('Turshilt2026');
+  await q.locator('#su-company').fill('Жинхэнэ нэр'); await q.locator('#su-family').fill('Бат'); await q.locator('#su-given').fill('Эрдэнэ'); await q.locator('#su-login').fill('erdene'); await q.locator('#su-password').fill('Turshilt2026'); await q.locator('#su-again').fill('Turshilt2026');
   await q.getByRole('button', { name: 'Эхлүүлэх' }).click(); await q.waitForSelector('dialog.welcome[open]', { timeout: 15000 }).catch(() => {}); await q.waitForTimeout(800);
   ok(await q.evaluate(() => localStorage.getItem('erp:v1')) === kept && JSON.parse(await q.evaluate(() => localStorage.getItem('erp:data'))).people.length === 1, 'the example data stays as it was, beside the new system');
+  ok((await q.evaluate(() => document.querySelector('dialog.welcome .welcome__letter p .sr-only')?.textContent ?? '')).startsWith('Жинхэнэ нэр компанийн хамт олны нэг болсонд тань'), 'a company name that does not end in ХХК gets no ending joined to it in the letter');
   await old.close();
 
   ok(errors.length === 0, `no page errors${errors.length ? ': ' + [...new Set(errors)].slice(0, 5).join(' / ') : ''}`);

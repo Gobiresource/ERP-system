@@ -1,5 +1,6 @@
 // Signing in. Five wrong tries in a row make the next one wait 30 seconds, then twice as long each time, so a password
 // cannot be guessed quickly; the count is kept in this browser (the server will keep it per login).
+import type { Id } from './types'
 import { actions, getState } from './store'
 import { hashOf, loginKey } from './access'
 import { open, signIn } from './ui'
@@ -35,11 +36,21 @@ export async function login(name: string, password: string): Promise<'ok' | 'wro
   }
   if (!p.account.active) return 'inactive'
   keepTries({ n: 0, until: 0 })
-  actions.setMe(p.id)
-  if (!p.companies.includes(getState().company)) actions.switchCompany(p.companies[0])
-  const first = actions.signedIn(p.id)
-  signIn(p.id)
-  // Whoever signs in for the first time is welcomed, and from there shown round (the user's request, docs/decisions.md, 2026-11-14)
-  if (first) open({ kind: 'welcome' })
+  enter(p.id)
   return 'ok'
+}
+
+/**
+ * The person is in. Whoever comes in for the first time is welcomed, and from there shown round (the user's request,
+ * docs/decisions.md, 2026-11-14). Also for whoever has just set the system up (screens/Setup.tsx): at once, so the
+ * sign-in page is never seen in between.
+ */
+export function enter(id: Id) {
+  const p = getState().people.find(x => x.id === id)
+  if (!p) return
+  actions.setMe(id)
+  if (!p.companies.includes(getState().company)) actions.switchCompany(p.companies[0])
+  const first = actions.signedIn(id)
+  signIn(id)
+  if (first) open({ kind: 'welcome' })
 }

@@ -1,10 +1,12 @@
 /* Тавтай морил (dialogs/Welcome.tsx): the page of a first sign-in. Clean paper, white in the light look, with the
-   person's name as the one large thing on it. The bits of coloured paper above and below are decoration: they keep to
-   their own bands, so no text ever lies over one. */
+   company's letter to a new colleague and the person's name as the one large thing on it. The bits of coloured paper are
+   decoration: they burst out from behind the name and come to lie in their own bands above and below, so no text ever
+   lies under one. */
 .viewer.welcome { overflow: auto; background: var(--paper); color: var(--paper-ink); }
 .welcome .sheet__inner { height: auto; min-height: 100%; display: grid; }
-.welcome__page { display: grid; grid-template-rows: minmax(96px, 1fr) auto minmax(80px, 1fr); }
-.welcome__above, .welcome__below { position: relative; overflow: hidden; }
+/* Clipped at its edges: a bit of paper near one never widens the page */
+.welcome__page { display: grid; grid-template-rows: minmax(96px, 1fr) auto minmax(80px, 1fr); overflow: clip; }
+.welcome__above, .welcome__below { position: relative; }
 .welcome__bit { position: absolute; background: var(--hue); }
 .welcome__bit--pill { width: 9px; height: 26px; border-radius: 5px; }
 .welcome__bit--dot { width: 13px; height: 13px; border-radius: 50%; }
@@ -14,28 +16,46 @@
 .welcome__bit:nth-child(3n) { scale: 1.3; }
 .welcome__bit:nth-child(4n) { scale: .8; }
 
+/* Above the bands, so the bits come out from behind the text */
 .welcome__body {
+  position: relative; z-index: 1;
   display: grid; justify-items: center; text-align: center;
   padding-inline: max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px));
 }
 .welcome__from { display: inline-flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; }
-.welcome__title { display: grid; justify-items: center; max-width: 100%; margin-top: 40px; }
+.welcome__title { display: grid; justify-items: center; max-width: 100%; margin-top: 32px; }
 .welcome__hello { font: 600 clamp(20px, 1vw + 14px, 28px)/1.2 var(--font); color: var(--paper-mute); }
 /* As large as the name's length lets one line be: the page's width over the letters, a letter about .64 of its size */
 .welcome__name {
+  position: relative; isolation: isolate;
   max-width: 100%; margin-top: 4px; letter-spacing: -.035em; overflow-wrap: anywhere;
   font: 700 clamp(20px, calc((min(100vw, 920px) - 48px) / (var(--n) * .64)), min(128px, 22vw))/1.08 var(--font);
 }
-.welcome__role { margin-top: 12px; font-size: 16px; font-weight: 500; color: var(--paper-mute); }
-.welcome__motto { max-width: 34em; margin-top: 28px; font-size: clamp(17px, .4vw + 15px, 20px); line-height: 1.5; text-wrap: balance; }
+/* The letters swing down from their top edges, so nothing masks them here as a page title's are masked */
+.welcome__name .word { overflow: visible; perspective: 600px; }
+.welcome__name .ch { transform-origin: 50% 0; }
+/* A stroke of the pen under the name, as wide as the name is */
+.welcome__stroke { position: absolute; z-index: -1; left: 3%; bottom: -.26em; width: 94%; height: .2em; overflow: visible; fill: none; stroke: var(--accent); stroke-width: .05em; stroke-linecap: round; }
+.welcome__stroke path { vector-effect: non-scaling-stroke; }
+.welcome__cheer { margin-top: 1.5em; font: 600 clamp(20px, 1vw + 14px, 28px)/1.2 var(--font); }
+.welcome__letter { display: grid; gap: .8em; max-width: 36em; margin-top: 24px; font-size: clamp(16px, .35vw + 14.5px, 19px); line-height: 1.55; }
+.welcome__letter p { text-wrap: pretty; }
+.welcome__w { display: inline-block; }
 .welcome__team { display: inline-flex; align-items: center; gap: 12px; margin-top: 24px; font-size: 14px; font-weight: 500; color: var(--paper-mute); }
 .welcome__team > span:first-child { display: inline-flex; }
-.welcome__go { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 36px; }
-.welcome__hint { max-width: 34em; margin-top: 12px; font-size: 13.5px; color: var(--paper-mute); text-wrap: balance; }
+/* The two buttons stay in sight: on a screen too short for the whole letter they keep to its lower edge, on paper that
+   fades out above them, and the letter moves under them */
+.welcome__go {
+  position: sticky; bottom: 0; z-index: 2;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; width: 100%;
+  margin-top: 12px; padding-block: 24px max(12px, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--paper) calc(100% - 24px), transparent);
+}
+.welcome__hint { max-width: 34em; margin-top: 0; font-size: 13.5px; color: var(--paper-mute); text-wrap: balance; }
 
 @media (width <= 760px) {
   /* A narrow page takes half the bits */
   .welcome__bit:nth-child(even) { display: none; }
-  .welcome__go { flex-direction: column; width: 100%; max-width: 360px; }
-  .welcome__go .btn { width: 100%; }
+  .welcome__go { flex-direction: column; align-items: center; }
+  .welcome__go .btn { width: 100%; max-width: 360px; }
 }
