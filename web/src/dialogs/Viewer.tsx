@@ -6,7 +6,7 @@ import '../styles/viewer.css'
 import type { BoardFile } from '../lib/types'
 import { close } from '../lib/ui'
 import { go } from '../lib/router'
-import { getFile, saveBlob } from '../lib/files'
+import { fileMissing, getFile, saveBlob } from '../lib/files'
 import { fileSize } from '../lib/draft'
 import { drawPage, viewPdf } from '../lib/pdf'
 import { Sheet, useCloseSheet } from '../ui/Sheet'
@@ -82,7 +82,7 @@ function Body({ name, sub, load, tools, start }: { name: string; sub?: string; l
       try {
         const blob = await load()
         if (!live) return
-        if (!blob) return setNote('Файл олдсонгүй. Өөр төхөөрөмж эсвэл хөтөч дээр нэмсэн байж магадгүй.')
+        if (!blob) return setNote(fileMissing())
         if (blob.type.startsWith('image/')) {
           urls.push(URL.createObjectURL(blob))
           return setPic(urls[0])

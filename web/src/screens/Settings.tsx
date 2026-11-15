@@ -3,6 +3,7 @@ import { AtSign, Bell, CalendarClock, Check, ChevronRight, Database, Download, F
 import '../styles/screens/settings.css'
 import type { Accent, Settings as Prefs, Wall } from '../lib/types'
 import { actions, getState, scoped, useApp } from '../lib/store'
+import { link } from '../lib/sync'
 import { clock, dayOf, initials, short, today } from '../lib/format'
 import { focus, focusLeft, resetDemo, toast, useUi } from '../lib/ui'
 import { applyAppearance } from '../lib/theme'
@@ -388,7 +389,7 @@ function Data() {
     downloadCsv(`ajluud-${today()}.csv`, rows)
   }
   return (
-    <Group id="set-data" title="Өгөгдөл" sub="Одоогоор бүх өгөгдөл зөвхөн энэ хөтөч дээр хадгалагдана">
+    <Group id="set-data" title="Өгөгдөл" sub={link.on ? 'Өгөгдөл сервер дээр хадгалагдана. Энэ хөтөч зөвхөн харагдах байдлын тохиргоог хадгална' : 'Одоогоор бүх өгөгдөл зөвхөн энэ хөтөч дээр хадгалагдана'}>
       <div className="cell cell--link">
         <Icon icon={Download} hue="green" />
         <div className="cell__main">

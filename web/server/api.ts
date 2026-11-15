@@ -9,9 +9,11 @@
 // POST /api/invite        a new person with their login and password, by an admin of the ХХК
 // POST /api/password      one's own new password (with the present one), or someone's by whoever manages their account
 // GET  /api/sync          what changed since; POST also takes the browser's changes in (server/data.ts)
+// GET, PUT /api/files/ID  the files people add (server/files.ts)
 // /api/attendance, /api/scan   as before, now for whoever is signed in, by their rights
 import { all, one, prepare, type Db } from './db.ts'
 import { changesOf, ctxFor, pull, push, worldOf, type Change } from './data.ts'
+import { handleFiles, type FileStore } from './files.ts'
 import type { Ctx } from './rules.ts'
 import { handleAttendance, plainCode, same, type Gate, type TimelyEnv } from './timely.ts'
 import { handleScan } from './scan.ts'
@@ -19,7 +21,7 @@ import { accessOf, managesAccount, teamOf } from '../src/lib/access.ts'
 import { linkOf } from '../src/lib/attendance.ts'
 import type { Employee, Id, Person } from '../src/lib/types.ts'
 
-export interface ApiEnv extends TimelyEnv { DB?: Db; OPENROUTER_API_KEY?: string }
+export interface ApiEnv extends TimelyEnv { DB?: Db; FILES?: FileStore; OPENROUTER_API_KEY?: string }
 
 const COOKIE = 'erp_sid'
 const DAYS14 = 14 * 86_400
@@ -179,10 +181,11 @@ export async function handleApi(req: Request, env: ApiEnv): Promise<Response | n
   const db = env.DB
   // Without a database (an older deployment): Ирц behind its code and the scan reader, as before
   if (!db) return path.startsWith('attendance') ? handleAttendance(req, env) : path === 'scan' ? handleScan(req, env) : said('Сервер хараахан байхгүй.', 404)
-  // Only our own pages change anything. Another site's page cannot send JSON here without asking first (and is told
-  // no), its requests carry no cookie (SameSite), and the browser itself says where a request comes from.
+  // Only our own pages change anything. Another site's page cannot send JSON, or put a file, here without asking first
+  // (and is told no), its requests carry no cookie (SameSite), and the browser itself says where a request comes from.
   const from = req.headers.get('sec-fetch-site')
-  if (req.method !== 'GET' && ((from && from !== 'same-origin' && from !== 'none') || !/^application\/json/.test(req.headers.get('content-type') ?? ''))) return said('Хүсэлт буруу байна.', 403)
+  const plain = path.startsWith('files/') || /^application\/json/.test(req.headers.get('content-type') ?? '')
+  if (req.method !== 'GET' && ((from && from !== 'same-origin' && from !== 'none') || !plain)) return said('Хүсэлт буруу байна.', 403)
   try {
     return await route(req, env, db, url, path)
   } catch (e) {
@@ -227,6 +230,7 @@ async function route(req: Request, env: ApiEnv, db: Db, url: URL, path: string):
     const after = ctxFor(w, x.me)
     return after ? json(await pull(db, w, after, since, scope, refused)) : said('Нэвтэрнэ үү.', 401, { signedOut: true })
   }
+  if (path.startsWith('files/')) return env.FILES ? handleFiles(req, env.FILES, x.me, path.slice(6)) : said('Файл хадгалах газар тохируулаагүй байна.', 404)
   if (path.startsWith('attendance')) return handleAttendance(req, env, gateOf(x))
   if (path === 'scan') return handleScan(req, env)
   return said('Хүсэлт буруу байна.', 404)

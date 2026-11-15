@@ -9,6 +9,7 @@ import { Download, FileUp } from 'lucide-react'
 import type { Contract, Id } from '../../lib/types'
 import { actions, getState } from '../../lib/store'
 import { getFile, putFile, saveBlob } from '../../lib/files'
+import { link } from '../../lib/sync'
 import { contractPaper } from '../../lib/paper'
 import { toast } from '../../lib/ui'
 import { cid } from '../../lib/draft'
@@ -170,7 +171,7 @@ export default function WordEditor({ c, who, mode }: { c: Contract; who: Id; mod
     <section className="wdoc" aria-label="Word файл">
       <div className="wdoc__top">
         <p className="wdoc__mode" role="status">
-          {missing && 'Хадгалсан Word файл энэ хөтөч дээр олдсонгүй. Гэрээний текстээс шинээр үүсгэлээ. '}
+          {missing && (link.on ? 'Хадгалсан Word файл олдсонгүй. Гэрээний текстээс шинээр үүсгэлээ. ' : 'Хадгалсан Word файл энэ хөтөч дээр олдсонгүй. Гэрээний текстээс шинээр үүсгэлээ. ')}
           {mode === 'viewing' ? 'Зөвхөн харах. Одоогийн шатанд танд засах эрх алга.'
             : mode === 'suggesting' ? `Таны засвар санал хэлбэрээр тэмдэглэгдэнэ. ${SAVED[saved]}` : SAVED[saved]}
         </p>

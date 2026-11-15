@@ -1,6 +1,7 @@
 // Cloudflare: the built app (dist) served by a small Worker from Workers KV (worker/site.js, docs/decisions.md,
 // 2026-11-02), with the ERP's server behind it (server/api.ts): people sign in and share one data, kept in the D1
-// database bound below as DB (docs/decisions.md, 2026-11-15). The Worker's secrets, which the user set and nothing here
+// database bound below as DB, their files in the KV namespace bound as FILES (docs/decisions.md, 2026-11-15). The
+// Worker's secrets, which the user set and nothing here
 // can read: OPENROUTER_API_KEY for the scan reader (its workspace budget caps the spending), TIMELY_API_KEYS for Ирц, and
 // ATTENDANCE_CODE, asked for once when the system is set up. Deploy: npm run deploy (Wrangler, with its usage
 // statistics turned off).
@@ -11,6 +12,8 @@
   "site": { "bucket": "./dist" },
   // The shared data. The id names the database; it opens nothing without the account's own key.
   "d1_databases": [{ "binding": "DB", "database_name": "gobi-erp", "database_id": "cb0a5f6d-840e-4308-891b-a6863cb4cfce" }],
+  // The files people add (server/files.ts): Workers KV, 25 MiB a file. The id opens nothing without the account's key.
+  "kv_namespaces": [{ "binding": "FILES", "id": "e91149409bac45c78c9b543370408283" }],
   // gobi-erp.gobiresource.workers.dev only: no extra public address for each version
   "workers_dev": true,
   "preview_urls": false

@@ -9,7 +9,7 @@ import { actions, getState, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
 import { enter, popIn, settle, usePageEnter } from '../../lib/motion'
 import { COLOURED, KIND, PAPER, SIZE, cardSummary, cid, fileSize, host, newCard, safeUrl } from '../../lib/draft'
-import { getFile, putFile, saveBlob, useFileUrl } from '../../lib/files'
+import { fileMissing, getFile, putFile, saveBlob, useFileUrl } from '../../lib/files'
 import { open, toast } from '../../lib/ui'
 import { PageHead } from '../../ui/PageHead'
 
@@ -317,7 +317,7 @@ function Desk({ d }: { d: Draft }) {
 
   const download = async (c: DraftCard) => {
     const blob = c.file && (await getFile(c.file.id).catch(() => undefined))
-    if (!blob) return setProblem('Файл олдсонгүй. Өөр төхөөрөмж эсвэл хөтөч дээр нэмсэн байж магадгүй.')
+    if (!blob) return setProblem(fileMissing())
     saveBlob(c.file!.name, blob)
   }
   const openCard = (c: DraftCard) => {

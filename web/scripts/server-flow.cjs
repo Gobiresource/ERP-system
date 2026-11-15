@@ -168,6 +168,48 @@ async function up(url) {
   const tried = await b.p.evaluate(async id => (await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ since: 0, scope: '', changes: [{ c: 'people', id, ops: [[['account', 'sysadmin'], true]] }] }) })).json(), staffId);
   ok(tried.refused.length === 1 && !(await b.rows()).people[staffId].account.sysadmin, 'asking the server directly for more rights is refused');
 
+  // ---- A file added by one opens for the other
+  const paper = Buffer.from('%PDF-1.4\n' + 'Дотоод журмын туршилтын файл. '.repeat(400));
+  await a.go(`docs-folder-${co}`);
+  await a.p.getByRole('button', { name: 'Бичиг баримт нэмэх' }).first().click(); await a.wait(600);
+  await a.p.locator('#da-file').setInputFiles({ name: 'Дотоод журам.pdf', mimeType: 'application/pdf', buffer: paper });
+  await a.wait(1200);
+  await a.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await a.wait(1500);
+  ok((await a.main()).includes('Дотоод журам'), 'the office adds a document with its file');
+  let queue = '';
+  for (let i = 0; i < 20 && queue !== '[]'; i++) { await a.wait(500); queue = await a.p.evaluate(() => localStorage.getItem('erp:uploads') ?? '[]'); }
+  ok(queue === '[]', 'the file goes up to the server by itself');
+  await b.sync(); await b.go(`docs-folder-${co}`);
+  ok((await b.main()).includes('Дотоод журам'), 'the document shows in the other person\'s folder');
+  const doc = Object.values((await b.rows()).docs).find(d => d.name === 'Дотоод журам');
+  const got = await b.p.evaluate(async id => { const r = await fetch(`/api/files/${id}`); return { status: r.status, size: (await r.arrayBuffer()).byteLength, type: r.headers.get('content-type') }; }, doc.file.id);
+  ok(got.status === 200 && got.size === paper.length && got.type === 'application/pdf', 'and its file comes to their browser from the server, whole');
+  // Looked for without opening it: opening a store that is not there would make an empty one
+  const viaApp = await b.p.evaluate(async () => (await indexedDB.databases()).some(d => d.name === 'erp-cache'));
+  ok(viaApp === false, 'before they open it, no copy of it is in their browser');
+  // Several files chosen at once (a lesson's pictures) all go up, each in its turn
+  const png = n => Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(3000 + n, n)]);
+  await a.go('training'); await a.p.getByRole('button', { name: 'Материал нэмэх' }).first().click(); await a.wait(600);
+  await a.p.locator('#lf-title').fill('Агуулахын аюулгүй ажиллагаа');
+  await a.p.locator('#lf-files').setInputFiles([1, 2, 3].map(n => ({ name: `Зураг ${n}.png`, mimeType: 'image/png', buffer: png(n) })));
+  await a.wait(1500);
+  await a.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await a.wait(1200);
+  queue = '';
+  for (let i = 0; i < 30 && queue !== '[]'; i++) { await a.wait(500); queue = await a.p.evaluate(() => localStorage.getItem('erp:uploads') ?? '[]'); }
+  await b.sync();
+  const lesson = Object.values((await b.rows()).lessons ?? {}).find(l => l.title === 'Агуулахын аюулгүй ажиллагаа');
+  const sizes = lesson ? await b.p.evaluate(async ids => Promise.all(ids.map(async id => { const r = await fetch(`/api/files/${id}`); return r.ok ? (await r.arrayBuffer()).byteLength : r.status; })), lesson.files.map(f => f.id)) : [];
+  ok(queue === '[]' && sizes.join() === [1, 2, 3].map(n => png(n).length).join(), 'three files chosen at once all reach the server, and the other person gets each whole');
+  // Opened in the app, the picture shows: it came through the app's own file store
+  await b.go('training'); await b.wait(600);
+  await b.p.getByText('Агуулахын аюулгүй ажиллагаа').first().click(); await b.wait(2500);
+  const cached = await b.p.evaluate(ids => new Promise(done => { const r = indexedDB.open('erp-cache'); r.onsuccess = () => { const d = r.result; if (!d.objectStoreNames.contains('files')) return done(-1); const st = d.transaction('files').objectStore('files'); let n = 0, left = ids.length; ids.forEach(id => { const g = st.get(id); g.onsuccess = () => { if (g.result) n++; if (!--left) { d.close(); done(n); } }; g.onerror = () => { if (!--left) { d.close(); done(n); } }; }); }; r.onerror = () => done(-2); }), lesson ? lesson.files.map(f => f.id) : []);
+  ok(cached >= 1, `opening the lesson brings its pictures into this browser's own store (${cached} of 3)`);
+  const anon = await open('nobody');
+  await anon.p.goto(BASE, { waitUntil: 'networkidle' }); await anon.wait(400);
+  ok(await anon.p.evaluate(async id => (await fetch(`/api/files/${id}`)).status, doc.file.id) === 401, 'nobody who is not signed in gets the file, even with its id');
+  await anon.ctx.close();
+
   // ---- The look is the device's own, and stays
   await a.p.locator('.tbtn--theme').click(); await a.wait(400);
   await a.p.reload({ waitUntil: 'networkidle' }); await a.wait(900);
@@ -201,6 +243,9 @@ async function up(url) {
   ok(await b.p.title() === 'Нэвтрэх', 'signed out: the sign-in page');
   kept = await b.stored();
   ok(!kept.includes('Номин') && !kept.includes('Гэрээний төсөл') && (await b.rows()).status === 401, 'nothing of the data is left in the browser, and the server sends it none');
+  await b.wait(500);
+  const left = await b.p.evaluate(async () => (await indexedDB.databases()).map(d => d.name));
+  ok(!left.includes('erp-cache'), 'nor a copy of any file');
   await b.signIn('nomin', 'Turshilt2026');
   ok((await b.p.locator('.login__error').innerText()).includes('буруу байна'), 'the old password no longer signs in');
   await b.signIn('nomin', 'Shine2027x');

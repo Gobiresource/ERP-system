@@ -7,6 +7,7 @@ import { close, toast } from '../lib/ui'
 import { putFile } from '../lib/files'
 import { cid, fileSize } from '../lib/draft'
 import { MAX_FILE, MAX_VIDEO, topicsOf } from '../lib/training'
+import { link } from '../lib/sync'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 
 export function LessonForm({ id }: { id?: string }) {
@@ -25,8 +26,10 @@ export function LessonForm({ id }: { id?: string }) {
     e.target.value = '' // a file that was removed can be chosen again
     drop('lf-files')
     drop('lf-text')
-    const big = chosen.filter(x => x.size > (x.type.startsWith('video/') ? MAX_VIDEO : MAX_FILE))
-    if (big.length) setErrors(v => ({ ...v, 'lf-files': `Хэт том файл: ${big.map(x => x.name).join(', ')}. Бичлэг 200 MB, бусад файл 25 MB хүртэл байна.` }))
+    // With a server a file must fit its file store to reach the others (lib/files.ts): a video too
+    const video = link.on ? MAX_FILE : MAX_VIDEO
+    const big = chosen.filter(x => x.size > (x.type.startsWith('video/') ? video : MAX_FILE))
+    if (big.length) setErrors(v => ({ ...v, 'lf-files': link.on ? `Хэт том файл: ${big.map(x => x.name).join(', ')}. Файл бүр 25 MB хүртэл байх ёстой.` : `Хэт том файл: ${big.map(x => x.name).join(', ')}. Бичлэг 200 MB, бусад файл 25 MB хүртэл байна.` }))
     const ok = chosen.filter(x => !big.includes(x))
     setSaving(n => n + ok.length)
     for (const x of ok) {
@@ -75,7 +78,7 @@ export function LessonForm({ id }: { id?: string }) {
       <Field id="lf-text" label="Заавар" optional wide hint="Алхам бүрийг шинэ мөрөнд бичнэ. «1.» гэж эхэлсэн мөрүүд дугаартай жагсаалт болно." error={errors['lf-text']}>
         <textarea {...fieldAria('lf-text', errors['lf-text'], true)} rows={7} value={f.text} onChange={e => { setF({ ...f, text: e.target.value }); drop('lf-text') }} />
       </Field>
-      <Field id="lf-files" label="Зураг, бичлэг, файл" optional wide hint="Хэдийг ч сонгож болно. Бичлэг 200 MB, бусад файл 25 MB хүртэл" error={errors['lf-files']}>
+      <Field id="lf-files" label="Зураг, бичлэг, файл" optional wide hint={link.on ? 'Хэдийг ч сонгож болно. Файл бүр 25 MB хүртэл.' : 'Хэдийг ч сонгож болно. Бичлэг 200 MB, бусад файл 25 MB хүртэл.'} error={errors['lf-files']}>
         <span className="dfilepick">
           <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" {...fieldAria('lf-files', errors['lf-files'], true)} onChange={pick} />
           <span className="btn btn--glass btn--sm" aria-hidden="true"><Paperclip className="ico" />Файл сонгох</span>

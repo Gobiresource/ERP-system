@@ -15,7 +15,11 @@ export const PAPER: [Hue | undefined, string][] = [
 /** Cards that take a paper colour */
 export const COLOURED: CardKind[] = ['note', 'todo', 'link']
 
-export const cid = () => 'k' + Math.random().toString(36).slice(2, 9)
+/**
+ * A short id of its own. Files are named by one too, and with a server behind the app every person's files share one
+ * place (server/files.ts), so it is long enough that two never meet: twelve random letters and figures.
+ */
+export const cid = () => 'k' + Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join('')
 const tilt = () => Math.round((Math.random() * 4 - 2) * 10) / 10
 
 export function newCard(kind: CardKind, x: number, y: number, more: Partial<DraftCard> = {}): DraftCard {

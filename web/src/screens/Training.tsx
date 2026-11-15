@@ -10,7 +10,8 @@ import { go } from '../lib/router'
 import { open, startTour, toast } from '../lib/ui'
 import { usePageEnter } from '../lib/motion'
 import { dateDots, short } from '../lib/format'
-import { getFile, saveBlob, useFileUrl } from '../lib/files'
+import { fileMissing, getFile, saveBlob, useFileUrl } from '../lib/files'
+import { link } from '../lib/sync'
 import { fileSize } from '../lib/draft'
 import { LESSON_KIND, blocksOf, isImage, isVideo, kindOf, teaches, topicsOf, type LessonKind } from '../lib/training'
 import { TOURS } from '../lib/tours'
@@ -30,7 +31,6 @@ const TrainNav = ({ at }: { at: (typeof TABS)[number][0] }) => <SubNav label="С
 
 const KIND_ICON: Record<LessonKind, typeof Play> = { video: Play, image: Image, file: FileText, text: ListChecks }
 const KIND_HUE: Record<LessonKind, string> = { video: 'purple', image: 'teal', file: 'orange', text: 'blue' }
-const MISSING = 'Файл олдсонгүй. Өөр төхөөрөмж эсвэл хөтөч дээр нэмсэн байж магадгүй.'
 
 /** The ХХК's lessons, the latest first, with a filter by topic */
 function Lessons() {
@@ -54,7 +54,7 @@ function Lessons() {
         sub="Ажлын заавар, зураг, бичлэгийг эндээс үзэж суралцана."
         actions={can && <button type="button" className="btn btn--accent" onClick={add}><Plus className="ico" />Материал нэмэх</button>}
       />
-      {can && (
+      {can && !link.on && (
         <p className="sbar" data-enter>
           <Info className="ico" />
           <span>Туршилтын хувилбарт оруулсан материал зөвхөн энэ хөтөч дээр хадгалагдана. Сервертэй болоход бүх ажилтанд харагдана.</span>
@@ -143,7 +143,7 @@ function LessonPage({ id }: { id: string }) {
     go('training')
     toast(`«${l.title}» материал устгагдлаа.`, { undo })
   }
-  const save = (f: BoardFile) => getFile(f.id).then(b => (b ? saveBlob(f.name, b) : toast(MISSING, { kind: 'warn' })))
+  const save = (f: BoardFile) => getFile(f.id).then(b => (b ? saveBlob(f.name, b) : toast(fileMissing(), { kind: 'warn' })))
 
   return (
     <div ref={ref}>
@@ -210,7 +210,7 @@ function Video({ f }: { f: BoardFile }) {
     <figure className="card glass tr-video" data-enter>
       {url
         ? <video controls preload="metadata" playsInline src={url} aria-label={f.name} />
-        : <p className="tr-wait" role="status">{url === undefined ? 'Нээж байна…' : MISSING}</p>}
+        : <p className="tr-wait" role="status">{url === undefined ? 'Нээж байна…' : fileMissing()}</p>}
       <figcaption>{f.name}, {fileSize(f.size)}</figcaption>
     </figure>
   )
@@ -218,7 +218,7 @@ function Video({ f }: { f: BoardFile }) {
 
 function Pic({ f, onOpen }: { f: BoardFile; onOpen: () => void }) {
   const url = useFileUrl(f.id)
-  if (!url) return <p className="tr-wait" role="status">{url === undefined ? 'Нээж байна…' : `${f.name}: ${MISSING}`}</p>
+  if (!url) return <p className="tr-wait" role="status">{url === undefined ? 'Нээж байна…' : `${f.name}: ${fileMissing()}`}</p>
   return (
     <button type="button" className="tr-pic" onClick={onOpen} aria-label={`${f.name}: томруулж харах`}>
       <img src={url} alt="" loading="lazy" draggable={false} />

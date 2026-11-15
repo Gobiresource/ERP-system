@@ -15,8 +15,11 @@ export const link = { on: false, started: false, code: false }
 interface Store { get(): State; adopt(next: State): void; empty(): void }
 let store: Store
 export const attach = (s: Store) => (store = s)
-/** What the screens are told (lib/ui.ts sets these): a change the server refused, and a sign-in that ended */
-export const tell = { refused: (_why: string) => {}, lost: () => {} }
+/**
+ * What the rest of the app is told (lib/ui.ts and lib/files.ts set these): a change the server refused, a sign-in that
+ * ended, and that someone is signed in with their data here, or has signed out
+ */
+export const tell = { refused: (_why: string) => {}, lost: () => {}, in: () => {}, out: () => {} }
 
 /** Whether this browser's changes are on the server: saved, on their way, or waiting for the connection */
 export type Saving = 'saved' | 'saving' | 'offline'
@@ -126,7 +129,9 @@ async function load() {
   mirror = new Mirror()
   live = true
   await sync()
-  return mirror.since > 0 || mirror.scope !== ''
+  const here = mirror.since > 0 || mirror.scope !== ''
+  if (here) tell.in()
+  return here
 }
 
 /**
@@ -179,6 +184,7 @@ export function signOutRemote() {
   mirror = new Mirror()
   say('saved')
   store.empty()
+  tell.out()
   if (was) void post('logout', {}).catch(() => {})
 }
 

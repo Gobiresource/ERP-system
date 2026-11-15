@@ -6,6 +6,7 @@
 // empty one made for the test and removed after:
 //   NODE_USE_ENV_PROXY=1 node web/scripts/server-test.ts --d1=gobi-erp-test
 import { handleApi, type ApiEnv } from '../server/api.ts'
+import type { About, FileStore } from '../server/files.ts'
 import { openDb } from '../server/sqlite.ts'
 import { forget } from '../server/timely.ts'
 import { restDb } from './d1-rest.ts'
@@ -49,6 +50,12 @@ class Browser {
     if (set) this.cookie = set.split(';')[0]
     const j = await res.json().catch(() => null)
     return { status: res.status, j, set }
+  }
+  /** A file as it goes up or comes down: its bytes, not JSON */
+  async file(method: 'GET' | 'PUT', id: string, body?: Uint8Array, headers: Record<string, string> = {}) {
+    const req = new Request(`https://erp.test/api/files/${id}`, { method, headers: { cookie: this.cookie, 'sec-fetch-site': 'same-origin', ...headers }, body })
+    const res = (await handleApi(req, this.env))!
+    return { status: res.status, bytes: res.status === 200 && method === 'GET' ? new Uint8Array(await res.arrayBuffer()) : undefined, type: res.headers.get('content-type'), tag: res.headers.get('etag'), j: res.headers.get('content-type')?.includes('json') ? await res.json().catch(() => null) : null }
   }
   take(j: { seq: number; scope: string; full: boolean; rows: Row[] }) {
     if (j.full) this.recs.clear()
@@ -117,7 +124,10 @@ const employee = (id: string, company: string, user: string | undefined, given: 
 
 async function main() {
   const d1 = process.argv.find(a => a.startsWith('--d1='))?.slice(5)
-  const env: ApiEnv = { DB: d1 ? await restDb(d1) : openDb(':memory:'), ATTENDANCE_CODE: CODE }
+  // The files in memory, as a store keeps them
+  const kept = new Map<string, { body: ArrayBuffer; about: About }>()
+  const FILES: FileStore = { get: async id => kept.get(id) ?? null, put: async (id, body, about) => void kept.set(id, { body, about }) }
+  const env: ApiEnv = { DB: d1 ? await restDb(d1) : openDb(':memory:'), ATTENDANCE_CODE: CODE, FILES }
   const admin = new Browser(env)
 
   console.log('Founding')
@@ -466,6 +476,23 @@ async function main() {
   r = await under.push([{ c: 'contracts', id: 'huge', ops: [[[], long('huge', 45_000)]] }, { c: 'tasks', id: 'tsmall', ops: [[[], task('tsmall', 'Жижиг')]] }])
   ok(r.j.refused.length === 1 && r.j.refused[0][1] === 'huge' && r.j.refused[0][2].includes('хэт том') && under.get('tasks', 'tsmall'), 'a record too large for the database is refused with why, and the rest of the round is kept')
   await under.push([{ c: 'tasks', id: 'tsmall', gone: true }])
+
+  console.log('Files')
+  const pdf = new Uint8Array([37, 80, 68, 70, 45, 49, 46, 52, 10, 1, 2, 3])
+  ok((await new Browser(env).file('PUT', 'fk1', pdf)).status === 401 && (await new Browser(env).file('GET', 'fk1')).status === 401, 'nobody signed in puts or gets a file')
+  let f = await under.file('PUT', 'fk1', pdf, { 'content-type': 'application/pdf' })
+  ok(f.status === 200 && f.j.v, 'someone signed in puts a file')
+  f = await staff.file('GET', 'fk1')
+  ok(f.status === 200 && f.type === 'application/pdf' && f.bytes?.join() === pdf.join(), 'and anyone signed in who has its id gets it, byte for byte')
+  const tag = f.tag!
+  ok((await staff.file('GET', 'fk1', undefined, { 'if-none-match': tag })).status === 304, 'a browser that has it already is told it has not changed')
+  ok((await staff.file('PUT', 'fk1', new Uint8Array([9, 9]), { 'content-type': 'application/pdf' })).status === 409 && (await staff.file('GET', 'fk1')).bytes?.join() === pdf.join(), "nobody replaces someone else's file")
+  f = await under.file('PUT', 'fk1', new Uint8Array([1, 2, 3, 4]), { 'content-type': 'application/pdf' })
+  await new Promise(done => setTimeout(done, 5))
+  ok(f.status === 200 && (await staff.file('GET', 'fk1', undefined, { 'if-none-match': tag })).status === 200, 'whoever put it there replaces it, and the others then get the new one')
+  ok((await under.file('GET', 'fk-none')).status === 404 && (await under.file('GET', '..%2Fsecret')).status === 400 && (await under.file('PUT', 'fk2', new Uint8Array(0))).status === 400, 'a file that is not there, a name that is not an id and an empty file are each answered as such')
+  ok((await under.file('PUT', 'fk3', pdf, { 'content-length': String(30 * 1024 * 1024) })).status === 413, 'a file over 25 MB is not taken')
+  ok((await under.file('PUT', 'fk4', pdf, { 'sec-fetch-site': 'cross-site' })).status === 403, 'another site cannot put a file')
 
   console.log('What must never get in')
   r = await staff.call('POST', 'sync', { since: staff.since, scope: staff.scope, changes: [{ c: 'tasks', id: 't1', ops: [[['__proto__', 'x'], 1]] }] })
