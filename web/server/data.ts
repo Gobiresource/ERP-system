@@ -58,8 +58,13 @@ function line(x: Ctx, r: Row, always = false): string | null {
  * browser puts them back as they are here.
  */
 export async function pull(db: Db, w: World, x: Ctx, since: number, scope: string, refused: Refused[] = []): Promise<string> {
-  // Worked out once for each state of the organisation, not at every question
-  const key = w.scopes.get(x.me) ?? w.scopes.set(x.me, scopeOf(x)).get(x.me)!
+  // Worked out once for each state of the organisation, not at every question. Should the organisation's records ever
+  // be such that it cannot be worked out, the person still gets their data: only the "everything afresh" is lost.
+  let key = w.scopes.get(x.me)
+  if (key === undefined) {
+    try { key = scopeOf(x) } catch { key = '?' }
+    w.scopes.set(x.me, key)
+  }
   // The counter first: a change made while the rows are read comes again next time, never too late
   const [now, again] = await db.batch([db.prepare(`SELECT v FROM meta WHERE k = 'seq'`), db.prepare(`SELECT v FROM meta WHERE k = ?`).bind(`again:${x.me}`)])
   const seq = Number((now.results[0] as { v: number } | undefined)?.v ?? 0)
@@ -82,7 +87,11 @@ export interface Change { c: Table; id: Id; ops?: Op[]; gone?: true; pos?: numbe
 export type Refused = [c: Table, id: Id, why: string]
 
 const TOO_MANY = 500
-const TOO_BIG = 1_000_000
+/** A record's JSON in bytes. The database takes 2 MB in one value; a row goes in inside a list of rows, which adds to it. */
+const TOO_BIG = 1_200_000
+/** As many rows as go into the database in one value */
+const LOAD = 1_500_000
+const bytes = (text: string) => new TextEncoder().encode(text).length
 const BUSY = 'Өөр хүн зэрэг өөрчилсөн тул зарим өөрчлөлт хадгалагдсангүй. Дахин оролдоно уу.'
 const BAD = 'Өөрчлөлтийг хадгалж чадсангүй. Дахин оролдоно уу.'
 
@@ -162,7 +171,7 @@ async function round(db: Db, x: Ctx | null, changes: Change[], refused: Refused[
         why = BAD
       }
       const data = next === undefined ? null : JSON.stringify(next)
-      if (!why && data && data.length > TOO_BIG) why = 'Оруулсан мэдээлэл хэт том тул хадгалагдсангүй.'
+      if (!why && data && data.length > TOO_BIG / 4 && bytes(data) > TOO_BIG) why = 'Оруулсан мэдээлэл хэт том тул хадгалагдсангүй.'
       const side = why ? null : await sideOf(db, ch.c, ch.id, old, next)
       if (why ?? side?.why) {
         refused.push([ch.c, ch.id, (why ?? side?.why)!])
@@ -174,16 +183,26 @@ async function round(db: Db, x: Ctx | null, changes: Change[], refused: Refused[
       entries.push({ c: ch.c, id: ch.id, co, k, pos: isList(ch.c) ? (ch.pos ?? row?.pos ?? 0) : 0, data, was: row?.seq ?? 0 })
     }
     if (!entries.length || (whole && refused.slice(before).some(r => r[2]))) return
-    const json = JSON.stringify(entries)
+    // The rows go in as JSON lists, each small enough for the database to take as one value
+    const loads: string[] = []
+    for (let i = 0, from = 0, size = 0; i < entries.length; i++) {
+      size += (entries[i].data?.length ?? 0) * 2 + 200
+      if (i + 1 === entries.length || size + (entries[i + 1].data?.length ?? 0) * 2 > LOAD) {
+        loads.push(JSON.stringify(entries.slice(from, i + 1)))
+        ;[from, size] = [i + 1, 0]
+      }
+    }
     const seq = `(SELECT v FROM meta WHERE k = 'seq')`
     const each = `SELECT value->>'c' AS c, value->>'id' AS id, value->>'co' AS co, value->>'k' AS k, value->>'pos' AS pos, value->>'data' AS data, value->>'was' AS was FROM json_each(?)`
     let out
     try {
       out = await db.batch([
         db.prepare(`UPDATE meta SET v = v + 1 WHERE k = 'seq' RETURNING v`),
-        // Only a row still as it was read is written: `was` is the change that last touched it
-        db.prepare(`UPDATE rows SET co = j.co, k = j.k, pos = j.pos, data = j.data, seq = ${seq} FROM (${each}) AS j WHERE rows.c = j.c AND rows.id = j.id AND rows.seq = j.was`).bind(json),
-        db.prepare(`INSERT INTO rows (c, id, co, k, pos, data, seq) SELECT j.c, j.id, j.co, j.k, j.pos, j.data, ${seq} FROM (${each}) AS j WHERE j.was = 0 AND j.data IS NOT NULL ON CONFLICT (c, id) DO NOTHING`).bind(json),
+        ...loads.flatMap(json => [
+          // Only a row still as it was read is written: `was` is the change that last touched it
+          db.prepare(`UPDATE rows SET co = j.co, k = j.k, pos = j.pos, data = j.data, seq = ${seq} FROM (${each}) AS j WHERE rows.c = j.c AND rows.id = j.id AND rows.seq = j.was`).bind(json),
+          db.prepare(`INSERT INTO rows (c, id, co, k, pos, data, seq) SELECT j.c, j.id, j.co, j.k, j.pos, j.data, ${seq} FROM (${each}) AS j WHERE j.was = 0 AND j.data IS NOT NULL ON CONFLICT (c, id) DO NOTHING`).bind(json),
+        ]),
         ...stmts,
         db.prepare(`SELECT r.c, r.id, r.seq FROM json_each(?) AS j JOIN rows AS r ON r.c = j.value->>0 AND r.id = j.value->>1`).bind(keys),
       ])

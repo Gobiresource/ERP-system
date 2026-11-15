@@ -122,7 +122,7 @@ cd web && CLOUDFLARE_ACCOUNT_ID=$(curl -s -H "Authorization: Bearer via-proxy" h
   - Жишээ өгөгдлийн «хийсвэр» зан (өөр хүний өмнөөс уншсан болгох гэх мэт) `DEMO`-ийн ард байна: жинхэнэ системд хүн бүр зөвхөн өөрийнхөө өмнөөс бичнэ.
 - **Тест.**
   ```bash
-  node web/scripts/server-test.ts      # серверийг хөтөчгүйгээр: 136 шалгалт, сүлжээгүй
+  node web/scripts/server-test.ts      # серверийг хөтөчгүйгээр: 138 шалгалт, сүлжээгүй
   node web/scripts/server-flow.cjs     # хөтчөөр, 42 шалгалт: сервер, preview-г өөрөө асаана (эхлээд web дотор `npm run build`)
   ```
   - **Query өөрчилсөн бол** байршуулахын өмнө Cloudflare-ийн жинхэнэ сан дээр шалгана: D1 нь SQLite-ийн зарим функцийг хаадаг. `gobi-erp-test` нэртэй түр сан үүсгэж (`POST …/d1/database`), `NODE_USE_ENV_PROXY=1 node web/scripts/server-test.ts --d1=gobi-erp-test` ажиллуулаад санг устгана. 15 орчим минут болно: API хүсэлтийн хурдыг хязгаарладаг. Скрипт `-test`-ээр төгсөөгүй нэртэй санд ажиллахгүй.

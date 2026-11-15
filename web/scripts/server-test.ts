@@ -458,6 +458,15 @@ async function main() {
   globalThis.fetch = real
   delete env.TIMELY_API_KEYS
 
+  console.log('Large records')
+  // A long contract in Cyrillic: several of them in one round are more than the database takes in one value
+  const long = (id: string, n: number) => ({ ...contract, id, owner: 'u7', title: `Урт гэрээ ${id}`, clauses: [{ id: 'cl1', title: 'Нэг', body: 'Гэрээний заалт. '.repeat(n) }] })
+  r = await under.push([1, 2, 3, 4].map(i => ({ c: 'contracts' as Table, id: `big${i}`, ops: [[[], long(`big${i}`, 20_000)]] as Op[], pos: 10 + i })))
+  ok(r.j.refused.length === 0 && [1, 2, 3, 4].every(i => under.get<{ clauses: { body: string }[] }>('contracts', `big${i}`)?.clauses[0].body.length === 320_000), 'four long contracts (2.4 MB together) sent at once are all kept, whole')
+  r = await under.push([{ c: 'contracts', id: 'huge', ops: [[[], long('huge', 45_000)]] }, { c: 'tasks', id: 'tsmall', ops: [[[], task('tsmall', 'Жижиг')]] }])
+  ok(r.j.refused.length === 1 && r.j.refused[0][1] === 'huge' && r.j.refused[0][2].includes('хэт том') && under.get('tasks', 'tsmall'), 'a record too large for the database is refused with why, and the rest of the round is kept')
+  await under.push([{ c: 'tasks', id: 'tsmall', gone: true }])
+
   console.log('What must never get in')
   r = await staff.call('POST', 'sync', { since: staff.since, scope: staff.scope, changes: [{ c: 'tasks', id: 't1', ops: [[['__proto__', 'x'], 1]] }] })
   ok(r.status === 400, 'a path into an object\'s workings is not read as a change')
