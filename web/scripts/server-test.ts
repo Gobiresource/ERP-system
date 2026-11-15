@@ -159,6 +159,22 @@ async function main() {
   const me = admin.get<Person>('people', 'u1')!
   ok(me.account?.sysadmin === true && me.account.active && !('hash' in me.account) && !('salt' in me.account), 'the founder is the system admin; no password hash or salt in the record')
 
+  // The owner may have the door opened for a while: then no code is asked, until the time is up
+  {
+    const open: ApiEnv = { DB: openDb(':memory:'), ATTENDANCE_CODE: CODE }
+    const first = new Browser(open)
+    await first.call('GET', 'state')
+    const until = (n: number) => open.DB!.prepare(`INSERT INTO meta (k, v) VALUES ('open', ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v`).bind(Math.floor(Date.now() / 1000) + n).all()
+    await until(-60)
+    ok((await first.call('GET', 'state')).j.code === true && (await first.call('POST', 'setup', { login: 'admin', salt: SALT, hash: hashOf('pass1234'), changes: founding })).status === 401, 'a door whose time is up asks for the code again')
+    await until(3600)
+    ok((await first.call('GET', 'state')).j.code === false, 'while the door is open, the page is told no code is needed')
+    r = await first.call('POST', 'setup', { login: 'admin', salt: SALT, hash: hashOf('pass1234'), changes: founding })
+    ok(r.status === 200 && r.j.me === 'u1', 'and the system is founded without one')
+    r = await new Browser(open).call('POST', 'setup', { login: 'other', salt: SALT, hash: hashOf('pass1234'), changes: founding.map(ch => (ch.c === 'people' ? { ...ch, id: 'u9', ops: [[[], { ...founder, id: 'u9' }]] } : ch)) })
+    ok(r.status === 409 && (await new Browser(open).call('GET', 'state')).j.code === false, 'still once only: the open door lets nobody found it a second time')
+  }
+
   console.log('Signing in')
   const anon = new Browser(env)
   r = await anon.pull()

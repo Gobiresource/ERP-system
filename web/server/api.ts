@@ -2,7 +2,8 @@
 // Request and Response only, so the same code runs on Cloudflare (worker/site.js) and on Node (server/main.ts).
 //
 // GET  /api/state         a server is here; whether the system has been set up; who is signed in in this browser
-// POST /api/setup         the first ХХК and whoever sets the system up: once, and on a public address only with the code
+// POST /api/setup         the first ХХК and whoever sets the system up: once, and on a public address only with the
+//                         code, unless its owner had the door opened for a while (codeNeeded)
 // POST /api/login/salt    what the browser stretches a login's password with
 // POST /api/login         signs in: a cookie JavaScript cannot read, for 14 days
 // POST /api/logout
@@ -61,10 +62,21 @@ async function signIn(req: Request, db: Db, person: Id) {
 
 type Body = Record<string, unknown>
 
+/**
+ * Whether setting the system up asks for the code. Whoever sets it up holds every right in it, so on a public address
+ * it does. The owner asked for their director to make the account without a code (docs/decisions.md, 2026-11-15): the
+ * database's meta row `open` holds the time until which none is asked, written there by hand for a few days; after
+ * that, or once the system is set up, the door is as it was.
+ */
+async function codeNeeded(env: ApiEnv, db: Db) {
+  if (env.ATTENDANCE_CODE === undefined) return false
+  return !(Number((await one<{ v: number }>(db, `SELECT v FROM meta WHERE k = 'open'`))?.v) > now())
+}
+
 async function setup(req: Request, env: ApiEnv, db: Db, b: Body) {
-  // Whoever sets the system up holds every right in it: on a public address, only with the code its owner put in the
-  // server's settings (the one that opened Ирц before people could sign in). Without one set there, the door is shut.
-  if (env.ATTENDANCE_CODE !== undefined) {
+  // With the code its owner put in the server's settings (the one that opened Ирц before people could sign in).
+  // Without one set there, the door is shut.
+  if (await codeNeeded(env, db)) {
     const code = plainCode(env.ATTENDANCE_CODE)
     if (code.length < 16) return said('Ирцийн код тохируулаагүй байна.', 503)
     if (!same(plainCode(b.code), code)) return said('Код буруу байна. Дахин шалгаад бичнэ үү.', 401, { field: 'code' })
@@ -202,7 +214,7 @@ async function route(req: Request, env: ApiEnv, db: Db, url: URL, path: string):
   if (path === 'state' && !post) {
     const started = !!(await one(db, `SELECT 1 FROM accounts LIMIT 1`))
     const x = session && ctxFor(await worldOf(db), session.me)
-    return json({ server: true, started, me: x ? x.me : null, code: env.ATTENDANCE_CODE !== undefined })
+    return json({ server: true, started, me: x ? x.me : null, code: !started && (await codeNeeded(env, db)) })
   }
   // The scan reader reads its own body (pages as pictures); everything else is small
   const b: Body = post && path !== 'scan' ? ((await req.json().catch(() => null)) ?? {}) : {}
