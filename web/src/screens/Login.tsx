@@ -1,12 +1,13 @@
 // Нэвтрэх: everyone signs in with their own login and password (the HR plan, module 1). The login ignores case and spaces
-// at its ends; Caps Lock and a Mongolian keyboard are pointed out, the usual reasons a right password fails. The example
-// accounts are offered while they still have the example password (docs/decisions.md, 2026-10-31).
+// at its ends; Caps Lock and a Mongolian keyboard are pointed out, the usual reasons a right password fails. With the
+// example data (lib/demo.ts) its accounts are offered while they still have the example password.
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Eye, EyeOff, LoaderCircle, LogIn, TriangleAlert } from 'lucide-react'
 import '../styles/screens/login.css'
 import { useApp } from '../lib/store'
 import { DEMO_PASSWORD, NO_ACCESS, isDemo, presetOf } from '../lib/access'
 import { login, waitLeft } from '../lib/auth'
+import { DEMO } from '../lib/demo'
 import { short } from '../lib/format'
 import { Wallpaper } from '../shell/Wallpaper'
 import { Avatar } from '../ui/bits'
@@ -52,7 +53,7 @@ export default function Login() {
     go(name, password)
   }
   const keys = (e: KeyboardEvent) => setCaps(e.getModifierState?.('CapsLock') ?? false)
-  const examples = EXAMPLES.flatMap(id => s.people.filter(p => p.id === id && p.account?.active && isDemo(p.account)))
+  const examples = DEMO ? EXAMPLES.flatMap(id => s.people.filter(p => p.id === id && p.account?.active && isDemo(p.account))) : []
 
   return (
     <div className="login">

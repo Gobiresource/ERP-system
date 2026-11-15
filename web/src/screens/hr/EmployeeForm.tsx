@@ -1,7 +1,7 @@
 // Add or edit an employee. A long form, so it is a page with sections and a bar at the bottom.
 // Checks follow our rules: empty fields on save, formats when leaving a field, and again on every change once wrong.
 import { useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Network } from 'lucide-react'
 import type { ContractKind, EmpStatus, Employee } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { go } from '../../lib/router'
@@ -12,6 +12,7 @@ import { hrView } from '../../lib/access'
 import { bossOf } from '../../lib/reports'
 import { collator, short, today, ymd } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
+import { Empty } from '../../ui/bits'
 import { Field, fieldAria, type Errors } from '../../ui/FormSheet'
 import EmployeePage from './EmployeePage'
 
@@ -157,6 +158,20 @@ export default function EmployeeForm({ id }: { id?: string }) {
   const free = pos ? pos.quota - (hr.filled.get(pos.id) ?? 0) + (editing?.position === pos.id && editing.status !== 'left' ? 1 : 0) : 0
   const back = editing ? `#hr-${editing.id}` : '#hr-employees'
 
+  // An employee belongs to a position of a department: without any, there is nothing to choose and nothing to save
+  if (!editing && hr.positions.length === 0) {
+    return (
+      <div ref={ref}>
+        <PageHead title="Ажилтан нэмэх" lead={<a className="ibtn ibtn--glass head__back" href={back} aria-label="Буцах"><ChevronLeft className="ico" /></a>} />
+        <section className="card glass" data-enter>
+          <Empty icon={<Network className="ico" />} title="Эхлээд бүтцээ бүртгэнэ үү" text="Ажилтан бүр хэлтэс, албан тушаалд харьяалагдана. Хэлтэс, албан тушаалаа нэмсний дараа ажилтнаа бүртгэх боломжтой.">
+            <a className="btn btn--accent" href="#hr-structure">Бүтэц, орон тоо руу очих</a>
+          </Empty>
+        </section>
+      </div>
+    )
+  }
+
   return (
     <div ref={ref}>
       <PageHead
@@ -238,8 +253,8 @@ export default function EmployeeForm({ id }: { id?: string }) {
               </select>
             </Field>
             <Field id="ef-position" label="Албан тушаал" error={err('position')}
-              hint={pos ? (free > 0 ? `${free} сул орон тоо байна` : 'Сул орон тоо байхгүй. Орон тоо хэтэрнэ.') : undefined}>
-              <select {...aria('position', !!pos)} value={f.position} onChange={set('position')}>
+              hint={pos ? (free > 0 ? `${free} сул орон тоо байна` : 'Сул орон тоо байхгүй. Орон тоо хэтэрнэ.') : 'Энэ хэлтэст албан тушаал бүртгэгдээгүй байна. «Бүтэц, орон тоо» хэсэгт нэмнэ үү.'}>
+              <select {...aria('position', true)} value={f.position} onChange={set('position')}>
                 {hr.positions.filter(p => p.dept === f.dept).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </Field>

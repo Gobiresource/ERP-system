@@ -1,6 +1,6 @@
 // Structure and headcount: departments, their positions, how many places each has and how many are taken
 import { useRef } from 'react'
-import { Ellipsis, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Ellipsis, Network, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Department } from '../../lib/types'
 import { actions, useApp } from '../../lib/store'
 import { open, toast } from '../../lib/ui'
@@ -10,6 +10,7 @@ import { hrView } from '../../lib/access'
 import { short } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Menu, MenuItem, usePopover } from '../../ui/Popover'
+import { Empty } from '../../ui/bits'
 import { Ring } from '../../ui/charts'
 import { HrNav } from '../Hr'
 
@@ -19,6 +20,7 @@ export default function Structure() {
   usePageEnter(ref)
   const quota = hr.positions.reduce((n, p) => n + p.quota, 0)
   const filled = hr.positions.reduce((n, p) => n + Math.min(p.quota, hr.filled.get(p.id) ?? 0), 0)
+  const add = hr.access.hrEdit && <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'dept' })}><Plus className="ico" />Хэлтэс нэмэх</button>
 
   return (
     <div ref={ref}>
@@ -32,11 +34,19 @@ export default function Structure() {
           { label: 'Сул', value: quota - filled },
           { label: 'Бүрдэлт', value: quota ? Math.round((100 * filled) / quota) : 0, unit: '%' },
         ]}
-        actions={hr.access.hrEdit && <button type="button" className="btn btn--accent" onClick={() => open({ kind: 'dept' })}><Plus className="ico" />Хэлтэс нэмэх</button>}
+        actions={add}
       />
-      <div className="dgrid">
-        {hr.departments.map(d => <DeptCard key={d.id} d={d} />)}
-      </div>
+      {hr.departments.length === 0 ? (
+        <section className="card glass" data-enter>
+          <Empty icon={<Network className="ico" />} title="Хэлтэс алга" text="Хэлтэс, албан тушаалаа нэмбэл орон тоо, бүрдэлт энд харагдана.">
+            {add}
+          </Empty>
+        </section>
+      ) : (
+        <div className="dgrid">
+          {hr.departments.map(d => <DeptCard key={d.id} d={d} />)}
+        </div>
+      )}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { FilePen, FilePlus2, Inbox, Users } from 'lucide-react'
 import '../../styles/screens/contracts.css'
 import type { Contract, Id, Scope } from '../../lib/types'
 import { useApp } from '../../lib/store'
+import { DEMO } from '../../lib/demo'
 import { open, setActAs, useUi } from '../../lib/ui'
 import { go } from '../../lib/router'
 import { usePageEnter } from '../../lib/motion'
@@ -125,13 +126,15 @@ export function Progress({ c }: { c: Contract }) {
 }
 
 /**
- * Demo only: work as another person of the process, to try each step (the writer, finance, the lawyer, the office, the
- * director, and anyone asked for an opinion; or `ids`). The real system knows who signed in.
+ * With the example data only (lib/demo.ts): work as another person of the process, to try each step (the writer,
+ * finance, the lawyer, the office, the director, and anyone asked for an opinion; or `ids`). The real system knows who
+ * signed in, and shows nothing here.
  */
 export function ActAs({ ids: given }: { ids?: Id[] }) {
   const s = useApp()
   const who = useActor()
   const roles = rolesOf(s, s.company)
+  if (!DEMO) return null
   const ids = given ?? [...new Set<Id>([s.me, ...ROLES.map(r => roles[r]), ...s.contracts.filter(c => c.company === s.company).flatMap(c => [c.owner, ...c.asked.map(a => a.to)])])]
   const label = (id: Id) => {
     const p = s.people.find(x => x.id === id)

@@ -1,24 +1,30 @@
 // App state: one object, saved in the browser. Components read it with useApp() and change it with the actions below.
 import { useSyncExternalStore } from 'react'
 import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, HrRequest, HrRequestDraft, Id, KpiRules, Lesson, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
-import { seed } from './seed'
+import { blank, seed } from './seed'
+import { DEMO } from './demo'
 import { seedDrafts } from './draft'
 import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
 import { bandOf, dueOf, empOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
-import { accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
+import { PRESETS, accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
 import { companyMark, today } from './format'
 import { docTypesFor } from './seedHr'
 import { seedLessons, teaches } from './training'
 import { STEPS, firstStep, leaveMove, mayAct, mayCancel, mayReturn, orderLines, ORDER_NAME, seedHrRequests, seedPurchases, stepOf, withMove } from './hrRequests'
 
-const KEY = 'erp:v1'
+/** The system's own data, and apart from it the example data of checks and demonstrations (lib/demo.ts) */
+const KEY = DEMO ? 'erp:v1' : 'erp:data'
 
 function load(): State | null {
   try {
     let s = JSON.parse(localStorage.getItem(KEY) ?? 'null')
     if (s?.version !== 1) return null
+    // The real system's data starts complete (version 53) and holds nothing made up. Everything below brings example
+    // data saved by older versions up to date, some of it by adding example records and example accounts: never for
+    // real data. A change to the saved shape made after version 53 goes above this line, for both.
+    if (!DEMO) return s
     // Saved before the HR section existed: add its demo data and keep everything else
     if (!s.employees) {
       const fresh = seed()
@@ -111,7 +117,7 @@ function load(): State | null {
   }
 }
 
-let state: State = load() ?? seed()
+let state: State = load() ?? (DEMO ? seed() : blank())
 const subs = new Set<() => void>()
 const subscribe = (f: () => void) => (subs.add(f), () => void subs.delete(f))
 let saveTimer = 0
@@ -207,6 +213,19 @@ const sysadmin = () => !!state.people.find(p => p.id === state.me)?.account?.sys
 const loginFree = (login: string, who?: Id) => !!loginKey(login) && !state.people.some(p => p.id !== who && p.account?.login === loginKey(login))
 
 export const actions = {
+  /**
+   * The system's first ХХК and the person who sets it up: they hold every right in it, as whoever sets the system up
+   * does anywhere. Only while nobody can sign in yet (screens/Setup.tsx).
+   */
+  async setUp(company: string, p: Pick<Person, 'given' | 'family' | 'role'>, login: string, password: string): Promise<Person | null> {
+    if (state.people.some(x => x.account)) return null
+    const c: Company = { id: uid('c'), name: company, hue: 'blue', code: companyMark(company) }
+    const salt = newSalt()
+    const account: Account = { login: loginKey(login), salt, hash: await hashOf(password, salt), active: true, sysadmin: true, access: { [c.id]: { ...PRESETS.find(x => x.key === 'director')!.access } } }
+    const me: Person = { ...p, id: uid('u'), team: 'Удирдлага', email: '', companies: [c.id], presence: 'online', hue: 'indigo', capacity: 40, account }
+    set(s => ({ ...s, me: me.id, company: c.id, companies: [c], people: [me], docTypes: docTypesFor(c.id), roles: { [c.id]: { finance: me.id, legal: me.id, clerk: me.id, director: me.id, supply: me.id } } }))
+    return me
+  },
   switchCompany: (company: Id) => set(s => ({ ...s, company })),
   /**
    * A new ХХК, with its folder in Бичиг хэрэг. I work in it from the start, so it is in my company menu, and hold its

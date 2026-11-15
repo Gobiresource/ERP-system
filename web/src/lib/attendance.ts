@@ -37,12 +37,15 @@ export async function unlock(code: string) {
 /** Names without "ХХК", quotes and case, to find an ХХК's Timely company */
 const plain = (name: string) => name.toLowerCase().replace(/ххк|«|»|"|'|\./g, '').replace(/\s+/g, ' ').trim()
 
-/** The ХХК's Timely company: the one picked by hand, or the one of the same name */
+/**
+ * The ХХК's Timely company: the one picked by hand, or the one of the same name. Our only ХХК takes Timely's only one
+ * whatever it is called, so attendance shows without anyone linking them (docs/decisions.md, 2026-11-15).
+ */
 export function linkOf(s: Pick<State, 'timely' | 'companies'>, company: Id, companies: TimelyCompany[]) {
   const picked = s.timely[company]
   if (picked !== undefined) return companies.find(c => c.id === picked)
   const name = plain(s.companies.find(c => c.id === company)?.name ?? '')
-  return companies.find(c => plain(c.name) === name)
+  return companies.find(c => plain(c.name) === name) ?? (s.companies.length === 1 && companies.length === 1 ? companies[0] : undefined)
 }
 
 async function ask<T>(path: string): Promise<T> {

@@ -6,6 +6,7 @@ import { actions, getState, scoped, useApp } from '../lib/store'
 import { clock, dayOf, initials, short, today } from '../lib/format'
 import { focus, focusLeft, resetDemo, toast, useUi } from '../lib/ui'
 import { applyAppearance } from '../lib/theme'
+import { DEMO } from '../lib/demo'
 import { gsap, reduced, useLens, usePageEnter } from '../lib/motion'
 import { downloadCsv } from '../lib/insights'
 import { hashOf, strongEnough } from '../lib/access'
@@ -397,23 +398,27 @@ function Data() {
           </button>
         </div>
       </div>
-      <div className="cell cell--link">
-        <Icon icon={RotateCcw} hue="danger" />
-        <div className="cell__main">
-          <button type="button" ref={opener} className="cell__btn cell__btn--danger" aria-expanded={confirm} onClick={() => setConfirm(true)}>
-            <span className="cell__text"><b>Жишээ өгөгдлийг сэргээх</b><small>Анхны жишээ өгөгдөл рүү буцна</small></span>
-            <ChevronRight className="ico cell__chev" />
-          </button>
-        </div>
-      </div>
-      {confirm && (
-        <div className="confirm" role="alertdialog" aria-labelledby="reset-q">
-          <p id="reset-q">Энд хийсэн бүх өөрчлөлт арилж, жишээ өгөгдөл анхны байдалдаа орно. Үргэлжлүүлэх үү?</p>
-          <div>
-            <button type="button" className="btn btn--glass btn--sm" onClick={shut} autoFocus>Болих</button>
-            <button type="button" className="btn btn--danger btn--sm" onClick={() => { shut(); resetDemo() }}>Сэргээх</button>
+      {DEMO && (
+        <>
+          <div className="cell cell--link">
+            <Icon icon={RotateCcw} hue="danger" />
+            <div className="cell__main">
+              <button type="button" ref={opener} className="cell__btn cell__btn--danger" aria-expanded={confirm} onClick={() => setConfirm(true)}>
+                <span className="cell__text"><b>Жишээ өгөгдлийг сэргээх</b><small>Анхны жишээ өгөгдөл рүү буцна</small></span>
+                <ChevronRight className="ico cell__chev" />
+              </button>
+            </div>
           </div>
-        </div>
+          {confirm && (
+            <div className="confirm" role="alertdialog" aria-labelledby="reset-q">
+              <p id="reset-q">Энд хийсэн бүх өөрчлөлт арилж, жишээ өгөгдөл анхны байдалдаа орно. Үргэлжлүүлэх үү?</p>
+              <div>
+                <button type="button" className="btn btn--glass btn--sm" onClick={shut} autoFocus>Болих</button>
+                <button type="button" className="btn btn--danger btn--sm" onClick={() => { shut(); resetDemo() }}>Сэргээх</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </Group>
   )

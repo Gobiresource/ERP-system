@@ -17,6 +17,7 @@ import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
 import { Empty, NoAccess } from '../../ui/bits'
 import { EmpAvatar, HrNav } from '../Hr'
+import { DEMO } from '../../lib/demo'
 
 /** Kept while moving between the overview and an employee, and back */
 let shownMonth = monthKey(new Date())
@@ -134,7 +135,8 @@ export default function Attendance() {
           {sum.avg !== null && <Low rows={sum.low} />}
           {sum.avg !== null && <ByDept rows={m.rows} />}
           <Everyone rows={m.rows} />
-          {(m.onlyTimely.length > 0 || m.onlyErp.length > 0) && <Unmatched a={a} onlyTimely={m.onlyTimely} onlyErp={m.onlyErp} />}
+          {/* With nobody in Хүний нөөц yet everyone is only in Timely, and the table above already lists them */}
+          {hr.all.length > 0 && (m.onlyTimely.length > 0 || m.onlyErp.length > 0) && <Unmatched a={a} onlyTimely={m.onlyTimely} onlyErp={m.onlyErp} />}
         </div>
       ) : (
         <Waiting a={a} />
@@ -177,7 +179,7 @@ function TimelyBar({ a }: { a: Att }) {
   )
   const errors = timely.errors.length > 0 && <span className="att-errs">{timely.errors.join(' ')}</span>
   const demo = a.demo && <span className="att-demo"><b>Жишээ горим:</b> ирц болон ажилтны мэдээлэл зохиомол.</span>
-  const showDemo = !a.demo && <button type="button" className="btn btn--glass btn--sm" onClick={a.showDemo}>Жишээ ирц харах</button>
+  const showDemo = DEMO && !a.demo && <button type="button" className="btn btn--glass btn--sm" onClick={a.showDemo}>Жишээ ирц харах</button>
   if (timely.locked) {
     return (
       <div className="sbar" role="status">
@@ -364,6 +366,16 @@ function Everyone({ rows }: { rows: Row[] }) {
       </button>
     </th>
   )
+  // Nobody to show: Timely has no one this month, or none of the person's own people is matched to Timely yet
+  if (rows.length === 0) {
+    return (
+      <section className="card glass span-12" data-enter>
+        {hr.access.attendance === 'all'
+          ? <Empty icon={<UserRound className="ico" />} title="Ирцийн мэдээлэл алга" text="Timely-д энэ сарын ирц бүртгэгдээгүй байна." />
+          : <Empty icon={<UserRound className="ico" />} title="Таны хариуцсан ажилтны ирц алга" text="Ажилтан Хүний нөөцөд бүртгэгдэж, шууд удирдлагаар нь та сонгогдсон үед ирц нь энд харагдана." />}
+      </section>
+    )
+  }
   return (
     <section className="card glass span-12 etable-card" aria-labelledby="ate-t" data-enter>
       <div className="card__head">

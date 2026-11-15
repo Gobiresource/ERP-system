@@ -10,11 +10,14 @@ import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 /** Latin letters, figures, dot, dash and underscore: what a login may be */
 const LOGIN = /^[a-z0-9._-]{3,32}$/
+/** The choice of Хэлтэс that asks for a new one's name */
+const NEW = '+'
 
 export function Invite() {
   const s = useApp()
-  const teams = [...new Set(scoped(s).people.map(p => p.team))].sort(collator.compare)
-  const [f, setF] = useState({ given: '', family: '', email: '', role: '', team: teams[0] ?? '', login: '', password: '', preset: 'staff' })
+  // The ХХК's departments so far: those its people are in, and those of Хүний нөөц → Бүтэц
+  const teams = [...new Set([...scoped(s).people.map(p => p.team), ...s.departments.filter(d => d.company === s.company).map(d => d.name)])].filter(Boolean).sort(collator.compare)
+  const [f, setF] = useState({ given: '', family: '', email: '', role: '', team: teams[0] ?? NEW, newTeam: '', login: '', password: '', preset: 'staff' })
   // The login follows the e-mail until it is typed in itself
   const [ownLogin, setOwnLogin] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
@@ -28,10 +31,12 @@ export function Invite() {
   const submit = () => {
     const e: Errors = {}
     const login = loginKey(f.login)
+    const team = f.team === NEW ? f.newTeam.trim() : f.team
     if (!f.given.trim()) e['inv-given'] = 'Нэрийг бичнэ үү.'
     if (!f.family.trim()) e['inv-family'] = 'Эцэг/эхийн нэрийг бичнэ үү.'
     if (!f.email.trim()) e['inv-email'] = 'Имэйл хаягийг бичнэ үү.'
     else if (!EMAIL.test(f.email.trim())) e['inv-email'] = 'Имэйл хаягийг зөв бичнэ үү, жишээ нь bold@example.mn.'
+    if (!team) e['inv-newTeam'] = 'Хэлтсийн нэрийг бичнэ үү.'
     if (!login) e['inv-login'] = 'Нэвтрэх нэрийг бичнэ үү.'
     else if (!LOGIN.test(login)) e['inv-login'] = 'Нэвтрэх нэр латин үсэг, тоотой, 3-аас 32 тэмдэгт байх ёстой.'
     else if (getState().people.some(p => p.account?.login === login)) e['inv-login'] = 'Энэ нэвтрэх нэр өөр хүнд бүртгэлтэй байна.'
@@ -40,7 +45,7 @@ export function Invite() {
     setErrors(e)
     if (Object.keys(e).length) return false
     const access = PRESETS.find(p => p.key === f.preset)!.access
-    actions.invite({ given: f.given.trim(), family: f.family.trim(), email: f.email.trim(), role: f.role.trim() || 'Ажилтан', team: f.team }, login, f.password, { ...access })
+    actions.invite({ given: f.given.trim(), family: f.family.trim(), email: f.email.trim(), role: f.role.trim() || 'Ажилтан', team }, login, f.password, { ...access })
       .then(p => (p ? toast(`${short(p)} нэмэгдлээ. «${login}» нэрээр нэвтэрнэ.`) : toast('Танд хэрэглэгч нэмэх эрх алга.', { kind: 'warn' })))
     return true
   }
@@ -62,8 +67,14 @@ export function Invite() {
       <Field id="inv-team" label="Хэлтэс">
         <select id="inv-team" value={f.team} onChange={set('team')}>
           {teams.map(t => <option key={t}>{t}</option>)}
+          <option value={NEW}>Шинэ хэлтэс…</option>
         </select>
       </Field>
+      {f.team === NEW && (
+        <Field id="inv-newTeam" label="Шинэ хэлтсийн нэр" error={errors['inv-newTeam']} wide>
+          <input {...fieldAria('inv-newTeam', errors['inv-newTeam'])} value={f.newTeam} onChange={set('newTeam')} autoComplete="off" />
+        </Field>
+      )}
       <Field id="inv-login" label="Нэвтрэх нэр" hint="Латин үсэг, тоо. Том, жижиг үсэг ялгахгүй." error={errors['inv-login']}>
         <input {...fieldAria('inv-login', errors['inv-login'], true)} value={f.login} onChange={set('login')} autoComplete="off" autoCapitalize="none" spellCheck={false} placeholder="saraa" />
       </Field>

@@ -1,10 +1,15 @@
-/* Нэвтрэх (screens/Login.tsx): the wallpaper, a card to sign in, and the example accounts of the preview */
+/* Нэвтрэх (screens/Login.tsx) and Системийг эхлүүлэх (screens/Setup.tsx): the wallpaper and a card to fill in; with
+   the example data, its accounts under the card */
 .login { position: relative; min-height: 100dvh; }
 .login__main {
   position: relative; z-index: 1; display: grid; align-content: center; justify-items: center; gap: 16px; min-height: 100dvh;
   padding: 32px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px));
 }
 .login__card { display: grid; gap: 16px; width: min(420px, 100%); padding: 32px; border-radius: 28px; }
+/* Системийг эхлүүлэх (screens/Setup.tsx): more to fill in, two fields to a row where they belong together */
+.login__card--wide { width: min(520px, 100%); }
+.login__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.login__errors { margin-bottom: 0; }
 .login__icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 16px; background: var(--accent-soft); color: var(--accent-ink); }
 .login__icon .ico { width: 24px; height: 24px; }
 .login__title { font-size: 28px; font-weight: 650; line-height: 1.2; letter-spacing: -.01em; }
@@ -32,6 +37,7 @@
 
 @media (width <= 600px) {
   .login__main { align-content: start; padding-top: max(24px, env(safe-area-inset-top, 0px)); }
+  .login__grid { grid-template-columns: 1fr; }
   .login__card { padding: 24px 20px; border-radius: 24px; }
   .login__title { font-size: 24px; }
 }

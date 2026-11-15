@@ -57,10 +57,12 @@ export function PersonDrawer({ id }: { id: string }) {
         )}
 
         <dl className="meta">
-          <div>
-            <dt>Имэйл</dt>
-            <dd><Mail className="ico" /><span>{p.email}</span></dd>
-          </div>
+          {p.email && (
+            <div>
+              <dt>Имэйл</dt>
+              <dd><Mail className="ico" /><span>{p.email}</span></dd>
+            </div>
+          )}
           <div>
             <dt>{where ? 'Бүсийн цаг' : 'Эцэг/эхийн нэр'}</dt>
             <dd>{where ? <><Clock className="ico" /><span className="tnum">{where.time}, {where.city}</span></> : <span>{p.family}</span>}</dd>

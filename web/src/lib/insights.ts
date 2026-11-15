@@ -1,9 +1,11 @@
-// Numbers for the Insights screen. Recent days come from the real tasks; older days are demo history,
-// generated the same way every time, so the charts have something to show before real data exists.
+// Numbers for the Insights screen: every day comes from the tasks and the focus sessions kept. With the example data
+// (lib/demo.ts), which covers about two weeks, older days are made up the same way every time, so its charts have
+// something to show.
 import type { State, Task } from './types'
 import { addDays, dayOf, monthDayDots, parse, ymd } from './format'
 import { scoped } from './store'
 import { saveBlob } from './files'
+import { DEMO } from './demo'
 
 export type Range = 7 | 30 | 90
 
@@ -15,7 +17,7 @@ interface Day {
   cycle: number // average days from created to done
 }
 
-/** Days for which the real tasks are the source (the demo data covers about two weeks) */
+/** With the example data: the days for which its tasks are the source. Without it every day is. */
 const REAL_DAYS = 14
 
 function rand(seed: string) {
@@ -40,14 +42,14 @@ export function history(s: State, days: number): Day[] {
     const key = ymd(d)
     const weekend = d.getDay() === 0 || d.getDay() === 6
     const noise = r()
-    if (i < REAL_DAYS) {
+    if (!DEMO || i < REAL_DAYS) {
       const done = sc.tasks.filter(t => t.doneAt && ymd(new Date(t.doneAt)) === key)
       const mine = sc.focusLog.filter(f => ymd(new Date(f.at)) === key).reduce((n, f) => n + f.minutes, 0)
       out.push({
         day: key,
         done: done.length,
         late: done.filter(t => ymd(new Date(t.doneAt!)) > t.due).length,
-        focusMin: mine + (weekend ? 0 : Math.round(teamSize * 30 * (0.6 + noise))),
+        focusMin: mine + (!DEMO || weekend ? 0 : Math.round(teamSize * 30 * (0.6 + noise))),
         cycle: done.length ? done.reduce((n, t) => n + daysBetween(t.createdAt, t.doneAt!), 0) / done.length : 0,
       })
     } else {
@@ -116,11 +118,11 @@ export function insights(s: State, range: Range) {
   }
 }
 
-/** Finished tasks per project in the range: real tasks plus demo history spread over the projects */
+/** Finished tasks per project in the range; with the example data, its made-up days spread over the projects too */
 export function byProject(s: State, range: Range) {
   const sc = scoped(s)
   const from = ymd(addDays(new Date(), -(range - 1)))
-  const realFrom = ymd(addDays(new Date(), -(REAL_DAYS - 1)))
+  const realFrom = DEMO ? ymd(addDays(new Date(), -(REAL_DAYS - 1))) : ''
   // The same demo days as insights() draws: history() of another length gives other numbers
   const demo = history(s, range * 2).slice(range).filter(d => d.day < realFrom).reduce((n, d) => n + d.done, 0)
   const projects = sc.projects

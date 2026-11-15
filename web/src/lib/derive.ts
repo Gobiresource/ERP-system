@@ -1,6 +1,7 @@
 // Numbers computed from the data: workload, local time, counts. Used by several screens.
 import type { CalEvent, FocusLog, Hue, Person, Project, Task } from './types'
-import { addDays, hm, parse, today, weekStart, ymd } from './format'
+import { addDays, dayOf, hm, parse, today, weekStart, ymd } from './format'
+import { DEMO } from './demo'
 
 const TEAM_HUE: Record<string, Hue> = { 'Удирдлага': 'indigo', 'Санхүү': 'pink', 'Борлуулалт': 'green', 'Үйл ажиллагаа': 'orange', 'Хүний нөөц': 'purple' }
 export const teamHue = (team: string): Hue => TEAM_HUE[team] ?? 'blue'
@@ -87,8 +88,9 @@ export function timeElapsed(p: Project) {
 export const nextMilestone = (p: Project) => [...p.milestones].sort((a, b) => a.date.localeCompare(b.date)).find(m => !m.done)
 
 /**
- * Burn-up: tasks done and total tasks, from the start of the project to today (or the end).
- * The demo has no history, so the curve before today is drawn from where the numbers are now.
+ * Burn-up: tasks done and total tasks, from the start of the project to today (or the end), as the tasks' own dates say:
+ * when each was added and when it was finished. The example data (lib/demo.ts) has no such history, so there the curve
+ * before today is drawn from where the numbers are now.
  */
 export function burnSeries(p: Project, tasks: Task[], points = 12) {
   const { total, done } = projectProgress(p.id, tasks)
@@ -98,6 +100,15 @@ export function burnSeries(p: Project, tasks: Task[], points = 12) {
   // At most one point a day, so no date repeats; none before the first whole day (a project not started, or started today)
   points = Math.min(points, Math.floor(span / 864e5) + 1)
   if (points < 2) return { labels: [], totals: [], dones: [] }
+  if (!DEMO) {
+    const mine = tasks.filter(t => t.project === p.id)
+    const days = Array.from({ length: points }, (_, i) => new Date(start.getTime() + span * (i / (points - 1))))
+    return {
+      labels: days.map(d => `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`),
+      totals: days.map(d => mine.filter(t => dayOf(t.createdAt) <= ymd(d)).length),
+      dones: days.map(d => mine.filter(t => t.doneAt && dayOf(t.doneAt) <= ymd(d)).length),
+    }
+  }
   let seed = 0
   for (const c of p.id) seed = (seed * 31 + c.charCodeAt(0)) % 9973
   const jitter = (i: number) => ((Math.sin(seed + i * 1.7) + 1) / 2) * 0.12

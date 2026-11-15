@@ -27,6 +27,7 @@ import Training from './screens/Training'
 import Settings from './screens/Settings'
 import Admin from './screens/Admin'
 import Login from './screens/Login'
+import Setup from './screens/Setup'
 import { NoAccess } from './ui/bits'
 
 // All screens ship in one file: a page change never waits for the network (about 100 KB more on first load)
@@ -41,12 +42,15 @@ export function App() {
   const main = useRef<HTMLElement>(null)
   const first = useRef(true)
 
+  // Somebody can sign in: the system has been set up
+  const started = s.people.some(p => p.account)
+
   useEffect(() => applyAppearance(s.settings), [s.settings])
 
   useEffect(() => {
     const company = s.companies.find(c => c.id === s.company)?.name
-    document.title = session ? `${pageLabel(route.page)} · ${company}` : 'Нэвтрэх'
-  }, [route.page, s.company, s.companies, session])
+    document.title = session ? `${pageLabel(route.page)} · ${company}` : started ? 'Нэвтрэх' : 'Системийг эхлүүлэх'
+  }, [route.page, s.company, s.companies, session, started])
 
   // After the first page, a page change scrolls up and focuses the new title (see usePageEnter)
   useEffect(() => {
@@ -55,7 +59,7 @@ export function App() {
     window.scrollTo(0, 0)
   }, [route.page, route.id])
 
-  if (!session) return <Login />
+  if (!session) return started ? <Login /> : <Setup />
   // A page outside the person's rights says so instead of showing anything
   const Screen = navFor(s).some(n => n.page === route.page) ? SCREENS[route.page] : NoAccess
   return (

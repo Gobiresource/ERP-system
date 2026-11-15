@@ -1,5 +1,6 @@
-// Demo data. All names, companies and numbers are made up. Dates are relative to the day the data is created.
-import type { CalEvent, Company, EventKind, Notice, Person, Priority, Project, State, Task, TaskStatus } from './types'
+// Demo data, for checks and demonstrations (lib/demo.ts): all names, companies and numbers are made up, and dates are
+// relative to the day the data is created. And blank(): the system as it really starts, with none of it.
+import type { CalEvent, Company, EventKind, Notice, Person, Priority, Project, Settings, State, Task, TaskStatus } from './types'
 import { addDays, ymd, ymdhm } from './format'
 import { seedHr } from './seedHr'
 import { seedDrafts } from './draft'
@@ -13,6 +14,26 @@ import { demoAccounts } from './access'
 
 let n = 0
 const uid = (p: string) => `${p}${++n}`
+
+const settings = (): Settings => ({
+  theme: 'light',
+  wall: 'ash',
+  accent: 'blue',
+  glass: 'tinted',
+  solid: false,
+  notify: { mentions: true, due: true, meetings: true, digest: false, focusEnd: true },
+  focus: { work: 25, rest: 5, autoStart: false },
+})
+
+/** The system before anyone has set it up: no ХХК, no people, nothing made up (screens/Setup.tsx starts it) */
+export function blank(): State {
+  return {
+    version: 1, me: '', company: '', companies: [], people: [], projects: [], tasks: [], events: [], notices: [], focusLog: [],
+    departments: [], positions: [], docTypes: [], employees: [], drafts: [], docs: [], requests: [], hrRequests: [], chats: [], messages: [],
+    contracts: [], roles: {}, reports: [], kpi: {}, scans: [], aiSpent: 0, scansKept: true, timely: {}, lessons: [], toursDone: {},
+    settings: settings(),
+  }
+}
 
 export function seed(): State {
   n = 0
@@ -244,15 +265,7 @@ export function seed(): State {
     timely: {},
     lessons: seedLessons(now),
     toursDone: {},
-    settings: {
-      theme: 'light',
-      wall: 'ash',
-      accent: 'blue',
-      glass: 'tinted',
-      solid: false,
-      notify: { mentions: true, due: true, meetings: true, digest: false, focusEnd: true },
-      focus: { work: 25, rest: 5, autoStart: false },
-    },
+    settings: settings(),
   }
   return { ...state, ...seedReports(now, state), ...seedHrRequests(now, state), people: demoAccounts(state) }
 }

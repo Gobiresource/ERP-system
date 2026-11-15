@@ -19,6 +19,7 @@ import { PeoplePick } from '../ui/PeoplePick'
 import { DocTile, ReqPill } from '../screens/Docs'
 import { docView } from '../lib/access'
 import { EditPdf, Tool, Viewer, isPdfName } from './Viewer'
+import { DEMO } from '../lib/demo'
 
 const MB25 = 25 * 1024 * 1024
 
@@ -339,7 +340,7 @@ function RequestBody({ id, office: asked }: { id: string; office?: boolean }) {
               {r.status === 'working' && !r.paper && (
                 <>
                   <button type="button" className="btn btn--accent" disabled={busy} onClick={() => attach.current?.click()}><Paperclip className="ico" />Файл хавсаргаж илгээх</button>
-                  <button type="button" className="btn btn--glass" disabled={busy} onClick={() => send(() => requestPdf(r), `${r.what}.pdf`)}><Sparkles className="ico" />Жишээ файлаар илгээх</button>
+                  {DEMO && <button type="button" className="btn btn--glass" disabled={busy} onClick={() => send(() => requestPdf(r), `${r.what}.pdf`)}><Sparkles className="ico" />Жишээ файлаар илгээх</button>}
                   <input ref={attach} type="file" hidden onChange={attachFile} />
                 </>
               )}

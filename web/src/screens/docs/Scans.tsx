@@ -20,6 +20,7 @@ import { PageHead } from '../../ui/PageHead'
 import { Seg } from '../../ui/Seg'
 import { Empty } from '../../ui/bits'
 import { DocsNav } from '../Docs'
+import { DEMO } from '../../lib/demo'
 
 /** A filed document, or a contract numbered in Гэрээ, of the same ХХК and number, by its name: the paper may be in a folder already */
 const twinOf = (s: State, f: ScanFields): string | undefined => {
@@ -113,7 +114,7 @@ function AiBar({ ai, samples }: { ai: AiState | null; samples: boolean }) {
     <div className="sbar" role="status">
       <CircleAlert className="ico" />
       <span><b>AI холбогдоогүй байна.</b> Серверт түлхүүр тохируулсны дараа скан автоматаар танигдана. Одоогоор мэдээллийг гараар бөглөнө үү.</span>
-      {!samples && <button type="button" className="btn btn--glass btn--sm" disabled={adding} onClick={add}>{adding ? 'Бэлтгэж байна…' : 'Жишээ скан нэмэх'}</button>}
+      {DEMO && !samples && <button type="button" className="btn btn--glass btn--sm" disabled={adding} onClick={add}>{adding ? 'Бэлтгэж байна…' : 'Жишээ скан нэмэх'}</button>}
     </div>
   )
 }

@@ -19,6 +19,7 @@ import { Avatar } from '../ui/bits'
 import { DocTile } from '../screens/Docs'
 import { HrPill, KIND_HUE, KIND_ICON, whatOf } from '../screens/Requests'
 import { useActor } from '../screens/docs/Contracts'
+import { DEMO } from '../lib/demo'
 
 const nameOf = (id?: Id) => {
   const p = id ? getState().people.find(x => x.id === id) : undefined
@@ -69,7 +70,7 @@ export function NewRequest() {
 
 interface TimelyRow { t: TimelyEmployee | null; sample: boolean; link?: TimelyCompany; failed?: boolean }
 const NONE: TimelyRow = { t: null, sample: false }
-/** The employee's month in Timely, or an example one while Timely is not connected (`sample`); null while it reads */
+/** The employee's month in Timely; null while it reads. With the example data (lib/demo.ts), an example one while Timely is not connected (`sample`). */
 function useTimely(e: Employee | undefined, month: string): TimelyRow | null {
   const [v, setV] = useState<TimelyRow | null>(null)
   const id = e?.id
@@ -80,7 +81,7 @@ function useTimely(e: Employee | undefined, month: string): TimelyRow | null {
       const s = getState()
       const link = st.ready ? linkOf(s, e.company, st.companies) : undefined
       const m = link ? await loadMonth(link.id, month).catch(() => null) : null
-      if (live) setV(link ? { t: m && rowOf(m, e), sample: false, link, failed: !m } : { t: sampleFor(s, e, month), sample: true })
+      if (live) setV(link ? { t: m && rowOf(m, e), sample: false, link, failed: !m } : DEMO ? { t: sampleFor(s, e, month), sample: true } : NONE)
     })
     return () => { live = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,7 +210,7 @@ function LeaveForm({ old }: { old?: LeaveRequest }) {
             <span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : leave ? (leave.left === null ? NO_CAP : `${leave.year} оны эрх · Timely`) : 'Timely'}</span>
           </div>
           {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : !leave ? (
-            <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>
+            <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : tl.link ? 'Timely-д бүртгэлгүй' : 'Timely холбогдоогүй байна.'}</p>
           ) : (
             <dl>
               {leave.earned !== null && <div><dt>Эрх</dt><dd className="tnum">{leave.earned}<small> хоног</small></dd></div>}
@@ -643,7 +644,7 @@ function LeaveContext({ r, e }: { r: LeaveRequest; e?: Employee }) {
         <section className="rbal" aria-labelledby="rq-bal">
           <div className="rbal__head"><h3 id="rq-bal">Амралтын үлдэгдэл</h3><span>{tl?.sample ? <span className="rbal__tag">Жишээ</span> : leave?.left === null ? NO_CAP : 'Timely'}</span></div>
           {!tl ? <p className="rbal__none">Timely-ээс уншиж байна…</p> : !leave ? (
-            <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : 'Timely-д бүртгэлгүй'}</p>
+            <p className="rbal__none">{tl.failed ? 'Timely-ээс уншиж чадсангүй. Дахин оролдоно уу.' : tl.link ? 'Timely-д бүртгэлгүй' : 'Timely холбогдоогүй байна.'}</p>
           ) : leave.left === null ? (
             <dl><div><dt>Ашигласан</dt><dd className="tnum">{leave.used}<small> хоног</small></dd></div></dl>
           ) : (

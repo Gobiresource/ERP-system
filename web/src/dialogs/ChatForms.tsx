@@ -43,7 +43,9 @@ export function NewChat() {
     <FormSheet title="Шинэ зурвас" sub="Нэг хүн сонговол хувийн зурвас, олон хүн сонговол бүлэг үүснэ." submit="Бичих" onSubmit={submit} onClose={close} errors={errors}>
       <fieldset className="field field--wide" id="nc-people" tabIndex={-1} aria-describedby={errors['nc-people'] ? 'nc-people-error' : undefined}>
         <legend className="field__label">Хэнд бичих</legend>
-        <PeoplePick people={people} value={f.members} onToggle={id => { setF({ ...f, members: toggle(f.members, id) }); setErrors({}) }} />
+        {people.length
+          ? <PeoplePick people={people} value={f.members} onToggle={id => { setF({ ...f, members: toggle(f.members, id) }); setErrors({}) }} />
+          : <p className="field__hint">Өөр хэрэглэгч бүртгэгдээгүй байна. Хэрэглэгч нэмэгдсэний дараа зурвас бичих боломжтой.</p>}
         {errors['nc-people'] && <span className="field__error" id="nc-people-error">{errors['nc-people']}</span>}
       </fieldset>
       {f.members.length > 1 && (

@@ -1,24 +1,40 @@
-// Walks every guided tour (Сургалт → ERP заавар, src/lib/tours.ts) with «Үргэлжлүүлэх», on a desktop and a phone, signed
-// in as the example director. For each tour it says which steps showed, which were passed over (their element was not
-// there) and which showed without a lit element. Run it after changing a screen: a class or an id a step points at may
-// be gone, and the step would then be passed over without a word.
+// Walks every guided tour (Сургалт → ERP заавар, src/lib/tours.ts) with «Үргэлжлүүлэх», on a desktop and a phone. For
+// each tour it says which steps showed, which were passed over (their element was not there) and which showed without
+// a lit element. Run it after changing a screen: a class or an id a step points at may be gone, and the step would
+// then be passed over without a word.
+//
+// It walks the example data (src/lib/demo.ts), signed in as the example director, where every step has something to
+// point at. With --empty it walks the system as it really starts: set up through «Системийг эхлүүлэх», with nothing in
+// it yet. There the steps about a list's rows are passed over, and that is all that may be.
 //
 // Usage: build, serve web/dist on 4173 (npx vite preview --port 4173 --strictPort), then
-//   node web/scripts/tour-walk.cjs [address] [tour id ...]
+//   node web/scripts/tour-walk.cjs [address] [--empty] [tour id ...]
 // Needs Playwright with Chromium (already in the cloud container; elsewhere: npm i playwright).
 const { chromium } = require('playwright')
 const args = process.argv.slice(2)
 const BASE = /^https?:/.test(args[0] ?? '') ? args.shift() : 'http://localhost:4173'
-const ONLY = args
+const EMPTY = args.includes('--empty')
+const ONLY = args.filter(a => a !== '--empty')
 let fails = 0
 ;(async () => {
   const b = await chromium.launch()
   for (const [name, opts] of [['desktop', { viewport: { width: 1440, height: 900 } }], ['phone', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }]]) {
     const ctx = await b.newContext(opts)
-    // The session the sign-in page keeps: Б.Болд (u1), who may open everything
-    await ctx.addInitScript(() => { if (!localStorage.getItem('erp:session')) localStorage.setItem('erp:session', JSON.stringify({ user: 'u1', until: Date.now() + 864e5 })) })
+    // The example data, and the session the sign-in page keeps: Б.Болд (u1), who may open everything
+    if (!EMPTY) await ctx.addInitScript(() => {
+      localStorage.setItem('erp:demo', '1')
+      if (!localStorage.getItem('erp:session')) localStorage.setItem('erp:session', JSON.stringify({ user: 'u1', until: Date.now() + 864e5 }))
+    })
     const p = await ctx.newPage()
     p.setDefaultTimeout(6000)
+    if (EMPTY) {
+      // The first page of an empty system makes its one admin; the welcome page is then closed
+      await p.goto(BASE, { waitUntil: 'networkidle' })
+      for (const [id, v] of [['su-company', 'Туршилт ХХК'], ['su-family', 'Дорж'], ['su-given', 'Саруул'], ['su-login', 'saruul'], ['su-password', 'Turshilt2026'], ['su-again', 'Turshilt2026']]) await p.locator(`#${id}`).fill(v)
+      await p.getByRole('button', { name: 'Эхлүүлэх' }).click()
+      await p.locator('.welcome__skip').click({ timeout: 15000 })
+      await p.waitForTimeout(600)
+    }
     const errors = []
     p.on('pageerror', e => errors.push(e.message))
     // Without the server Ирц has nothing to read (502): not this script's business
@@ -26,7 +42,7 @@ let fails = 0
     await p.goto(`${BASE}/#training-erp`, { waitUntil: 'networkidle' })
     await p.waitForTimeout(900)
     const ids = await p.$$eval('[data-tour-start]', els => els.map(e => e.dataset.tourStart))
-    console.log(`\n=== ${name}: ${ids.length} tours`)
+    console.log(`\n=== ${name}${EMPTY ? ', empty system' : ''}: ${ids.length} tours`)
     for (const id of ids.filter(x => !ONLY.length || ONLY.includes(x))) {
       await p.goto(`${BASE}/#training-erp`, { waitUntil: 'networkidle' })
       await p.waitForTimeout(500)
