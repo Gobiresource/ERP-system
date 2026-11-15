@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>ERP</title>
     <script>
-      // Paint the right light/dark background before the app loads.
+      // Paint the right background before the app loads: dark only when the person chose it, light otherwise.
       try {
         var s = JSON.parse(localStorage.getItem('erp:v1') || 'null');
-        var t = s && s.settings && s.settings.theme;
-        var host = document.documentElement.dataset.theme;
-        var dark = t === 'dark' || (t !== 'light' && (host ? host === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches));
-        document.documentElement.dataset.mode = dark ? 'dark' : 'light';
+        document.documentElement.dataset.mode = s && s.settings && s.settings.theme === 'dark' ? 'dark' : 'light';
       } catch (e) {}
     </script>
   </head>

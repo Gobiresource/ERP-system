@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import { AtSign, Bell, CalendarClock, Check, ChevronRight, Contrast, Database, Download, Flag, Hourglass, Inbox, KeyRound, Layers, Mail, Minus, Moon, Palette, Play, Plus, RotateCcw, Shield, Smile, Square, Sun, SunMoon, Timer, User, BadgeCheck, Droplet } from 'lucide-react'
+import { AtSign, Bell, CalendarClock, Check, ChevronRight, Database, Download, Flag, Hourglass, Inbox, KeyRound, Layers, Mail, Minus, Moon, Palette, Play, Plus, RotateCcw, Shield, Smile, Square, Sun, SunMoon, Timer, User, BadgeCheck, Droplet } from 'lucide-react'
 import '../styles/screens/settings.css'
 import type { Accent, Settings as Prefs, Wall } from '../lib/types'
 import { actions, getState, scoped, useApp } from '../lib/store'
@@ -261,10 +261,10 @@ function Appearance() {
       <div className="cell">
         <Icon icon={SunMoon} hue="indigo" />
         <div className="cell__main">
-          <span className="cell__text"><b>Горим</b><small>Автомат нь төхөөрөмжийн тохиргоог дагана</small></span>
+          <span className="cell__text"><b>Горим</b><small>Бараан горим зөвхөн сонгосон үед идэвхжинэ</small></span>
           <span className="cell__ctl">
             <Seg label="Горим" className="set-theme" value={p.theme} onChange={theme => setLook({ theme })}
-              options={[{ value: 'light', label: 'Цайвар', icon: <Sun className="ico" /> }, { value: 'dark', label: 'Бараан', icon: <Moon className="ico" /> }, { value: 'system', label: 'Автомат', icon: <Contrast className="ico" /> }]} />
+              options={[{ value: 'light', label: 'Цайвар', icon: <Sun className="ico" /> }, { value: 'dark', label: 'Бараан', icon: <Moon className="ico" /> }]} />
           </span>
         </div>
       </div>

@@ -43,7 +43,6 @@ export function AccountMenu({ variant }: { variant: 'side' | 'toolbar' }) {
         <hr />
         <MenuItem checked={s.settings.theme === 'light'} onSelect={pick(() => setTheme('light'))}>Цайвар</MenuItem>
         <MenuItem checked={s.settings.theme === 'dark'} onSelect={pick(() => setTheme('dark'))}>Бараан</MenuItem>
-        <MenuItem checked={s.settings.theme === 'system'} onSelect={pick(() => setTheme('system'))}>Автомат</MenuItem>
         <hr />
         <MenuItem danger icon={<RotateCcw className="ico" />} onSelect={pick(resetDemo)}>
           Жишээ өгөгдлийг сэргээх

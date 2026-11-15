@@ -1,18 +1,12 @@
-// Applies the appearance settings to <html>. "system" follows the page that shows the app (data-theme), then the OS.
+// Applies the appearance settings to <html>. Цайвар is the look everyone starts with, and Бараан comes only when the
+// person chose it: neither the device's setting nor the page that shows the app turns it on (the user's decision,
+// docs/decisions.md, 2026-11-15).
 import { useSyncExternalStore } from 'react'
 import type { Settings } from './types'
 import { reduced } from './motion'
 
 const root = document.documentElement
-const mq = window.matchMedia('(prefers-color-scheme: dark)')
 let current: Settings | null = null
-
-export function resolveMode(theme: Settings['theme']): 'light' | 'dark' {
-  if (theme !== 'system') return theme
-  const host = root.dataset.theme
-  if (host === 'dark' || host === 'light') return host
-  return mq.matches ? 'dark' : 'light'
-}
 
 let pending = false
 
@@ -23,7 +17,7 @@ export function applyAppearance(s: Settings, animate = false) {
   const apply = () => {
     pending = false
     const c = current!
-    root.dataset.mode = resolveMode(c.theme)
+    root.dataset.mode = c.theme
     root.dataset.accent = c.accent
     root.dataset.wall = c.wall
     root.dataset.glass = c.glass
@@ -34,10 +28,6 @@ export function applyAppearance(s: Settings, animate = false) {
     document.startViewTransition(apply)
   } else apply()
 }
-
-const refresh = () => current && applyAppearance(current)
-mq.addEventListener('change', refresh)
-new MutationObserver(refresh).observe(root, { attributes: true, attributeFilter: ['data-theme'] })
 
 /** 'light' or 'dark', as shown right now */
 export const useMode = () =>

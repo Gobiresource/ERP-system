@@ -245,7 +245,7 @@ export function seed(): State {
     lessons: seedLessons(now),
     toursDone: {},
     settings: {
-      theme: 'system',
+      theme: 'light',
       wall: 'ash',
       accent: 'blue',
       glass: 'tinted',

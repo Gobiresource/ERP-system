@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gobi design demo</title>
 <!-- Icons: Lucide, ISC License, Copyright (c) Lucide Contributors, https://lucide.dev/license -->
-<script>// Put inline in <head>, before the stylesheets load, so the first paint has the right theme: the user's saved choice,
-// else the system setting. Store the choice under the same key when the user changes it.
+<script>// Put inline in <head>, before the stylesheets load, so the first paint has the right theme. Light is the look everyone
+// starts with; dark comes only when the person chose it. The device's own dark setting is not followed. Store the
+// choice under the same key when the person changes it.
 (function () {
-  try {
-    var saved = localStorage.getItem('theme');
-    var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  } catch (e) { document.documentElement.dataset.theme = 'light'; }
+  var dark = false;
+  try { dark = localStorage.getItem('theme') === 'dark'; } catch (e) {}
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
 })();
 </script>
 <link rel="stylesheet" href="tokens.css">
@@ -187,7 +186,7 @@
 <h2 class="demo-h">Tour<small>Дэлгэц дээр заах хөтөч: нэг хэсэг гэрэлтэж, бусад нь бараан болно. Дээрх «Заавар үзэх» товчоор ажиллуулна</small></h2>
 <div class="ds-stage">
 <div class="ds-col" style="max-width:420px">
-  <div class="tour__card glass glass--thick" style="position:static;animation:none" role="group" aria-label="Зааврын картын жишээ">
+  <div class="tour__card glass glass--thick" style="position:static;animation:none;width:100%;max-width:360px" role="group" aria-label="Зааврын картын жишээ">
     <p class="tour__count">Ажил нэмэх, 2 / 8</p>
     <h3 class="tour__title">Шинэ ажил</h3>
     <p class="tour__text">Ажил нэмэхдээ энэ товчийг дарна.</p>

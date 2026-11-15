@@ -1,5 +1,6 @@
 // Pictures of a page for checking a design: desktop 1440x900 and phone 390x844, light and dark, and one with reduced
-// motion. Prints page errors and any sideways overflow. With --scale it also opens the page at a real 125% and 150%
+// motion. Dark is chosen the way theme.js keeps a person's choice (localStorage 'theme', <html data-theme>): a page
+// built with this skill does not turn dark because the device is. Prints page errors and any sideways overflow. With --scale it also opens the page at a real 125% and 150%
 // screen scale (Playwright's deviceScaleFactor draws differently from a real scaled screen; thin lines show it).
 // Usage: node shoot.js <url or file path> <out dir> [--scale]
 // Needs Playwright with Chromium (npm i playwright; npx playwright install chromium) unless already installed.
@@ -9,11 +10,12 @@ const [target, out = 'shots', flag] = process.argv.slice(2)
 if (!target) { console.log('Usage: node shoot.js <url or file path> <out dir> [--scale]'); process.exit(1) }
 const url = /^https?:|^file:/.test(target) ? target : 'file://' + path.resolve(target)
 fs.mkdirSync(out, { recursive: true })
-const look = async (p, name, w) => {
+const look = async (p, name, w, scheme) => {
   const errors = []
   p.on('pageerror', e => errors.push(e.message))
   p.on('console', m => m.type() === 'error' && errors.push(m.text()))
   await p.goto(url, { waitUntil: 'networkidle' })
+  if (scheme) await p.evaluate(s => { document.documentElement.dataset.theme = s }, scheme)
   await p.waitForTimeout(600)
   // Compared with the width asked for: a phone browser zooms out to fit a page that is too wide
   const over = await p.evaluate(w => document.documentElement.scrollWidth - w, w)
@@ -24,8 +26,9 @@ const look = async (p, name, w) => {
   const b = await chromium.launch()
   for (const [w, h, dev] of [[1440, 900, 'desktop'], [390, 844, 'phone']]) {
     for (const scheme of ['light', 'dark']) {
-      const ctx = await b.newContext({ viewport: { width: w, height: h }, colorScheme: scheme, deviceScaleFactor: dev === 'phone' ? 3 : 1, isMobile: dev === 'phone', hasTouch: dev === 'phone' })
-      await look(await ctx.newPage(), `${dev}-${scheme}`, w)
+      const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dev === 'phone' ? 3 : 1, isMobile: dev === 'phone', hasTouch: dev === 'phone' })
+      await ctx.addInitScript(s => { try { localStorage.setItem('theme', s) } catch (e) {} }, scheme)
+      await look(await ctx.newPage(), `${dev}-${scheme}`, w, scheme)
       await ctx.close()
     }
   }

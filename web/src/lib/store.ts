@@ -103,6 +103,8 @@ function load(): State | null {
     if (s.notices.some((n: { to?: Id }) => !n.to) || s.focusLog.some((f: { who?: Id }) => !f.who)) {
       s = { ...s, notices: s.notices.map((n: object) => ({ to: 'u1', ...n })), focusLog: s.focusLog.map((f: object) => ({ who: 'u1', ...f })) }
     }
+    // Saved when the look could follow the device («Автомат»): it is Цайвар now unless Бараан was chosen
+    if (s.settings.theme !== 'dark' && s.settings.theme !== 'light') s = { ...s, settings: { ...s.settings, theme: 'light' } }
     return s
   } catch {
     return null

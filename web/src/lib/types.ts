@@ -169,7 +169,8 @@ export interface FocusLog {
   who: Id
 }
 
-export type ThemeSetting = 'light' | 'dark' | 'system'
+/** Цайвар unless the person chose Бараан: the look never follows the device by itself (docs/decisions.md, 2026-11-15) */
+export type ThemeSetting = 'light' | 'dark'
 export type Wall = 'ash' | 'sand' | 'sage' | 'aurora' | 'smoke' | 'tide' | 'bloom' | 'ember' | 'grove' | 'dusk'
 export type Accent = 'blue' | 'purple' | 'pink' | 'orange' | 'green' | 'graphite'
 
