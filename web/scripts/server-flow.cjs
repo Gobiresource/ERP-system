@@ -164,14 +164,23 @@ async function up(url) {
 
 
   // ---- Work reaches the others
-  const addTask = async (x, title) => {
+  /** A new task; given also to `to` (a name in the picker) */
+  const addTask = async (x, title, to) => {
     await x.p.locator('.tbtn[aria-label="Үүсгэх"]').click(); await x.wait(300);
     await x.p.getByRole('menuitem', { name: 'Шинэ ажил' }).click(); await x.wait(500);
-    await x.p.locator('#nt-title').fill(title); await x.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await x.wait(1200);
+    await x.p.locator('#nt-title').fill(title);
+    if (to) await x.p.locator('dialog[open] .people-pick label', { hasText: to }).click();
+    await x.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await x.wait(1200);
   };
-  await addTask(a, 'Гэрээний төсөл бэлтгэх');
+  // Ажил is one's own (docs/decisions.md, 2026-11-16): a task kept for oneself reaches nobody; one given to someone reaches them
+  await addTask(a, 'Өөрийн тэмдэглэл');
+  await addTask(a, 'Гэрээний төсөл бэлтгэх', 'Номин');
   await b.sync(); await b.go('tasks');
-  ok((await b.main()).includes('Гэрээний төсөл бэлтгэх'), 'a task the admin adds shows in the other person\'s browser');
+  ok((await b.main()).includes('Гэрээний төсөл бэлтгэх') && !(await b.main()).includes('Өөрийн тэмдэглэл'), 'a task the admin gives the other person shows in their Ажил; one the admin keeps for themself does not');
+  await b.p.locator('.tk-whose').click(); await b.wait(300);
+  await b.p.getByRole('menuitemradio', { name: 'Надад оноосон' }).or(b.p.getByRole('menuitem', { name: 'Надад оноосон' })).first().click(); await b.wait(500);
+  ok((await b.main()).includes('Гэрээний төсөл бэлтгэх'), 'and is under «Надад оноосон»');
+  await b.p.getByRole('button', { name: 'Шүүлтүүр арилгах' }).click(); await b.wait(300);
   // What the hidden system admin writes reaches the person, from «Системийн админ», and nothing breaks for want of their record
   const put = changes => a.p.evaluate(async c => (await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ since: 0, scope: '', changes: c }) })).json(), changes);
   const at = new Date().toISOString();
@@ -184,10 +193,10 @@ async function up(url) {
   ok(said.every(r => r.refused.length === 0) && chatText.includes('Системээс мэндчилгээ') && chatText.includes('Системийн админ'), 'a message from the hidden system admin reaches the person, from «Системийн админ»');
   await addTask(b, 'Тайлан нэгтгэх');
   await a.sync(); await a.go('tasks');
-  ok((await a.main()).includes('Тайлан нэгтгэх') && (await a.main()).includes('Гэрээний төсөл бэлтгэх'), 'and theirs in the admin\'s');
+  ok(!(await a.main()).includes('Тайлан нэгтгэх') && (await a.main()).includes('Гэрээний төсөл бэлтгэх'), 'the other\'s own task stays out of the admin\'s Ажил, though the system admin may see every task');
   const tab = await a.ctx.newPage();
   await tab.goto(BASE + '#tasks', { waitUntil: 'networkidle' }); await tab.waitForTimeout(900 * SLOW);
-  ok((await tab.locator('#main').innerText()).includes('Тайлан нэгтгэх'), 'a second tab of the same person opens signed in, with the same data');
+  ok((await tab.locator('#main').innerText()).includes('Өөрийн тэмдэглэл'), 'a second tab of the same person opens signed in, with the same data');
   await tab.close();
 
   // ---- Rights hold on the server, not only on the screen
@@ -271,7 +280,7 @@ async function up(url) {
 
   // ---- The connection drops
   await a.ctx.route('**/api/sync**', r => r.abort());
-  await addTask(a, 'Холболтгүй үед нэмсэн');
+  await addTask(a, 'Холболтгүй үед нэмсэн', 'Номин');
   await a.wait(1500);
   ok(await a.p.locator('.offline__pill').count() === 1 && (await a.p.locator('.offline__pill').innerText()).includes('Холболт тасарсан'), 'without a connection the change stays on the screen, and the person is told it waits');
   await a.go('tasks');

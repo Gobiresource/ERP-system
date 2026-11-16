@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { ChevronDown, Columns3, Flag, Folder, List as ListIcon, Plus, Search, X } from 'lucide-react'
 import '../styles/screens/tasks.css'
-import type { Priority } from '../lib/types'
+import type { Id, Priority, Task } from '../lib/types'
 import { scoped, useApp } from '../lib/store'
 import { open } from '../lib/ui'
 import { usePageEnter } from '../lib/motion'
@@ -14,6 +14,16 @@ import { Board } from './tasks/Board'
 import { List } from './tasks/List'
 
 type View = 'board' | 'list'
+type Whose = 'all' | 'given' | 'sent'
+/**
+ * Ажил is the person's own (docs/decisions.md, 2026-11-16): what they made and what they were given. These pick among
+ * them: all, what someone else gave them, what they gave someone else.
+ */
+const WHOSE: Record<Whose, { label: string; has: (t: Task, me: Id) => boolean }> = {
+  all: { label: 'Миний бүх ажил', has: () => true },
+  given: { label: 'Надад оноосон', has: (t, me) => t.assignees.includes(me) && !!t.by && t.by !== me },
+  sent: { label: 'Миний оноосон', has: (t, me) => t.by === me && t.assignees.some(a => a !== me) },
+}
 const VIEW_KEY = 'erp:tasks-view'
 const readView = (): View => { try { return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'board' } catch { return 'board' } }
 
@@ -24,35 +34,38 @@ export default function Tasks() {
   usePageEnter(ref)
   const [view, setView] = useState<View>(readView)
   const [project, setProject] = useState('all')
-  const [mine, setMine] = useState(false)
+  const [whose, setWhose] = useState<Whose>('all')
   const [prio, setPrio] = useState<'all' | Priority>('all')
   const [q, setQ] = useState('')
   const projPop = usePopover()
   const prioPop = usePopover()
+  const whoPop = usePopover()
 
   const changeView = (v: View) => {
     setView(v)
     try { localStorage.setItem(VIEW_KEY, v) } catch { /* not saved */ }
   }
 
+  // Others' tasks the person may see (their project's, or given to their people) are found in Төсөл and Баг, not here
+  const ours = useMemo(() => sc.tasks.filter(t => t.by === s.me || t.assignees.includes(s.me)), [sc, s.me])
   const shown = useMemo(() => {
     const t = q.trim().toLocaleLowerCase('mn')
-    return sc.tasks.filter(x =>
+    return ours.filter(x =>
       (project === 'all' || (project === 'none' ? !x.project : x.project === project)) &&
-      (!mine || x.assignees.includes(s.me)) &&
+      WHOSE[whose].has(x, s.me) &&
       (prio === 'all' || x.prio === prio) &&
       (!t || [x.title, sc.project(x.project)?.name, ...x.assignees.flatMap(id => [sc.person(id)?.given, sc.person(id)?.family])].some(v => v?.toLocaleLowerCase('mn').includes(t))))
-  }, [sc, project, mine, prio, q, s.me])
+  }, [sc, ours, project, whose, prio, q, s.me])
 
-  const open_ = sc.tasks.filter(t => t.status !== 'done')
+  const open_ = ours.filter(t => t.status !== 'done')
   const [from, to] = thisWeekRange()
   const stats = {
     open: open_.length,
     week: open_.filter(t => t.due >= from && t.due <= to).length,
     late: open_.filter(t => daysFromToday(t.due) < 0).length,
-    done: sc.tasks.filter(t => t.doneAt && dayOf(t.doneAt) >= from).length,
+    done: ours.filter(t => t.doneAt && dayOf(t.doneAt) >= from).length,
   }
-  const filtered = project !== 'all' || mine || prio !== 'all' || q.trim() !== ''
+  const filtered = project !== 'all' || whose !== 'all' || prio !== 'all' || q.trim() !== ''
   const current = sc.project(project === 'all' || project === 'none' ? undefined : project)
   const me = sc.me
 
@@ -86,9 +99,10 @@ export default function Tasks() {
             <span className="tk-chip__label">{current ? current.name : project === 'none' ? 'Төсөлгүй' : 'Бүх төсөл'}</span>
             <ChevronDown className="ico caret" />
           </button>
-          <button type="button" className="tk-chip" aria-pressed={mine} onClick={() => setMine(!mine)}>
+          <button ref={whoPop.anchor} type="button" className={`tk-chip tk-whose${whose !== 'all' ? ' is-on' : ''}`} aria-haspopup="menu" aria-expanded={whoPop.open} onClick={whoPop.toggle}>
             <Avatar person={me} size="xs" />
-            Зөвхөн минийх
+            {WHOSE[whose].label}
+            <ChevronDown className="ico caret" />
           </button>
           <button ref={prioPop.anchor} type="button" className={`tk-chip${prio !== 'all' ? ' is-on' : ''}`} aria-haspopup="menu" aria-expanded={prioPop.open} onClick={prioPop.toggle}>
             <Flag className="ico" />
@@ -102,7 +116,7 @@ export default function Tasks() {
           <input type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Нэр, төсөл, хүнээр шүүх" />
         </label>
         {filtered && (
-          <button type="button" className="btn btn--glass btn--sm" onClick={() => { setProject('all'); setMine(false); setPrio('all'); setQ('') }}>
+          <button type="button" className="btn btn--glass btn--sm" onClick={() => { setProject('all'); setWhose('all'); setPrio('all'); setQ('') }}>
             <X className="ico" />
             Шүүлтүүр арилгах
           </button>
@@ -111,7 +125,7 @@ export default function Tasks() {
 
       <Menu state={projPop} label="Төслөөр шүүх" placement="bottom-start">
         {[{ id: 'all', name: 'Бүх төсөл', hue: undefined }, ...sc.projects.filter(p => p.status !== 'done'), { id: 'none', name: 'Төсөлгүй', hue: undefined }].map(p => {
-          const n = sc.tasks.filter(t => t.status !== 'done' && (p.id === 'all' || (p.id === 'none' ? !t.project : t.project === p.id))).length
+          const n = ours.filter(t => t.status !== 'done' && (p.id === 'all' || (p.id === 'none' ? !t.project : t.project === p.id))).length
           return (
             <MenuItem key={p.id} checked={project === p.id} onSelect={() => { projPop.close(); setProject(p.id) }}>
               <span className="row" style={{ gap: 10 }}>
@@ -122,6 +136,11 @@ export default function Tasks() {
             </MenuItem>
           )
         })}
+      </Menu>
+      <Menu state={whoPop} label="Ажлын хамаарлаар шүүх" placement="bottom-start">
+        {(Object.keys(WHOSE) as Whose[]).map(k => (
+          <MenuItem key={k} checked={whose === k} onSelect={() => { whoPop.close(); setWhose(k) }}>{WHOSE[k].label}</MenuItem>
+        ))}
       </Menu>
       <Menu state={prioPop} label="Ач холбогдлоор шүүх" placement="bottom-start">
         <MenuItem checked={prio === 'all'} onSelect={() => { prioPop.close(); setPrio('all') }}>Бүх ач холбогдол</MenuItem>

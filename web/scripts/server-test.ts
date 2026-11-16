@@ -302,7 +302,7 @@ async function main() {
     { c: 'companies', id: 'c2', ops: [[[], { id: 'c2', name: 'Хоёр ХХК', hue: 'green', code: 'ХО' }]], pos: 2 },
     { c: 'people', id: 'u1', ops: [[['companies'], ['c1', 'c2']]] },
     { c: 'roles', id: 'c2', ops: [[[], { finance: 'u1', legal: 'u1', clerk: 'u1', director: 'u1', supply: 'u1' }]] },
-    { c: 'tasks', id: 't2', ops: [[[], { id: 't2', company: 'c2', title: 'Хоёрын ажил', status: 'todo', prio: 'low', assignees: [], due: '2026-12-01', estimate: 1, subtasks: [], comments: [], createdAt: '2026-11-15T00:00:00Z' }]], pos: 1 },
+    { c: 'tasks', id: 't2', ops: [[[], { id: 't2', company: 'c2', title: 'Хоёрын ажил', status: 'todo', prio: 'low', assignees: ['u8'], due: '2026-12-01', estimate: 1, subtasks: [], comments: [], createdAt: '2026-11-15T00:00:00Z', by: 'u1' }]], pos: 1 },
   ])
   ok(r.j.refused.length === 0, 'the system admin adds a second ХХК, joins it, and adds a task there')
   r = await invite(admin, person('u8', 'Хоёрын', 'c2', 'second', NO_ACCESS))
@@ -318,14 +318,15 @@ async function main() {
   ok(r.j.refused.length === 1, 'only the system admin adds a ХХК')
   r = await staff.push([{ c: 'tasks', id: 't2', ops: [[['title'], 'Эвдсэн']] }])
   ok(r.j.refused.length === 1 && !staff.get('tasks', 't2'), 'a task of a ХХК one is not in cannot be changed, though its id is known')
-  r = await staff.push([{ c: 'tasks', id: 't9', ops: [[[], { id: 't9', company: 'c2', title: 'Тэнд', status: 'todo', prio: 'low', assignees: [], due: '2026-12-01', estimate: 1, subtasks: [], comments: [], createdAt: '' }]] }])
+  r = await staff.push([{ c: 'tasks', id: 't9', ops: [[[], { id: 't9', company: 'c2', title: 'Тэнд', status: 'todo', prio: 'low', assignees: [], due: '2026-12-01', estimate: 1, subtasks: [], comments: [], createdAt: '', by: 'u3' }]] }])
   ok(r.j.refused.length === 1, 'nor a task added there')
 
-  console.log('Work everyone shares')
-  const task = (id: string, title: string) => ({ id, company: 'c1', title, status: 'todo', prio: 'low', assignees: ['u3'], due: '2026-12-01', estimate: 1, subtasks: [], comments: [], createdAt: '2026-11-15T00:00:00Z' })
+  console.log('Work shared between two people')
+  // Given by one to both: each sees it (who sees which task is checked under «Ажил: whose tasks»)
+  const task = (id: string, title: string) => ({ id, company: 'c1', title, status: 'todo', prio: 'low', assignees: ['u3', 'u7'], due: '2026-12-01', estimate: 1, subtasks: [], comments: [], createdAt: '2026-11-15T00:00:00Z', by: 'u3' })
   await staff.put('tasks', task('t1', 'Нэг'), 10)
   await under.pull()
-  ok(under.get<{ title: string }>('tasks', 't1')?.title === 'Нэг', 'a task one person adds reaches the others of the ХХК')
+  ok(under.get<{ title: string }>('tasks', 't1')?.title === 'Нэг', 'a task one person gives another reaches them')
   // Two people change different parts of one task without seeing each other's change
   const mine = under.push([{ c: 'tasks', id: 't1', ops: [[['status'], 'doing']] }])
   const theirs = staff.push([{ c: 'tasks', id: 't1', ops: [[['title'], 'Нэг, засав']] }])
@@ -492,7 +493,7 @@ async function main() {
   const long = (id: string, n: number) => ({ ...contract, id, owner: 'u7', title: `Урт гэрээ ${id}`, clauses: [{ id: 'cl1', title: 'Нэг', body: 'Гэрээний заалт. '.repeat(n) }] })
   r = await under.push([1, 2, 3, 4].map(i => ({ c: 'contracts' as Table, id: `big${i}`, ops: [[[], long(`big${i}`, 20_000)]] as Op[], pos: 10 + i })))
   ok(r.j.refused.length === 0 && [1, 2, 3, 4].every(i => under.get<{ clauses: { body: string }[] }>('contracts', `big${i}`)?.clauses[0].body.length === 320_000), 'four long contracts (2.4 MB together) sent at once are all kept, whole')
-  r = await under.push([{ c: 'contracts', id: 'huge', ops: [[[], long('huge', 45_000)]] }, { c: 'tasks', id: 'tsmall', ops: [[[], task('tsmall', 'Жижиг')]] }])
+  r = await under.push([{ c: 'contracts', id: 'huge', ops: [[[], long('huge', 45_000)]] }, { c: 'tasks', id: 'tsmall', ops: [[[], { ...task('tsmall', 'Жижиг'), by: 'u7' }]] }])
   ok(r.j.refused.length === 1 && r.j.refused[0][1] === 'huge' && r.j.refused[0][2].includes('хэт том') && under.get('tasks', 'tsmall'), 'a record too large for the database is refused with why, and the rest of the round is kept')
   await under.push([{ c: 'tasks', id: 'tsmall', gone: true }])
 
@@ -609,7 +610,7 @@ async function main() {
   await b3.sync()
   ok(JSON.stringify(b3.state.toursDone) === JSON.stringify({ u7: ['first', 'tasks'] }) && b3.titles() === b.titles(), 'a fresh browser of the same person gets their tours and the same lists')
   // Everything afresh keeps what this browser has not sent yet
-  b3.list<T>('tasks', l => [mk('td', 'Шинэ'), ...l])
+  b3.list<T>('tasks', l => [{ ...mk('td', 'Шинэ'), by: 'u7' } as T, ...l])
   b3.mirror.scope = 'stale'
   r = await b3.sync()
   ok(r.j.full === true && b3.titles().startsWith('Шинэ') && b3.mirror.pending(b3.state).length === 0, 'sent everything afresh, a browser keeps the record it was just sending')
@@ -653,6 +654,53 @@ async function main() {
     r = await admin.call('POST', 'link/new', { who: 'u5' })
     ok(r.status === 200 && (await new Browser(env).call('POST', 'link/use', { token: r.j.link, salt: SALT, hash: hashOf('back1234') })).status === 403, 'someone stopped from signing in is not let in by a link')
     ok((await admin.call('POST', 'invite', { person: person('u21', 'Буруу', 'c1', 'halfway', NO_ACCESS), salt: SALT })).status === 400, 'half a password is no password: refused')
+  }
+
+  console.log('Ажил: whose tasks')
+  {
+    const director = new Browser(env)
+    await director.login('linked', 'reset1234')
+    const all = [admin, staff, under, hr, outside, director]
+    const pulls = async () => { for (const b of all) await b.pull() }
+    const job = (id: string, by: string, assignees: string[], project?: string) =>
+      ({ id, company: 'c1', ...(project ? { project } : {}), title: `Ажил ${id}`, status: 'todo', prio: 'low', assignees, due: '2026-12-01', estimate: 1, subtasks: [], comments: [], createdAt: '2026-11-16T00:00:00Z', by })
+    const has = (b: Browser, c: Table, id: string) => !!b.get(c, id)
+    r = await under.put('tasks', job('p1', 'u7', ['u7']))
+    const given = [await staff.put('tasks', job('g1', 'u3', ['u7'])), await outside.put('tasks', job('g2', 'u10', ['u7']))]
+    ok(r.j.refused.length === 0 && given.every(x => x.j.refused.length === 0), 'a task for oneself, and tasks given to someone else, are taken')
+    await pulls()
+    ok(has(under, 'tasks', 'p1') && has(admin, 'tasks', 'p1') && [staff, hr, outside, director].every(b => !has(b, 'tasks', 'p1')), 'a task kept for oneself is theirs alone: not even management sees it, only whoever set the system up')
+    ok([under, staff, director].every(b => has(b, 'tasks', 'g1')) && [hr, outside].every(b => !has(b, 'tasks', 'g1')), 'a task given to someone: they, whoever gave it, and the ХХК\'s management see it; others do not')
+    ok([under, outside, staff, director].every(b => has(b, 'tasks', 'g2')) && !has(hr, 'tasks', 'g2'), 'what someone else gives a person is seen by whoever they work under')
+    const pr1 = { id: 'pr1', company: 'c1', name: 'Төсөл', goal: '', status: 'active', hue: 'blue', icon: 'rocket', lead: 'u3', members: ['u3', 'u10'], start: '2026-11-01', due: '2026-12-31', milestones: [], pinned: false }
+    r = await staff.put('projects', pr1)
+    const pt = await staff.put('tasks', job('pt1', 'u3', ['u3'], 'pr1'))
+    ok(r.j.refused.length === 0 && pt.j.refused.length === 0, 'the lead makes a project, and a task in it')
+    await pulls()
+    ok(has(outside, 'projects', 'pr1') && has(outside, 'tasks', 'pt1') && [under, hr, director].every(b => !has(b, 'projects', 'pr1') && !has(b, 'tasks', 'pt1')), 'a project and all its tasks are seen by the people in it, and by nobody else')
+    ok((await under.put('tasks', job('pt2', 'u7', ['u7'], 'pr1'))).j.refused.length === 1, 'nobody adds a task to a project they are not in')
+    ok((await under.put('tasks', job('x1', 'u3', ['u7']))).j.refused.length === 1, "nor a task in someone else's name")
+    r = await staff.edit<{ members: string[] }>('projects', 'pr1', p => ({ ...p, members: [...p.members, 'u7'] }))
+    const back = await under.pull()
+    ok(r.j.refused.length === 0 && back.j.full === true && has(under, 'projects', 'pr1') && has(under, 'tasks', 'pt1'), 'added to a project, a person is sent it and all its tasks so far')
+    ok((await outside.push([{ c: 'tasks', id: 'g1', ops: [[['title'], 'Өөр']] }])).j.refused.length === 1, 'nobody changes a task they have no part in, though its id is known')
+    r = await hr.push([{ c: 'tasks', id: 'p1', gone: true }])
+    await under.pull()
+    ok(r.j.refused.length === 1 && has(under, 'tasks', 'p1'), 'nor removes it')
+    ok((await under.edit<{ status: string }>('tasks', 'g1', t => ({ ...t, status: 'doing' }))).j.refused.length === 0, 'whoever is given a task changes it')
+    ok((await under.edit<{ by: string }>('tasks', 'g1', t => ({ ...t, by: 'u7' }))).j.refused.length === 1, 'but never who made it')
+    r = await under.edit<{ assignees: string[] }>('tasks', 'g1', t => ({ ...t, assignees: ['u10'] }))
+    await outside.pull()
+    ok(r.j.refused.length === 0 && !has(under, 'tasks', 'g1') && has(outside, 'tasks', 'g1'), 'and may hand it on: it leaves them and reaches whoever has it now')
+    // A task from before its maker was noted
+    const seq = Number((await env.DB!.prepare(`SELECT v FROM meta WHERE k = 'seq'`).all<{ v: number }>()).results[0].v) + 1
+    const { by: _, ...old1 } = job('old1', 'u7', ['u7'])
+    await env.DB!.batch([
+      env.DB!.prepare(`INSERT INTO rows (c, id, co, k, pos, data, seq) VALUES ('tasks', 'old1', 'c1', '', 1, ?, ?)`).bind(JSON.stringify(old1), seq),
+      env.DB!.prepare(`UPDATE meta SET v = ? WHERE k = 'seq'`).bind(seq),
+    ])
+    await pulls()
+    ok(has(under, 'tasks', 'old1') && [staff, director, outside].every(b => !has(b, 'tasks', 'old1')), 'a task from before its maker was noted is its own people\'s alone')
   }
 
   console.log(`\n${passed} passed, ${failed} failed`)

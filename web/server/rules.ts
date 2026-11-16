@@ -4,8 +4,8 @@
 //
 // Reading follows the screens exactly. Changing is checked by who may touch a record at all (its ХХК, its owner, its
 // part in a process); the finer order of a process's steps is still the browser's to keep (docs/decisions.md, 2026-11-15).
-import type { Chat, Contract, Doc, DocRequest, Draft, Employee, HrRequest, Id, Message, MonthReport, Person, ScanItem, State } from '../src/lib/types.ts'
-import { accessOf, docView, managesAccount, seer, teamOf } from '../src/lib/access.ts'
+import type { Chat, Contract, Doc, DocRequest, Draft, Employee, HrRequest, Id, Message, MonthReport, Person, Project, ScanItem, State, Task } from '../src/lib/types.ts'
+import { accessOf, changesTask, docView, inProject, managesAccount, seer, seesTask, teamOf } from '../src/lib/access.ts'
 import { rolesOf } from '../src/lib/contracts.ts'
 import { actorsOf, involves } from '../src/lib/hrRequests.ts'
 import { managerOf, seesAll } from '../src/lib/reports.ts'
@@ -13,8 +13,11 @@ import { teaches } from '../src/lib/training.ts'
 import type { Op } from '../src/lib/patch.ts'
 import type { Table } from '../src/lib/tables.ts'
 
-/** What the rules read: who works where with which rights, who reports to whom, who holds which role, who is in which chat */
-export const ORG = ['people', 'companies', 'roles', 'employees', 'departments', 'chats', 'timely'] as const
+/**
+ * What the rules read: who works where with which rights, who reports to whom, who holds which role, who is in which
+ * chat and which project
+ */
+export const ORG = ['people', 'companies', 'roles', 'employees', 'departments', 'chats', 'timely', 'projects'] as const
 export type Org = Pick<State, (typeof ORG)[number]>
 
 /** A person asking, and what is already known about them */
@@ -77,8 +80,13 @@ export function see(x: Ctx, c: Table, r: { id: Id; co: string; k: string; data: 
   switch (c) {
     case 'companies': case 'roles': case 'kpi': case 'timely':
       return ok(member(x, r.id))
-    case 'projects': case 'tasks': case 'events': case 'departments': case 'positions': case 'docTypes': case 'lessons':
+    case 'events': case 'departments': case 'positions': case 'docTypes': case 'lessons':
       return ok(member(x, r.co))
+    // A project and its tasks are for the people in it; a task also for whoever made it, is given it, or manages them
+    case 'projects':
+      return ok(member(x, r.co) && (x.sys || inProject(x.rec<Project>('projects', r.id), x.me)))
+    case 'tasks':
+      return ok(member(x, r.co) && seesTask(x.s, x.me, JSON.parse(r.data) as Task))
     case 'notices': case 'drafts': case 'focusLog':
       return ok(r.k === x.me)
     case 'toursDone':
@@ -134,6 +142,8 @@ export function scopeOf(x: Ctx): string {
       staff.filter(e => managerOf(x.s, c, e.user!) === x.me).map(e => e.user).sort(),
       Object.entries(x.s.roles[c] ?? {}).filter(([, who]) => who === x.me).map(([role]) => role).sort(),
       actorsOf(x.s, { company: c }, 'hr').includes(x.me),
+      // Whose project tasks come: being added to a project brings its tasks so far
+      x.s.projects.filter(p => p.company === c && inProject(p, x.me)).map(p => p.id).sort(),
     ]
   })
   const text = JSON.stringify([x.sys, per])
@@ -200,8 +210,20 @@ export function may(x: Ctx, c: Table, id: Id, old: unknown, next: unknown, ops: 
     case 'people':
       // New people come through Хэрэглэгч нэмэх (server/auth.ts), with their password
       return old && next ? person(x, old as Person, next as Person, ops) : NO
-    case 'projects': case 'tasks': case 'events':
+    case 'events':
       return both<{ company: Id }>(r => member(x, co(r)))
+    case 'projects':
+      // Its people change it; a new one has whoever makes it in it, or they could not see their own project
+      return both<Project>(p => member(x, p.company) && (x.sys || inProject(p, x.me)))
+    case 'tasks': {
+      const [o, t] = [old as Task | undefined, next as Task | undefined]
+      const inIt = (project?: Id) => !project || x.sys || inProject(x.rec<Project>('projects', project), x.me)
+      // A new task is its maker's, and goes into a project only by someone in it
+      if (!o) return t && t.by === x.me && member(x, t.company) && inIt(t.project) ? null : NO
+      // Changed or removed by whoever made it, is given it, or leads its project: given away too, so not checked after
+      if (!member(x, o.company) || !changesTask(x.s, x.me, o)) return NO
+      return !t || (t.by === o.by && t.company === o.company && (t.project === o.project || inIt(t.project))) ? null : NO
+    }
     case 'notices':
       return old && ops.every(([path]) => path.join() === 'read') && (old as { to: Id }).to === x.me ? null : NO
     case 'focusLog':

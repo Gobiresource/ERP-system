@@ -3,7 +3,7 @@
 // удирдлага: a branch director's or a department head's own people (docs/decisions.md, 2026-10-31). Screens and actions
 // check these, and a server that holds the data asks them again itself (server/rules.ts), so this file must load on Node
 // as it is: imports with their .ts ending, and nothing of the browser.
-import type { Access, Account, Contract, Doc, Employee, Id, Person, Scope, State } from './types.ts'
+import type { Access, Account, Contract, Doc, Employee, Id, Person, Project, Scope, State, Task } from './types.ts'
 import { current, hrScoped, type HrScoped } from './hr.ts'
 import { bossOf } from './reports.ts'
 import { ROLES, rolesOf } from './contracts.ts'
@@ -196,4 +196,36 @@ export function withDocRights(s: Pick<State, 'people'> & Org): Person[] {
     }))
     return { ...p, account: { ...p.account, access } }
   })
+}
+
+// Ажил (the owner's rule, docs/decisions.md, 2026-11-16): a task someone keeps for themself is theirs alone; one given
+// to someone is also seen by whoever gave it and by management; a project's tasks by everyone in the project.
+
+/** Whether the person takes part in the project: its lead or one of its people */
+export const inProject = (p: Pick<Project, 'lead' | 'members'> | undefined, who: Id) => !!p && (p.lead === who || p.members.includes(who))
+
+/** The people a task was given to by someone else. A task from before its maker was noted is its people's own. */
+export const givenTo = (t: Pick<Task, 'by' | 'assignees'>) => (t.by ? t.assignees.filter(a => a !== t.by) : [])
+
+/**
+ * Whether the person sees the task: whoever made it and whoever it is given to; everyone in its project; and, for what
+ * someone else gave a person, the ХХК's management (Удирдлага) and whoever that person works under (Шууд удирдлага).
+ * Whoever set the system up sees every task.
+ */
+export function seesTask(s: Pick<State, 'people' | 'projects' | 'employees' | 'departments' | 'roles'>, who: Id, t: Task) {
+  if (t.by === who || t.assignees.includes(who)) return true
+  if (s.people.find(p => p.id === who)?.account?.sysadmin) return true
+  if (t.project && inProject(s.projects.find(p => p.id === t.project), who)) return true
+  const given = givenTo(t)
+  if (!given.length) return false
+  if (accessOf(s, who, t.company).admin) return true
+  const team = teamOf(s, who, t.company)
+  return s.employees.some(e => e.company === t.company && !!e.user && e.user !== who && given.includes(e.user) && team.has(e.id))
+}
+
+/** Whether the person may change the task: whoever made it, whoever it is given to, its project's lead */
+export function changesTask(s: Pick<State, 'people' | 'projects'>, who: Id, t: Task) {
+  if (t.by === who || t.assignees.includes(who)) return true
+  if (s.people.find(p => p.id === who)?.account?.sysadmin) return true
+  return !!t.project && s.projects.find(p => p.id === t.project)?.lead === who
 }

@@ -108,6 +108,8 @@ export interface Task {
   comments: Comment[]
   createdAt: string
   doneAt?: string
+  /** Who made it (lib/access.ts seesTask); tasks from before it was noted have none (docs/decisions.md, 2026-11-16) */
+  by?: Id
 }
 
 export type ProjectStatus = 'active' | 'planning' | 'done'

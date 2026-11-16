@@ -281,7 +281,7 @@ export const actions = {
   updateCompany: (id: Id, patch: Pick<Company, 'name' | 'hue'>) => accessOf(state, state.me, id).admin && set(s => ({ ...s, companies: s.companies.map(c => (c.id === id ? { ...c, ...patch } : c)) })),
 
   addTask(t: Omit<Task, 'id' | 'company' | 'subtasks' | 'comments' | 'createdAt'>) {
-    const task: Task = { ...t, id: uid('t'), company: state.company, subtasks: [], comments: [], createdAt: new Date().toISOString() }
+    const task: Task = { ...t, id: uid('t'), company: state.company, subtasks: [], comments: [], createdAt: new Date().toISOString(), by: state.me }
     if (task.status === 'done') task.doneAt = task.createdAt
     set(s => ({ ...s, tasks: [task, ...s.tasks] }))
     return task
@@ -329,7 +329,8 @@ export const actions = {
   },
 
   addProject(p: Omit<Project, 'id' | 'company' | 'pinned' | 'milestones' | 'members'> & { members?: Id[] }) {
-    const project: Project = { ...p, id: uid('p'), company: state.company, pinned: false, milestones: [], members: p.members ?? [p.lead] }
+    // Whoever makes it is in it: a project is seen only by its people (lib/access.ts inProject)
+    const project: Project = { ...p, id: uid('p'), company: state.company, pinned: false, milestones: [], members: [...new Set([...(p.members ?? [p.lead]), state.me])] }
     set(s => ({ ...s, projects: [...s.projects, project] }))
     return project
   },

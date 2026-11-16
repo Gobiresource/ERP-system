@@ -32,7 +32,7 @@ export async function worldOf(db: Db): Promise<World> {
 function orgOf(recs: World['recs']): Org {
   const list = (c: OrgTable) => [...(recs.get(c)?.values() ?? [])]
   const map = (c: OrgTable) => Object.fromEntries(recs.get(c) ?? [])
-  return { people: list('people'), companies: list('companies'), employees: list('employees'), departments: list('departments'), chats: list('chats'), roles: map('roles'), timely: map('timely') } as Org
+  return { people: list('people'), companies: list('companies'), employees: list('employees'), departments: list('departments'), chats: list('chats'), projects: list('projects'), roles: map('roles'), timely: map('timely') } as Org
 }
 /** The person asking, by today's organisation; null when they may not sign in (any more) */
 export const ctxFor = (w: World, me: Id) => ctxOf(w.org, me, (c, id) => w.recs.get(c)?.get(id) as never)
