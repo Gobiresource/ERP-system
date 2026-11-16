@@ -340,16 +340,21 @@ export const actions = {
     set(s => ({ ...s, projects: s.projects.map(p => (p.id === id ? { ...p, milestones: p.milestones.map(x => (x.id === m ? { ...x, done: !x.done } : x)) } : p)) })),
 
   setPresence: (id: Id, presence: Presence) => set(s => ({ ...s, people: s.people.map(p => (p.id === id ? { ...p, presence } : p)) })),
-  /** A new person in the ХХК, who signs in with the login and password given; only an admin adds people */
-  async invite(p: Pick<Person, 'given' | 'family' | 'email' | 'role' | 'team'>, login: string, password: string, access: Access): Promise<Person | { error: string } | null> {
+  /**
+   * A new person in the ХХК, who signs in with the login and password given; only an admin adds people. With a server
+   * the password may be left out: the person comes with the sign-in link (`link`) they set their own with.
+   */
+  async invite(p: Pick<Person, 'given' | 'family' | 'email' | 'role' | 'team'>, login: string, password: string, access: Access): Promise<(Person & { link?: string }) | { error: string } | null> {
     if (!accessOf(state, state.me, state.company).admin || !loginFree(login)) return null
     const hues = ['blue', 'purple', 'pink', 'orange', 'green', 'teal', 'indigo'] as const
     const rights = { login: loginKey(login), active: true, access: { [state.company]: access } }
     const person = { ...p, id: uid('u'), companies: [state.company], presence: 'away' as const, hue: hues[state.people.length % hues.length], capacity: 40 }
     if (link.on) {
       // The server makes the person with what signs them in, or says why not (a login taken in a ХХК not seen from here)
-      const bad = await inviteRemote({ ...person, account: rights } as Person, password)
-      return bad ?? state.people.find(x => x.id === person.id) ?? null
+      const j = await inviteRemote({ ...person, account: rights } as Person, password)
+      if ('error' in j) return j
+      const made = state.people.find(x => x.id === person.id)
+      return made ? { ...made, link: j.link } : null
     }
     const salt = newSalt()
     const made: Person = { ...person, account: { ...rights, salt, hash: await hashOf(password, salt) } }

@@ -24,6 +24,8 @@
 .login__warn { font-weight: 560; color: var(--bad-ink); }
 .login__go { justify-content: center; width: 100%; min-height: 44px; }
 .login__note { font-size: 13px; line-height: 1.5; color: var(--text-2); }
+/* The login a sign-in link is for (screens/Join.tsx): shown, not typed */
+.join__login { font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
 
 .login__demo { display: grid; gap: 8px; width: min(420px, 100%); padding: 20px; border-radius: 22px; }
 .login__demo h2 { font-size: 15px; font-weight: 650; }

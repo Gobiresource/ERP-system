@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ComponentType } from 'react'
 import { useApp } from './lib/store'
 import { useUi } from './lib/ui'
-import { link } from './lib/sync'
+import { joining, link } from './lib/sync'
 import { useRoute, type Page } from './lib/router'
 import { applyAppearance } from './lib/theme'
 import { Wallpaper } from './shell/Wallpaper'
@@ -30,6 +30,7 @@ import Settings from './screens/Settings'
 import Admin from './screens/Admin'
 import Login from './screens/Login'
 import Setup from './screens/Setup'
+import Join from './screens/Join'
 import { NoAccess } from './ui/bits'
 
 // All screens ship in one file: a page change never waits for the network (about 100 KB more on first load)
@@ -46,13 +47,15 @@ export function App() {
 
   // Somebody can sign in: the system has been set up. With a server it says so; signed out, no people are here.
   const started = link.on ? link.started : s.people.some(p => p.account)
+  // Opened with a sign-in link: its page, whoever may be signed in here (re-read at each change of the address)
+  const join = joining()
 
   useEffect(() => applyAppearance(s.settings), [s.settings])
 
   useEffect(() => {
     const company = s.companies.find(c => c.id === s.company)?.name
-    document.title = session ? `${pageLabel(route.page)} · ${company}` : started ? 'Нэвтрэх' : 'Системийг эхлүүлэх'
-  }, [route.page, s.company, s.companies, session, started])
+    document.title = join ? 'Нууц үг үүсгэх' : session ? `${pageLabel(route.page)} · ${company}` : started ? 'Нэвтрэх' : 'Системийг эхлүүлэх'
+  }, [route.page, s.company, s.companies, session, started, join])
 
   // After the first page, a page change scrolls up and focuses the new title (see usePageEnter)
   useEffect(() => {
@@ -61,6 +64,7 @@ export function App() {
     window.scrollTo(0, 0)
   }, [route.page, route.id])
 
+  if (join) return <Join token={join} />
   if (!session) return started ? <Login /> : <Setup />
   // A page outside the person's rights says so instead of showing anything
   const Screen = navFor(s).some(n => n.page === route.page) ? SCREENS[route.page] : NoAccess

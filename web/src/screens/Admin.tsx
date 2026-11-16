@@ -3,11 +3,12 @@
 // person by Шууд удирдлага: what a branch director sees (lib/access.ts, docs/decisions.md, 2026-10-31). Only admins open
 // this page.
 import { useRef, useState } from 'react'
-import { ChevronLeft, KeyRound, Power, ShieldCheck, UserPlus, UsersRound } from 'lucide-react'
+import { ChevronLeft, KeyRound, Link2, Power, ShieldCheck, UserPlus, UsersRound } from 'lucide-react'
 import '../styles/screens/admin.css'
 import type { Access, Person, Scope } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { open, toast } from '../lib/ui'
+import { joinUrl, link, linkRemote } from '../lib/sync'
 import { go } from '../lib/router'
 import { usePageEnter } from '../lib/motion'
 import { DOC_SCOPE, NO_ACCESS, PRESETS, SCOPE, accessOf, managesAccount, presetOf, teamOf } from '../lib/access'
@@ -135,6 +136,8 @@ function User({ id }: { id: string }) {
     setLoginError(e)
     if (!e) toast(`Нэвтрэх нэр «${login.trim().toLowerCase()}» боллоо.`)
   }
+  // With a server nobody gives anyone a password: a link lets the person make their own
+  const sendLink = () => linkRemote(id).then(j => ('error' in j ? toast(j.error, { kind: 'warn' }) : open({ kind: 'signinLink', id, url: joinUrl(j.link) })))
   const toggle = () => {
     const e = actions.setAccount(id, { active: !acc.active })
     if (e) return toast(e, { kind: 'warn' })
@@ -222,7 +225,8 @@ function User({ id }: { id: string }) {
                 {loginError && <span className="field__error" id="adm-login-error" role="alert">{loginError}</span>}
               </div>
               <div className="adm-acts">
-                <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'password', id })}><KeyRound className="ico" />Нууц үг шинэчлэх</button>
+                {!link.on ? <button type="button" className="btn btn--glass" onClick={() => open({ kind: 'password', id })}><KeyRound className="ico" />Нууц үг шинэчлэх</button>
+                  : !me && <button type="button" className="btn btn--glass" onClick={sendLink}><Link2 className="ico" />Нэвтрэх холбоос</button>}
                 {!me && (
                   <button type="button" className={`btn ${acc.active ? 'btn--ghost adm-stop' : 'btn--glass'}`} onClick={toggle}>
                     <Power className="ico" />{acc.active ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}

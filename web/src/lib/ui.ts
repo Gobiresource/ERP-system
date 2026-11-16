@@ -42,6 +42,7 @@ export type Dialog =
   | { kind: 'kpiRules' }
   | { kind: 'scanSplit'; id: Id; ai: boolean }
   | { kind: 'password'; id: Id }
+  | { kind: 'signinLink'; id: Id; url: string }
   | { kind: 'lessonForm'; id?: Id }
   | { kind: 'welcome' }
   | null
@@ -106,6 +107,8 @@ export const getUi = () => ui
 
 export const open = (dialog: Dialog) => set({ dialog })
 export const close = () => set({ dialog: null })
+/** Closes the window if it is still `kind`: one opened while this one slid away stays open */
+export const closeOnly = (kind: NonNullable<Dialog>['kind']) => ui.dialog?.kind === kind && close()
 export const setFinder = (finder: boolean) => set({ finder })
 export const setIslandOpen = (islandOpen: boolean) => set({ islandOpen })
 export const setActAs = (actAs: Id | null) => set({ actAs })

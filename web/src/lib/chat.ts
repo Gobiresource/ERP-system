@@ -1,12 +1,12 @@
 // Зурвас (chat): a chat's name, unread messages, my chats in order, and the demo chats (docs/decisions.md, 2026-10-29).
 import type { Chat, ChatRef, Message, Person, State } from './types'
-import { short } from './format'
+import { UNSEEN, short } from './format'
 
 /** A group by its name; a direct chat after the other person */
 export function chatName(c: Chat, people: Person[], me: string) {
   if (c.kind === 'group') return c.name ?? ''
   const other = people.find(p => p.id !== me && c.members.includes(p.id))
-  return other ? short(other) : 'Устгагдсан ажилтан'
+  return other ? short(other) : UNSEEN
 }
 
 /** Messages by others since I last read the chat */

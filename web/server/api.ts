@@ -7,8 +7,11 @@
 // POST /api/login/salt    what the browser stretches a login's password with
 // POST /api/login         signs in: a cookie JavaScript cannot read, for 14 days
 // POST /api/logout
-// POST /api/invite        a new person with their login and password, by an admin of the ХХК
+// POST /api/invite        a new person with their login, and a password or a sign-in link, by an admin of the ХХК
 // POST /api/password      one's own new password (with the present one), or someone's by whoever manages their account
+// POST /api/link/new      a sign-in link for someone, by whoever manages their account
+// POST /api/link/who      whose a sign-in link is, while it holds
+// POST /api/link/use      the link's person sets their password with it, and is signed in
 // GET  /api/sync          what changed since; POST also takes the browser's changes in (server/data.ts)
 // GET, PUT /api/files/ID  the files people add (server/files.ts)
 // /api/attendance, /api/scan   as before, now for whoever is signed in, by their rights
@@ -61,6 +64,49 @@ async function signIn(req: Request, db: Db, person: Id) {
 }
 
 type Body = Record<string, unknown>
+
+/** A sign-in link holds a week, and once */
+const WEEK = 7 * 86_400
+const BAD_LINK = 'Энэ холбоос хүчингүй болсон байна. Удирдлагадаа хандаж шинэ холбоос авна уу.'
+/** A password nobody knows: a person invited by link signs in only once they have set their own */
+const unknowable = () => b64u(crypto.getRandomValues(new Uint8Array(32)))
+
+/**
+ * A new sign-in link for the person (docs/decisions.md, 2026-11-16): whoever opens it sets the person's password and
+ * is signed in as them. The link carries `<person>.<secret>`; the server keeps what is kept of the secret, in meta
+ * under `link:<person>`, so a newer link puts out the one before.
+ */
+async function newLink(db: Db, who: Id) {
+  const secret = b64u(crypto.getRandomValues(new Uint8Array(24)))
+  await all(db, `INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v`, `link:${who}`, JSON.stringify({ t: await kept(secret), until: now() + WEEK }))
+  return `${who}.${secret}`
+}
+
+/** The person a sign-in link is for, while it holds; else null */
+async function linkHolder(db: Db, token: unknown): Promise<Id | null> {
+  const dot = text(token) ? token.lastIndexOf('.') : -1
+  if (dot < 1) return null
+  const [who, secret] = [(token as string).slice(0, dot), (token as string).slice(dot + 1)]
+  const row = await one<{ v: string }>(db, `SELECT v FROM meta WHERE k = ?`, `link:${who}`)
+  const v = row ? (JSON.parse(row.v) as { t: string; until: number }) : null
+  return v && v.until > now() && same(await kept(secret), v.t) ? who : null
+}
+
+/** The link's person sets their password and is in; whoever was signed in as them before is out */
+async function useLink(req: Request, db: Db, b: Body) {
+  if (!text(b.salt) || !SALT.test(b.salt) || !text(b.hash) || !HASH.test(b.hash)) return said('Хүсэлт буруу байна.', 400)
+  const who = await linkHolder(db, b.token)
+  if (!who) return said(BAD_LINK, 404)
+  if (!ctxFor(await worldOf(db), who)) return said('Таны бүртгэл идэвхгүй байна. Удирдлагадаа хандана уу.', 403)
+  const session = await signIn(req, db, who)
+  await db.batch([
+    db.prepare(`UPDATE accounts SET salt = ?, hash = ?, tries = 0, until = 0 WHERE person = ?`).bind(b.salt, await kept(b.hash), who),
+    db.prepare(`DELETE FROM meta WHERE k = ?`).bind(`link:${who}`),
+    db.prepare(`DELETE FROM sessions WHERE person = ?`).bind(who),
+    session.stmt,
+  ])
+  return json({ me: who }, 200, { 'Set-Cookie': session.cookie })
+}
 
 /**
  * Whether setting the system up asks for the code. Whoever sets it up holds every right in it, so on a public address
@@ -126,11 +172,15 @@ async function login(req: Request, db: Db, b: Body) {
   return json({ me: a.person }, 200, { 'Set-Cookie': session.cookie })
 }
 
-/** A new person in the ХХК, as dialogs/Invite.tsx makes them: the record, and what signs them in */
+/**
+ * A new person in the ХХК, as dialogs/Invite.tsx makes them: the record, and the password they sign in with, or none:
+ * then the answer carries the sign-in link they set their own with
+ */
 async function invite(db: Db, x: Ctx, b: Body) {
   const p = b.person as Person | undefined
   const a = p?.account
-  if (!p || !text(p.id) || !Array.isArray(p.companies) || p.companies.length !== 1 || !a || !text(b.salt) || !SALT.test(b.salt) || !text(b.hash) || !HASH.test(b.hash)) return said('Хүсэлт буруу байна.', 400)
+  const byLink = b.salt === undefined && b.hash === undefined
+  if (!p || !text(p.id) || !Array.isArray(p.companies) || p.companies.length !== 1 || !a || (!byLink && (!text(b.salt) || !SALT.test(b.salt) || !text(b.hash) || !HASH.test(b.hash)))) return said('Хүсэлт буруу байна.', 400)
   const company = p.companies[0]
   if (!accessOf(x.s, x.me, company).admin) return said('Танд хэрэглэгч нэмэх эрх алга.', 403)
   if (!text(a.login) || !LOGIN.test(a.login)) return said('Нэвтрэх нэр латин үсэг, тоотой, 3-аас 32 тэмдэгт байх ёстой.', 400)
@@ -138,8 +188,10 @@ async function invite(db: Db, x: Ctx, b: Body) {
   // Rights in this ХХК only, and never the system's own
   const record: Person = { ...p, account: { login: a.login, active: true, access: { [company]: a.access?.[company] } } as Person['account'] }
   const change: Change = { c: 'people', id: p.id, ops: [[[], record]], pos: typeof b.pos === 'number' ? b.pos : undefined }
-  const refused = await push(db, null, [change], [db.prepare(`INSERT INTO accounts (person, login, salt, hash) VALUES (?, ?, ?, ?)`).bind(p.id, a.login, b.salt, await kept(b.hash))])
-  return refused.some(r => r[2]) ? said('Хэрэглэгчийг нэмж чадсангүй. Дахин оролдоно уу.', 409) : json({ ok: true })
+  const [salt, hash] = byLink ? [b64(crypto.getRandomValues(new Uint8Array(16))), unknowable()] : [b.salt as string, await kept(b.hash as string)]
+  const refused = await push(db, null, [change], [db.prepare(`INSERT INTO accounts (person, login, salt, hash) VALUES (?, ?, ?, ?)`).bind(p.id, a.login, salt, hash)])
+  if (refused.some(r => r[2])) return said('Хэрэглэгчийг нэмж чадсангүй. Дахин оролдоно уу.', 409)
+  return json(byLink ? { link: await newLink(db, p.id) } : { ok: true })
 }
 
 async function password(db: Db, x: Ctx, sid: string, b: Body) {
@@ -221,6 +273,12 @@ async function route(req: Request, env: ApiEnv, db: Db, url: URL, path: string):
   if (post && path === 'setup') return setup(req, env, db, b)
   if (post && path === 'login/salt') return salt(db, b)
   if (post && path === 'login') return login(req, db, b)
+  if (post && path === 'link/who') {
+    const who = await linkHolder(db, b.token)
+    const p = who ? (await worldOf(db)).recs.get('people')?.get(who) as Person | undefined : undefined
+    return p?.account ? json({ given: p.given, family: p.family, login: p.account.login }) : said(BAD_LINK, 404)
+  }
+  if (post && path === 'link/use') return useLink(req, db, b)
   if (post && path === 'logout') {
     if (session) await all(db, `DELETE FROM sessions WHERE id = ?`, session.sid)
     return json({ ok: true }, 200, { 'Set-Cookie': cookie(req, '', 0) })
@@ -230,6 +288,11 @@ async function route(req: Request, env: ApiEnv, db: Db, url: URL, path: string):
   if (!session || !x) return said('Нэвтэрнэ үү.', 401, { signedOut: true })
   if (post && path === 'invite') return invite(db, x, b)
   if (post && path === 'password') return password(db, x, session.sid, b)
+  if (post && path === 'link/new') {
+    if (!text(b.who) || !x.rec<Person>('people', b.who)?.account) return said('Хэрэглэгч олдсонгүй.', 404)
+    if (!managesAccount(x.s, x.me, b.who)) return said('Танд энэ хэрэглэгчид нэвтрэх холбоос үүсгэх эрх алга.', 403)
+    return json({ link: await newLink(db, b.who) })
+  }
   if (path === 'sync') {
     const since = Number(post ? b.since : url.searchParams.get('since')) || 0
     const scope = String((post ? b.scope : url.searchParams.get('scope')) ?? '')

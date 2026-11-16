@@ -1,8 +1,10 @@
 // A new person in the ХХК (Баг, Удирдлага): who they are, the login and first password they sign in with, and their
-// rights here. Only an admin of the ХХК adds people; the password is kept only as its hash (lib/access.ts).
+// rights here. Only an admin of the ХХК adds people; the password is kept only as its hash (lib/access.ts). With a server
+// nobody gives a password: the person gets a sign-in link and makes their own (docs/decisions.md, 2026-11-16).
 import { useState } from 'react'
 import { actions, getState, scoped, useApp } from '../lib/store'
-import { close, toast } from '../lib/ui'
+import { closeOnly, open, toast } from '../lib/ui'
+import { joinUrl, link } from '../lib/sync'
 import { PRESETS, loginKey, strongEnough } from '../lib/access'
 import { collator, short } from '../lib/format'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
@@ -40,18 +42,22 @@ export function Invite() {
     if (!login) e['inv-login'] = 'Нэвтрэх нэрийг бичнэ үү.'
     else if (!LOGIN.test(login)) e['inv-login'] = 'Нэвтрэх нэр латин үсэг, тоотой, 3-аас 32 тэмдэгт байх ёстой.'
     else if (getState().people.some(p => p.account?.login === login)) e['inv-login'] = 'Энэ нэвтрэх нэр өөр хүнд бүртгэлтэй байна.'
-    if (!f.password) e['inv-password'] = 'Түр нууц үгийг бичнэ үү.'
+    if (link.on) { /* the person makes their own */ }
+    else if (!f.password) e['inv-password'] = 'Түр нууц үгийг бичнэ үү.'
     else if (!strongEnough(f.password)) e['inv-password'] = 'Нууц үг 8-аас доошгүй тэмдэгттэй, үсэг, тоо хоёулаа орсон байх ёстой.'
     setErrors(e)
     if (Object.keys(e).length) return false
     const access = PRESETS.find(p => p.key === f.preset)!.access
     actions.invite({ given: f.given.trim(), family: f.family.trim(), email: f.email.trim(), role: f.role.trim() || 'Ажилтан', team }, login, f.password, { ...access })
-      .then(p => (!p ? toast('Танд хэрэглэгч нэмэх эрх алга.', { kind: 'warn' }) : 'error' in p ? toast(p.error, { kind: 'warn' }) : toast(`${short(p)} нэмэгдлээ. «${login}» нэрээр нэвтэрнэ.`)))
+      .then(p => (!p ? toast('Танд хэрэглэгч нэмэх эрх алга.', { kind: 'warn' }) : 'error' in p ? toast(p.error, { kind: 'warn' })
+        : p.link ? open({ kind: 'signinLink', id: p.id, url: joinUrl(p.link) }) : toast(`${short(p)} нэмэгдлээ. «${login}» нэрээр нэвтэрнэ.`)))
     return true
   }
 
   return (
-    <FormSheet title="Хэрэглэгч нэмэх" sub="Шинэ хэрэглэгч энэ ХХК-д нэмэгдэж, доорх нэр, нууц үгээр нэвтэрнэ." submit="Нэмэх" onSubmit={submit} onClose={close} errors={errors}>
+    // The link window may open before this one has finished sliding away: closing this must not close that
+    <FormSheet title="Хэрэглэгч нэмэх" submit="Нэмэх" onSubmit={submit} onClose={() => closeOnly('invite')} errors={errors}
+      sub={link.on ? 'Шинэ хэрэглэгч энэ ХХК-д нэмэгдэнэ. Дараа нь үүсэх холбоосыг хэрэглэгчид илгээнэ үү: хэрэглэгч нууц үгээ өөрөө үүсгээд нэвтэрнэ.' : 'Шинэ хэрэглэгч энэ ХХК-д нэмэгдэж, доорх нэр, нууц үгээр нэвтэрнэ.'}>
       <Field id="inv-given" label="Нэр" error={errors['inv-given']}>
         <input {...fieldAria('inv-given', errors['inv-given'])} value={f.given} onChange={set('given')} autoComplete="off" placeholder="Сараа" data-autofocus />
       </Field>
@@ -75,12 +81,14 @@ export function Invite() {
           <input {...fieldAria('inv-newTeam', errors['inv-newTeam'])} value={f.newTeam} onChange={set('newTeam')} autoComplete="off" />
         </Field>
       )}
-      <Field id="inv-login" label="Нэвтрэх нэр" hint="Латин үсэг, тоо. Том, жижиг үсэг ялгахгүй." error={errors['inv-login']}>
+      <Field id="inv-login" label="Нэвтрэх нэр" hint="Латин үсэг, тоо. Том, жижиг үсэг ялгахгүй." error={errors['inv-login']} wide={link.on}>
         <input {...fieldAria('inv-login', errors['inv-login'], true)} value={f.login} onChange={set('login')} autoComplete="off" autoCapitalize="none" spellCheck={false} placeholder="saraa" />
       </Field>
-      <Field id="inv-password" label="Түр нууц үг" hint="Хэрэглэгч нэвтэрсний дараа Тохиргооноос солино." error={errors['inv-password']}>
-        <input {...fieldAria('inv-password', errors['inv-password'], true)} type="text" value={f.password} onChange={set('password')} autoComplete="new-password" spellCheck={false} />
-      </Field>
+      {!link.on && (
+        <Field id="inv-password" label="Түр нууц үг" hint="Хэрэглэгч нэвтэрсний дараа Тохиргооноос солино." error={errors['inv-password']}>
+          <input {...fieldAria('inv-password', errors['inv-password'], true)} type="text" value={f.password} onChange={set('password')} autoComplete="new-password" spellCheck={false} />
+        </Field>
+      )}
       <Field id="inv-preset" label="Эрх" hint={PRESETS.find(p => p.key === f.preset)?.hint} wide>
         <select {...fieldAria('inv-preset', undefined, true)} value={f.preset} onChange={set('preset')}>
           {PRESETS.map(p => <option key={p.key} value={p.key}>{p.name}</option>)}

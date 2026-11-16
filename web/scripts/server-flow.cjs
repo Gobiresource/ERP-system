@@ -86,12 +86,21 @@ async function up(url) {
     await a.p.locator('#inv-given').fill(given); await a.p.locator('#inv-family').fill(family); await a.p.locator('#inv-email').fill(`${login}@turshilt.mn`);
     await a.p.locator('#inv-team').selectOption({ label: 'Шинэ хэлтэс…' }).catch(() => {});
     if (await a.p.locator('#inv-newTeam').count()) await a.p.locator('#inv-newTeam').fill('Борлуулалт');
-    await a.p.locator('#inv-login').fill(login); await a.p.locator('#inv-password').fill('Turshilt2026'); await a.p.locator('#inv-preset').selectOption(preset);
-    await a.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await a.wait(2500);
+    await a.p.locator('#inv-login').fill(login); await a.p.locator('#inv-preset').selectOption(preset);
+    ok(await a.p.locator('#inv-password').count() === 0, 'with a server, adding someone asks for no password');
+    await a.p.getByRole('button', { name: 'Нэмэх', exact: true }).click();
+    // The person's sign-in link, to send them: copied in one press
+    await a.p.waitForSelector('#sl-url', { timeout: 20000 });
+    const url = await a.p.locator('#sl-url').inputValue();
+    const hint = await a.p.locator('#sl-url-hint').innerText().catch(() => '');
+    await a.p.getByRole('button', { name: 'Хуулах', exact: true }).click(); await a.wait(800);
+    const copied = await a.p.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+    ok(url.startsWith(BASE) && /#join-u\w+\.[\w-]{32}$/.test(url) && hint.includes(`«${login}»`) && copied === url && await a.p.locator('#sl-url').count() === 0, 'added, the admin is given the link to send, which says the login, and copies it');
+    return url;
   };
 
   // ---- Founding
-  const a = await open('admin');
+  const a = await open('admin', { permissions: ['clipboard-read', 'clipboard-write'] });
   await a.p.goto(BASE, { waitUntil: 'networkidle' }); await a.wait(600);
   ok(await a.p.title() === 'Системийг эхлүүлэх' && await a.p.locator('#su-code').count() === 1, 'a server nobody has set up opens on «Системийг эхлүүлэх», with a field for the code');
   ok((await a.p.locator('.login__note').innerText()).startsWith('Өгөгдөл сервер дээр хадгалагдана.'), 'and says the data is kept on the server');
@@ -118,17 +127,39 @@ async function up(url) {
   ok((await a.p.locator('#page-title').innerText()).includes('Саруул') && await a.p.locator('dialog.welcome[open]').count() === 0, 'opened again: still signed in, the data is back, and no second welcome');
 
   // ---- A second person, from another browser
-  await invite(a, 'Номин', 'Бат', 'nomin', 'staff');
+  const nominLink = await invite(a, 'Номин', 'Бат', 'nomin', 'staff');
+  const nominId = nominLink.match(/#join-([^.]+)\./)[1];
   ok((await a.main()).includes('Номин'), 'the admin adds a person, who shows in Удирдлага');
   const b = await open('staff');
   await b.p.goto(BASE, { waitUntil: 'networkidle' }); await b.wait(600);
   ok(await b.p.title() === 'Нэвтрэх' && await b.p.locator('#su-company').count() === 0, 'another browser opens on «Нэвтрэх»: the system is set up for everyone');
   await b.signIn('nomin', 'Buruu2026');
   ok((await b.p.locator('.login__error').innerText()).includes('Нэвтрэх нэр эсвэл нууц үг буруу байна.'), 'a wrong password is refused');
-  await b.signIn('nomin', 'Turshilt2026', true);
-  ok((await b.p.locator('dialog.welcome .welcome__name').innerText()).includes('Номин'), 'the right one signs in, and the new person is welcomed');
+  // In with the link: the person makes their own password
+  await b.p.goto(nominLink, { waitUntil: 'networkidle' }); await b.wait(900);
+  ok(await b.p.title() === 'Нууц үг үүсгэх' && (await b.p.locator('.join__login').innerText()) === 'nomin' && (await b.p.locator('.login__sub').innerText()).includes('Б.Номин'), 'the link opens «Нууц үг үүсгэх», with the person\'s name and login');
+  await b.p.locator('#jn-password').fill('Turshilt'); await b.p.getByRole('button', { name: 'Нэвтрэх', exact: true }).click(); await b.wait(400);
+  ok((await b.p.locator('.mform__errors li').allInnerTexts()).join('|') === 'Нууц үг 8-аас доошгүй тэмдэгттэй, үсэг, тоо хоёулаа орсон байх ёстой.', 'a weak password: said so');
+  await b.p.locator('#jn-password').fill('Turshilt2026'); await b.p.locator('#jn-again').fill('Turshilt2026'); await b.p.getByRole('button', { name: 'Нэвтрэх', exact: true }).click();
+  await b.p.waitForSelector('dialog.welcome[open] .welcome__name', { timeout: 20000 }).catch(() => {}); await b.wait(1200);
+  ok((await b.p.locator('dialog.welcome .welcome__name').innerText().catch(() => '')).includes('Номин') && !(await b.p.evaluate(() => location.hash)).includes('join'), 'their own password made, the new person is in and welcomed, and the link has left the address');
   await b.skip();
   ok((await b.p.locator('.sbar, .side').first().innerText()).includes('Туршилт'), 'into the same ХХК');
+  const theirs = await b.rows();
+  await b.go('team');
+  ok(Object.keys(theirs.people).length === 1 && !Object.values(theirs.people).some(p => p.account?.sysadmin) && !(await b.main()).includes('Саруул'), 'the system admin is not among the people they are sent, nor in their Баг');
+  const again = await open('again');
+  await again.p.goto(nominLink, { waitUntil: 'networkidle' }); await again.wait(900);
+  ok((await again.p.locator('h1').innerText()) === 'Холбоос хүчингүй байна', 'the link opened a second time says it no longer works');
+  await again.p.getByRole('button', { name: 'Нэвтрэх хуудас руу' }).click(); await again.wait(600);
+  ok(await again.p.title() === 'Нэвтрэх', 'and leads to the sign-in page');
+  await again.ctx.close();
+  // A new link from the person's page, for someone locked out
+  await a.go(`admin-${nominId}`);
+  await a.p.getByRole('button', { name: 'Нэвтрэх холбоос' }).click();
+  await a.p.waitForSelector('#sl-url', { timeout: 20000 });
+  ok((await a.p.locator('#sl-url').inputValue()) !== nominLink && await a.p.getByRole('button', { name: 'Нууц үг шинэчлэх' }).count() === 0, 'the person\'s page gives a new link, instead of a password to set for them');
+  await a.p.getByRole('button', { name: 'Болих' }).first().click(); await a.wait(600);
 
 
   // ---- Work reaches the others
@@ -140,6 +171,16 @@ async function up(url) {
   await addTask(a, 'Гэрээний төсөл бэлтгэх');
   await b.sync(); await b.go('tasks');
   ok((await b.main()).includes('Гэрээний төсөл бэлтгэх'), 'a task the admin adds shows in the other person\'s browser');
+  // What the hidden system admin writes reaches the person, from «Системийн админ», and nothing breaks for want of their record
+  const put = changes => a.p.evaluate(async c => (await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ since: 0, scope: '', changes: c }) })).json(), changes);
+  const at = new Date().toISOString();
+  const said = [
+    await put([{ c: 'chats', id: 'chx', ops: [[[], { id: 'chx', kind: 'direct', members: [me.id, nominId], by: me.id, created: at, read: { [me.id]: at } }]], pos: 1 }]),
+    await put([{ c: 'messages', id: 'msx', ops: [[[], { id: 'msx', chat: 'chx', by: me.id, at, text: 'Системээс мэндчилгээ', refs: [], files: [] }]], pos: 1 }]),
+  ];
+  await b.sync(); await b.go('chat-chx');
+  const chatText = await b.main();
+  ok(said.every(r => r.refused.length === 0) && chatText.includes('Системээс мэндчилгээ') && chatText.includes('Системийн админ'), 'a message from the hidden system admin reaches the person, from «Системийн админ»');
   await addTask(b, 'Тайлан нэгтгэх');
   await a.sync(); await a.go('tasks');
   ok((await a.main()).includes('Тайлан нэгтгэх') && (await a.main()).includes('Гэрээний төсөл бэлтгэх'), 'and theirs in the admin\'s');
@@ -279,6 +320,24 @@ async function up(url) {
   await a.sync();
   const out = await a.p.locator('.login__ended').waitFor({ timeout: 45000 }).then(() => true, () => false);
   ok(out && await a.p.title() === 'Нэвтрэх' && (await a.p.locator('.login__ended').innerText()).includes('Та системээс гарсан байна.'), 'a browser whose sign-in ended goes to the sign-in page, which says so');
+
+  // ---- A link opened where someone else is signed in: that person is signed out first, and nothing of theirs is sent as the newcomer's
+  const e = await open('shared');
+  await e.p.goto(BASE, { waitUntil: 'networkidle' }); await e.wait(600);
+  await e.signIn('saruul', 'Turshilt2026');
+  await e.go(`admin-${nominId}`);
+  await e.p.getByRole('button', { name: 'Нэвтрэх холбоос' }).click();
+  await e.p.waitForSelector('#sl-url', { timeout: 20000 });
+  const reset = await e.p.locator('#sl-url').inputValue();
+  await e.p.getByRole('button', { name: 'Болих' }).first().click(); await e.wait(600);
+  await e.p.goto(reset, { waitUntil: 'networkidle' }); await e.wait(900);
+  await e.p.locator('#jn-password').fill('Shine2027y'); await e.p.locator('#jn-again').fill('Shine2027y');
+  await e.p.getByRole('button', { name: 'Нэвтрэх', exact: true }).click(); await e.wait(3000 * SLOW);
+  const shared = await e.rows();
+  await e.p.locator('button.brand').click(); await e.wait(500);
+  const menu = await e.p.locator('[role=menu]').innerText().catch(() => '');
+  ok(Object.keys(shared.companies ?? {}).length === 1 && !menu.includes('Хоёрдугаар') && await e.p.locator('.island', { hasText: 'эрх алга' }).count() === 0 && (await e.p.locator('.side__me').innerText()).includes('Номин'), 'opened in the admin\'s browser, the link signs the admin out and the person in, with only their own data and nothing sent in their name');
+  await e.ctx.close();
 
   // ---- The server out of reach when the page opens
   const d = await open('down');

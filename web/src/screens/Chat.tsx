@@ -11,7 +11,7 @@ import { open, setActAs, toast, type Dialog } from '../lib/ui'
 import { chatName, myChats, readers, unread } from '../lib/chat'
 import { DOC_KIND } from '../lib/docs'
 import { docView } from '../lib/access'
-import { collator, dueLabel, hm, parse, short, today, ymd } from '../lib/format'
+import { UNSEEN, collator, dueLabel, hm, parse, short, today, ymd } from '../lib/format'
 import { getFile, putFile, saveBlob, useFileUrl } from '../lib/files'
 import { cid, fileSize } from '../lib/draft'
 import { Avatar, AvatarStack, Empty, KIND, PRESENCE, PresenceLabel, STATUS } from '../ui/bits'
@@ -194,7 +194,7 @@ function Bubble({ m, first, group, fresh, on, toggle }: { m: Message; first: boo
   const name = (id: Id) => {
     if (id === s.me) return 'Та'
     const p = s.people.find(x => x.id === id)
-    return p ? short(p) : 'Устгагдсан ажилтан'
+    return p ? short(p) : UNSEEN
   }
   const who = name(m.by)
   const cls = `cmsg${mine ? ' is-mine' : ''}${first ? ' is-first' : ''}${fresh ? ' is-fresh' : ''}${on ? ' is-on' : ''}`

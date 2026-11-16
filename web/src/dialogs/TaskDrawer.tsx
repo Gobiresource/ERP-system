@@ -6,7 +6,7 @@ import type { TaskStatus } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, open, toast } from '../lib/ui'
 import { go } from '../lib/router'
-import { ago, collator, dateDots, daysFromToday, dueLabel, monthDayDots, parse, short } from '../lib/format'
+import { UNSEEN, ago, collator, dateDots, daysFromToday, dueLabel, monthDayDots, parse, short } from '../lib/format'
 import { Sheet, useCloseSheet } from '../ui/Sheet'
 import { Seg } from '../ui/Seg'
 import { Avatar, Prio, ProjectChip, STATUS, STATUSES } from '../ui/bits'
@@ -148,7 +148,7 @@ function Body({ id }: { id: string }) {
               <div className="tp-comment" key={c.id}>
                 {a && <Avatar person={a} size="sm" />}
                 <div>
-                  <small><b style={{ color: 'var(--text)' }}>{a ? short(a) : 'Устгагдсан ажилтан'}</b> · {ago(c.at)}</small>
+                  <small><b style={{ color: 'var(--text)' }}>{a ? short(a) : UNSEEN}</b> · {ago(c.at)}</small>
                   <p>{c.text}</p>
                 </div>
               </div>

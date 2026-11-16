@@ -14,7 +14,7 @@ import { FileSheet } from './Viewer'
 import { ContractAsk, ContractPdf, ContractReason, ContractRegister, NewContract, ProcessRoles } from './ContractForms'
 import { KpiRules, ReportPdf, ReportReturn } from './ReportForms'
 import { ScanSplit } from './ScanForms'
-import { PasswordReset } from './AdminForms'
+import { PasswordReset, SigninLink } from './AdminForms'
 import { HrRequestForm, HrRequestSheet, NewRequest } from './RequestForms'
 import { LessonForm } from './TrainingForms'
 import { Welcome } from './Welcome'
@@ -59,6 +59,7 @@ export function Dialogs() {
     case 'kpiRules': return <KpiRules />
     case 'scanSplit': return <ScanSplit key={dialog.id} id={dialog.id} ai={dialog.ai} />
     case 'password': return <PasswordReset key={dialog.id} id={dialog.id} />
+    case 'signinLink': return <SigninLink key={dialog.url} id={dialog.id} url={dialog.url} />
     case 'lessonForm': return <LessonForm key={dialog.id ?? 'new'} id={dialog.id} />
     case 'welcome': return <Welcome />
   }

@@ -85,6 +85,9 @@ export function see(x: Ctx, c: Table, r: { id: Id; co: string; k: string; data: 
       return ok(r.id === x.me)
     case 'people': {
       const p = x.rec<Person>('people', r.id)
+      // Whoever set the system up is the owner's own way in, out of everyone else's sight (the owner's wish,
+      // docs/decisions.md, 2026-11-16): no list or picker of anyone else's ever shows them
+      if (p?.account?.sysadmin && p.id !== x.me && !x.sys) return null
       return ok(!!p && (x.sys || p.id === x.me || p.companies.some(co => x.mine.has(co))))
     }
     case 'chats':

@@ -89,6 +89,11 @@ export const clock = (sec: number) => `${pad(Math.floor(Math.max(0, sec) / 60))}
 
 /** Б.Болд */
 export const short = (p: { given: string; family: string }) => `${p.family.charAt(0)}.${p.given}`
+/**
+ * Whoever a record names whom this browser is not sent: with a server, in practice the system admin, whom nobody else
+ * sees (docs/decisions.md, 2026-11-16)
+ */
+export const UNSEEN = 'Системийн админ'
 /** Initials for avatars: БӨ */
 export const initials = (p: { given: string; family: string }) => (p.family.charAt(0) + p.given.charAt(0)).toUpperCase()
 /** ГР for "Говь Ресурс ХХК": the company's mark, and the start of its employee codes */

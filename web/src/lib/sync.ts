@@ -35,16 +35,22 @@ export const useSaving = () => useSyncExternalStore(f => (subs.add(f), () => voi
 const JSON_TYPE = { 'Content-Type': 'application/json' }
 const post = (path: string, body: unknown, keepalive = false) => fetch(`/api/${path}`, { method: 'POST', headers: JSON_TYPE, body: JSON.stringify(body), keepalive, signal: AbortSignal.timeout(30_000) })
 const NO_ANSWER = 'Сервертэй холбогдож чадсангүй. Интернэтээ шалгаад дахин оролдоно уу.'
-/** A request whose answer is only yes or why not: null, or what to tell the person */
-async function ask(path: string, body: unknown): Promise<{ error: string; field?: string; status: number } | null> {
+/** Why the server said no, in words to show the person; `status` 0 when it did not answer */
+export interface Refusal { error: string; field?: string; status: number }
+/** A request: what the server answered, or what to tell the person */
+async function call<T extends object>(path: string, body: unknown): Promise<T | Refusal> {
   try {
     const r = await post(path, body)
-    if (r.ok) return null
     const j = await r.json().catch(() => null)
-    return { error: j?.error ?? NO_ANSWER, field: j?.field, status: r.status }
+    return r.ok ? (j ?? {}) : { error: j?.error ?? NO_ANSWER, field: j?.field, status: r.status }
   } catch {
     return { error: NO_ANSWER, status: 0 }
   }
+}
+/** A request whose answer is only yes or why not: null, or what to tell the person */
+async function ask(path: string, body: unknown): Promise<Refusal | null> {
+  const j = await call(path, body)
+  return 'error' in j ? (j as Refusal) : null
 }
 
 let mirror = new Mirror()
@@ -175,8 +181,8 @@ export async function signInRemote(login: string, password: string): Promise<{ m
   }
 }
 
-/** Signs out here and on the server: nothing of the data stays in this browser */
-export function signOutRemote() {
+/** Signs out here and on the server: nothing of the data stays in this browser. Done when the server has heard. */
+export function signOutRemote(): Promise<void> | undefined {
   if (!link.on) return
   const was = live
   live = false
@@ -185,7 +191,7 @@ export function signOutRemote() {
   say('saved')
   store.empty()
   tell.out()
-  if (was) void post('logout', {}).catch(() => {})
+  if (was) return post('logout', {}).then(() => {}, () => {})
 }
 
 /**
@@ -200,12 +206,37 @@ export async function found(first: State, login: string, password: string, code:
   return (await load()) ? null : { error: NO_ANSWER, status: 0 }
 }
 
-/** A new person, with what signs them in (dialogs/Invite.tsx); null when done, and the person is in the data here */
-export async function inviteRemote(person: Person, password: string) {
+/**
+ * A new person (dialogs/Invite.tsx), with the password they sign in with, or without: then the answer carries the
+ * sign-in link they set their own with. Once done, the person is in the data here.
+ */
+export async function inviteRemote(person: Person, password?: string) {
   const salt = newSalt()
-  const bad = await ask('invite', { person, salt, hash: await hashOf(password, salt), pos: store.get().people.length + 1 })
-  if (!bad) await sync()
-  return bad
+  const j = await call<{ link?: string }>('invite', { person, pos: store.get().people.length + 1, ...(password ? { salt, hash: await hashOf(password, salt) } : {}) })
+  if (!('error' in j)) await sync()
+  return j
+}
+
+/**
+ * Sign-in links (server/api.ts): someone who manages a person's account makes one; the person opens it, sets their own
+ * password and is in. A newer one puts out the one before; each holds a week, and once.
+ */
+export const linkRemote = (who: Id) => call<{ link: string }>('link/new', { who })
+/** The address to send: the app, with the link after # (never sent to any server by the browser) */
+export const joinUrl = (token: string) => `${location.origin}${location.pathname}#join-${token}`
+/** The link this page was opened with, if any */
+export const joining = () => (link.on && location.hash.startsWith('#join-') ? location.hash.slice(6) : null)
+/** Whose the link is, while it holds */
+export const linkWho = (token: string) => call<{ given: string; family: string; login: string }>('link/who', { token })
+/** Sets the password with the link and signs in, with the data here */
+export async function joinRemote(token: string, password: string): Promise<{ me: Id } | Refusal> {
+  // Someone else signed in here: out first, so nothing of theirs is taken for this person's (and their sign-out ends
+  // before this one's cookie comes, which it would otherwise clear)
+  if (live) await signOutRemote()
+  const salt = newSalt()
+  const j = await call<{ me: Id }>('link/use', { token, salt, hash: await hashOf(password, salt) })
+  if ('error' in j) return j
+  return (await load()) ? j : { error: NO_ANSWER, status: 0 }
 }
 
 /** A new password: one's own with the present one (`now`), or someone's by whoever manages their account */

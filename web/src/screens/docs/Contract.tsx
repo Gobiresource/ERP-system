@@ -10,7 +10,7 @@ import { open, toast } from '../../lib/ui'
 import { usePageEnter } from '../../lib/motion'
 import { CONTRACT_KIND, FLOW, REVIEW, REVIEW_PART, STAGE, canEdit, deciders, diffClauses, rolesOf, type Piece } from '../../lib/contracts'
 import { cid } from '../../lib/draft'
-import { ago, dateDots, num, parse, short } from '../../lib/format'
+import { UNSEEN, ago, dateDots, num, parse, short } from '../../lib/format'
 import { PageHead } from '../../ui/PageHead'
 import { Avatar, NoAccess } from '../../ui/bits'
 import { accessOf, docView } from '../../lib/access'
@@ -71,7 +71,7 @@ export default function ContractPage({ id }: { id: string }) {
 
 const name = (people: { id: Id; given: string; family: string }[], id: Id) => {
   const p = people.find(x => x.id === id)
-  return p ? short(p) : 'Устгагдсан ажилтан'
+  return p ? short(p) : UNSEEN
 }
 
 /** The contract as a sheet of paper; the people working on it now type straight into it */
