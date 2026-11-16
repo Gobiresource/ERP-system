@@ -129,6 +129,7 @@ async function up(url) {
   // ---- A second person, from another browser
   const nominLink = await invite(a, 'Номин', 'Бат', 'nomin', 'staff');
   const nominId = nominLink.match(/#join-([^.]+)\./)[1];
+  ok((await a.p.locator('.adm-table tbody tr', { hasText: 'saruul' }).innerText()).includes('Бусдад харагдахгүй') && !(await a.p.locator('.adm-table tbody tr', { hasText: 'nomin' }).innerText()).includes('Бусдад харагдахгүй'), 'in Удирдлага the system admin\'s own row says the others do not see it; nobody else\'s does');
   ok((await a.main()).includes('Номин'), 'the admin adds a person, who shows in Удирдлага');
   const b = await open('staff');
   await b.p.goto(BASE, { waitUntil: 'networkidle' }); await b.wait(600);

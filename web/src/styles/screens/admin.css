@@ -8,6 +8,9 @@
 .adm-pill .ico { width: 13px; height: 13px; }
 .adm-pill.is-admin { background: var(--accent-soft); color: var(--accent-ink); }
 .adm-pill.is-off { background: color-mix(in srgb, var(--danger) 12%, var(--glass-solid)); color: var(--bad-ink); }
+/* The system admin's row, which nobody else is sent (server/rules.ts) */
+.adm-hidden { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+.adm-hidden .ico { width: 13px; height: 13px; }
 
 .adm-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
 .adm-rights { grid-column: span 7; }

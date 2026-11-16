@@ -3,7 +3,7 @@
 // person by Шууд удирдлага: what a branch director sees (lib/access.ts, docs/decisions.md, 2026-10-31). Only admins open
 // this page.
 import { useRef, useState } from 'react'
-import { ChevronLeft, KeyRound, Link2, Power, ShieldCheck, UserPlus, UsersRound } from 'lucide-react'
+import { ChevronLeft, EyeOff, KeyRound, Link2, Power, ShieldCheck, UserPlus, UsersRound } from 'lucide-react'
 import '../styles/screens/admin.css'
 import type { Access, Person, Scope } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
@@ -81,6 +81,8 @@ function Users() {
                       {p.account?.active
                         ? <span className={`adm-pill${a.admin ? ' is-admin' : ''}`}>{a.admin && <ShieldCheck className="ico" />}{rightsName(rightsOf(p, s.company), p.account.sysadmin)}</span>
                         : <span className="adm-pill is-off"><Power className="ico" />Идэвхгүй</span>}
+                      {/* Only a system admin sees this row at all (server/rules.ts): it says so, lest they think the others see it too */}
+                      {link.on && p.account?.sysadmin && <small className="adm-hidden"><EyeOff className="ico" />Бусдад харагдахгүй</small>}
                     </td>
                     <td className="hide-md">{SCOPE[a.hr]}</td>
                     <td className="hide-md">{SCOPE[a.attendance]}</td>
@@ -164,7 +166,7 @@ function User({ id }: { id: string }) {
           <div className="card__head">
             <div>
               <h2 className="card__title" id="adr-t">{company} дахь эрх</h2>
-              <p className="card__sub">{acc.sysadmin ? 'Системийн админ: бүх ХХК-д бүх эрхтэй.' : 'Өөрчлөлт шууд хадгалагдана.'}</p>
+              <p className="card__sub">{acc.sysadmin ? (link.on ? 'Системийн админ: бүх ХХК-д бүрэн эрхтэй. Бусдад харагдахгүй.' : 'Системийн админ: бүх ХХК-д бүрэн эрхтэй.') : 'Өөрчлөлт шууд хадгалагдана.'}</p>
             </div>
           </div>
           <fieldset className="adm-presets" disabled={acc.sysadmin}>
