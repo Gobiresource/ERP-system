@@ -1,10 +1,12 @@
-// A new project, and who works on a project: its lead (Төслийн ахлах) and the people with them (Оролцогчид).
+// A new project, who works on a project (its lead, Төслийн ахлах, and the people with them, Оролцогчид), and its
+// milestones (Үе шат).
 import { useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import type { Hue, Id, ProjectIcon } from '../lib/types'
 import { actions, scoped, useApp } from '../lib/store'
 import { close, toast } from '../lib/ui'
 import { go } from '../lib/router'
-import { addDaysYmd, collator, short, today } from '../lib/format'
+import { addDaysYmd, collator, dateDots, parse, short, today } from '../lib/format'
 import { Field, FormSheet, fieldAria, type Errors } from '../ui/FormSheet'
 import { PeoplePick } from '../ui/PeoplePick'
 
@@ -102,6 +104,53 @@ export function ProjectTeam({ id }: { id: string }) {
     <FormSheet title="Оролцогчид" sub={p.name} submit="Хадгалах" onSubmit={submit} onClose={close} errors={{}}>
       <LeadField t={t} set={setT} wide />
       <MembersField t={t} set={setT} />
+    </FormSheet>
+  )
+}
+
+/** A milestone (Үе шат), new or to change: a name and the day it is due. From the project's page, by anyone on it. */
+export function MilestoneForm({ project, id }: { project: Id; id?: Id }) {
+  const p = scoped(useApp()).project(project)
+  const old = p?.milestones.find(m => m.id === id)
+  // A new one two weeks on, or on the project's last day if that is sooner
+  const soon = addDaysYmd(today(), 14)
+  const [f, setF] = useState({ name: old?.name ?? '', date: old?.date ?? (p && p.due < soon ? p.due : soon) })
+  const [errors, setErrors] = useState<Errors>({})
+  if (!p) return null
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
+    setF({ ...f, [k]: e.target.value })
+    if (errors[`ms-${k}`]) setErrors(({ [`ms-${k}`]: _, ...rest }) => rest)
+  }
+  const submit = () => {
+    const e: Errors = {}
+    if (!f.name.trim()) e['ms-name'] = 'Үе шатны нэрийг бичнэ үү.'
+    if (!f.date) e['ms-date'] = 'Огноог сонгоно уу.'
+    setErrors(e)
+    if (Object.keys(e).length) return false
+    actions.saveMilestone(p.id, { id: old?.id, name: f.name.trim(), date: f.date })
+    toast(old ? 'Үе шат хадгалагдлаа.' : 'Үе шат нэмэгдлээ.')
+    return true
+  }
+  // Taken away at once, with Буцаах: nothing else hangs on a milestone
+  const remove = () => {
+    const before = p.milestones
+    actions.setMilestones(p.id, before.filter(m => m.id !== old?.id))
+    close()
+    toast('Үе шат устгагдлаа.', { undo: () => actions.setMilestones(p.id, before) })
+  }
+  return (
+    <FormSheet title={old ? 'Үе шат засах' : 'Үе шат нэмэх'} sub={p.name} submit={old ? 'Хадгалах' : 'Нэмэх'} onSubmit={submit} onClose={close} errors={errors}>
+      <Field id="ms-name" label="Нэр" error={errors['ms-name']} wide>
+        <input {...fieldAria('ms-name', errors['ms-name'])} value={f.name} onChange={set('name')} placeholder="Жишээ нь: Зураг төсөл батлуулах" data-autofocus />
+      </Field>
+      <Field id="ms-date" label="Огноо" hint={`Төслийн хугацаа: ${dateDots(parse(p.start))}–${dateDots(parse(p.due))}`} error={errors['ms-date']} wide>
+        <input {...fieldAria('ms-date', errors['ms-date'], true)} type="date" value={f.date} onChange={set('date')} />
+      </Field>
+      {old && (
+        <div className="field field--wide">
+          <button type="button" className="btn btn--ghost ms-remove" onClick={remove}><Trash2 className="ico" />Үе шатыг устгах</button>
+        </div>
+      )}
     </FormSheet>
   )
 }

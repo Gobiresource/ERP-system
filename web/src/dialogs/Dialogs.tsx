@@ -4,7 +4,7 @@ import { PersonDrawer } from './PersonDrawer'
 import { Invite } from './Invite'
 import { TaskDrawer } from './TaskDrawer'
 import { NewTask } from './NewTask'
-import { NewProject, ProjectTeam } from './NewProject'
+import { MilestoneForm, NewProject, ProjectTeam } from './NewProject'
 import { EventDrawer } from './EventDrawer'
 import { NewEvent } from './NewEvent'
 import { DeptForm, PositionForm } from './HrForms'
@@ -31,6 +31,7 @@ export function Dialogs() {
     case 'newTask': return <NewTask defaults={dialog.defaults} />
     case 'newProject': return <NewProject />
     case 'projectTeam': return <ProjectTeam key={dialog.id} id={dialog.id} />
+    case 'milestone': return <MilestoneForm key={dialog.id ?? 'new'} project={dialog.project} id={dialog.id} />
     case 'event': return <EventDrawer key={dialog.id} id={dialog.id} />
     case 'newEvent': return <NewEvent defaults={dialog.defaults} />
     case 'dept': return <DeptForm id={dialog.id} />

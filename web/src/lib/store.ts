@@ -1,7 +1,7 @@
 // App state: one object. Components read it with useApp() and change it with the actions below. It is saved in the
 // browser, or, with a server behind the app, shared through it (lib/sync.ts): the actions are the same either way.
 import { useSyncExternalStore } from 'react'
-import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, HrRequest, HrRequestDraft, Id, KpiRules, Lesson, Message, MonthReport, Person, ScanItem, Position, Presence, ProcessRole, Project, ReqStatus, Settings, State, Task, TaskStatus } from './types'
+import type { Access, Account, BoardFile, CalEvent, Chat, Clause, Company, Contract, ContractEvent, ContractStage, Department, Doc, DocRequest, Draft, DraftCard, Employee, FileItem, HrRequest, HrRequestDraft, Id, KpiRules, Lesson, Message, Milestone, MonthReport, Person, Position, Presence, ProcessRole, Project, ReqStatus, ScanItem, Settings, State, Task, TaskStatus } from './types'
 import { blank, seed } from './seed'
 import { DEMO } from './demo'
 import { seedDrafts } from './draft'
@@ -337,6 +337,18 @@ export const actions = {
   updateProject: (id: Id, patch: Partial<Project>) =>
     set(s => ({ ...s, projects: s.projects.map(p => (p.id === id ? { ...p, ...patch } : p)) })),
   togglePin: (id: Id) => set(s => ({ ...s, projects: s.projects.map(p => (p.id === id ? { ...p, pinned: !p.pinned } : p)) })),
+  /** A milestone of the project (Үе шат), new or with its name and day changed */
+  saveMilestone(project: Id, m: Pick<Milestone, 'name' | 'date'> & { id?: Id }) {
+    set(s => ({
+      ...s,
+      projects: s.projects.map(p => (p.id !== project ? p : {
+        ...p,
+        milestones: m.id ? p.milestones.map(x => (x.id === m.id ? { ...x, name: m.name, date: m.date } : x)) : [...p.milestones, { id: uid('m'), name: m.name, date: m.date, done: false }],
+      })),
+    }))
+  },
+  /** The project's milestones as given: one taken away, or put back by Буцаах */
+  setMilestones: (project: Id, milestones: Milestone[]) => set(s => ({ ...s, projects: s.projects.map(p => (p.id === project ? { ...p, milestones } : p)) })),
   toggleMilestone: (id: Id, m: Id) =>
     set(s => ({ ...s, projects: s.projects.map(p => (p.id === id ? { ...p, milestones: p.milestones.map(x => (x.id === m ? { ...x, done: !x.done } : x)) } : p)) })),
 

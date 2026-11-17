@@ -14,6 +14,7 @@ export type Dialog =
   | { kind: 'newEvent'; defaults?: Partial<CalEvent> }
   | { kind: 'newProject' }
   | { kind: 'projectTeam'; id: Id }
+  | { kind: 'milestone'; project: Id; id?: Id }
   | { kind: 'invite' }
   | { kind: 'dept'; id?: Id }
   | { kind: 'position'; id?: Id; dept?: Id }

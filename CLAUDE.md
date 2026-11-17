@@ -132,7 +132,7 @@ cd web && CLOUDFLARE_ACCOUNT_ID=$(curl -s -H "Authorization: Bearer via-proxy" h
 - **Тест.**
   ```bash
   node web/scripts/server-test.ts      # серверийг хөтөчгүйгээр: 185 шалгалт, сүлжээгүй
-  node web/scripts/server-flow.cjs     # хөтчөөр, 65 шалгалт: сервер, preview-г өөрөө асаана (эхлээд web дотор `npm run build`)
+  node web/scripts/server-flow.cjs     # хөтчөөр, 72 шалгалт: сервер, preview-г өөрөө асаана (эхлээд web дотор `npm run build`)
   ```
   - **Query өөрчилсөн бол** байршуулахын өмнө Cloudflare-ийн жинхэнэ сан дээр шалгана: D1 нь SQLite-ийн зарим функцийг хаадаг. `gobi-erp-test` нэртэй түр сан үүсгэж (`POST …/d1/database`), `NODE_USE_ENV_PROXY=1 node web/scripts/server-test.ts --d1=gobi-erp-test` ажиллуулаад санг устгана. 15 орчим минут болно: API хүсэлтийн хурдыг хязгаарладаг. Скрипт `-test`-ээр төгсөөгүй нэртэй санд ажиллахгүй.
   - **Том өөрчлөлтийн өмнө** түр Worker (`gobi-erp-test`: өөрийн түр сан ба түр KV, `vars`-аар тавьсан түр код, commit хийхгүй тохиргооны файл) байршуулж `node web/scripts/server-flow.cjs https://… --code=…` ажиллуулна. Дараа нь Worker, түүний KV, санг устгана.

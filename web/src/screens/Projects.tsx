@@ -286,18 +286,20 @@ function Detail({ p, sc }: { p: Project; sc: Scoped }) {
                 <h2 className="card__title" id="ms-t">Үе шат</h2>
                 <p className="card__sub">{ms.filter(m => m.done).length}/{ms.length} биелсэн</p>
               </div>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => open({ kind: 'milestone', project: p.id })}><Plus className="ico" />Үе шат нэмэх</button>
             </div>
-            {ms.length === 0 ? <p className="tp-none">Үе шат төлөвлөөгүй байна.</p> : (
+            {ms.length === 0 ? <p className="tp-none">Үе шат төлөвлөөгүй байна. Төслийн гол алхмуудыг огноотой нь нэмнэ үү.</p> : (
               <ol className="ms">
                 {ms.map(m => (
                   <li key={m.id} className={`ms__item${m.done ? ' is-done' : ''}${m === next ? ' is-next' : ''}`}>
                     <button type="button" className="ms__check" aria-pressed={m.done} aria-label={`${m.name}: биелсэн`} onClick={() => actions.toggleMilestone(p.id, m.id)}>
                       <Check className="ico" />
                     </button>
-                    <span className="ms__body">
+                    {/* The name opens it to change its name or day, or to take it away */}
+                    <button type="button" className="ms__body" onClick={() => open({ kind: 'milestone', project: p.id, id: m.id })}>
                       <b>{m.name}</b>
                       <small>{m.done ? `${dateDots(parse(m.date))}, биелсэн` : when(m.date)}</small>
-                    </span>
+                    </button>
                     {m === next && <span className="ms__tag">Дараагийнх</span>}
                   </li>
                 ))}

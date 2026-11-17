@@ -229,6 +229,32 @@ async function up(url) {
   rows = await b.rows();
   ok(Object.keys(rows.companies).join() === co && Object.values(rows).every(t => Object.values(t).every(v => v !== null)) && await b.p.locator('button.folder-add').count() === 0, 'someone of the first ХХК is not told of it, not even by a record\'s number, and cannot add one');
 
+  // ---- A project's milestones (Үе шат): added, changed and taken away on its page, by anyone on the project
+  await a.go('projects');
+  await a.p.getByRole('button', { name: 'Шинэ төсөл' }).first().click(); await a.wait(600);
+  await a.p.locator('#np-name').fill('Туршилтын төсөл');
+  await a.p.locator('dialog[open] .people-pick label', { hasText: 'Номин' }).click();
+  await a.p.locator('dialog[open]').getByRole('button', { name: 'Үүсгэх', exact: true }).click(); await a.wait(1500);
+  const route = (await a.p.evaluate(() => location.hash)).slice(1);
+  ok(route.startsWith('project-') && (await a.p.locator('.pd-ms').innerText()).includes('Төслийн гол алхмуудыг огноотой нь нэмнэ үү.'), 'a new project has no milestones yet, and says how to add them');
+  await a.p.getByRole('button', { name: 'Үе шат нэмэх' }).click(); await a.wait(500);
+  await a.p.locator('#ms-name').fill(''); await a.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await a.wait(300);
+  ok((await a.p.locator('.mform__errors li').allInnerTexts()).join('|') === 'Үе шатны нэрийг бичнэ үү.', 'a milestone without a name: asked for it');
+  await a.p.locator('#ms-name').fill('Зураг төсөл батлуулах'); await a.p.getByRole('button', { name: 'Нэмэх', exact: true }).click(); await a.wait(1200);
+  ok((await a.p.locator('.pd-ms').innerText()).includes('Зураг төсөл батлуулах'), 'added, it shows on the project page');
+  await b.sync(); await b.go(route);
+  ok((await b.main()).includes('Зураг төсөл батлуулах'), 'and to the others on the project');
+  await b.p.locator('.ms__body', { hasText: 'Зураг төсөл батлуулах' }).click(); await b.wait(500);
+  await b.p.locator('#ms-date').fill('2026-12-24'); await b.p.getByRole('button', { name: 'Хадгалах', exact: true }).click(); await b.wait(1500);
+  const pid = route.slice('project-'.length);
+  ok((await a.rows()).projects?.[pid]?.milestones?.[0]?.date === '2026-12-24', 'someone else on the project changes its day, and the server keeps it');
+  await a.sync(); await a.go(route);
+  await a.p.locator('.ms__body', { hasText: 'Зураг төсөл батлуулах' }).click(); await a.wait(500);
+  await a.p.getByRole('button', { name: 'Үе шатыг устгах' }).click(); await a.wait(600);
+  ok(!(await a.p.locator('.pd-ms').innerText()).includes('Зураг төсөл батлуулах'), 'taken away, it is gone');
+  await a.p.locator('.island__undo').click(); await a.wait(1500);
+  ok((await a.p.locator('.pd-ms').innerText()).includes('Зураг төсөл батлуулах') && (await a.rows()).projects?.[pid]?.milestones?.length === 1, 'and back with Буцаах');
+
   // ---- A file added by one opens for the other
   const paper = Buffer.from('%PDF-1.4\n' + 'Дотоод журмын туршилтын файл. '.repeat(400));
   await a.go(`docs-folder-${co}`);
