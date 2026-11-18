@@ -201,6 +201,35 @@ cd web && CLOUDFLARE_ACCOUNT_ID=$(curl -s -H "Authorization: Bearer via-proxy" h
     - Жишээ өгөгдөл дээр «passed over» гэж гарсан алхам бүрийг харна. Зөвхөн өгөгдөл, эрхээс хамаардаг алхам алгасагдах ёстой (жишээ нь Timely холбогдоогүй үеийн ирцийн хүснэгт).
     - Хоосон систем дээр жагсаалтын мөр шаарддаг алхмууд алгасагдана. «NO ELEMENT LIT» гарвал тэр алхмыг `optional` болгоно: шинэ хүн заавруудыг анх хоосон систем дээр үзнэ.
 
+## Кодын граф (Graphify)
+
+Кодын функц, файл хоорондын дуудлагыг граф болгож, «энэ функцийг өөрчилбөл юу нөлөөлөх вэ»-г хурдан олно (2026-11-18, хэрэглэгчийн хүсэлт; шалгалт, хязгаарыг `docs/decisions.md`-ээс үз). Тест, гараар шалгахыг орлохгүй.
+
+- **Хэзээ.** Олон газар хэрэглэгддэг функцийг (`src/lib/access.ts`, `store.ts`, `server/` гэх мэт) өөрчлөхөөс өмнө түүнийг шууд болон шууд бусаар дууддаг газрыг харна.
+- **Суулгах.** Шинэ орчин бүрт. Хувилбар нь гадны сангийн 14 хоногийн дүрмээр тогтсон, багцын нэр хоёр y-тэй:
+  ```bash
+  pip install uv==0.13.7    # uv байхгүй бол
+  uv tool install graphifyy==0.9.102 --exclude-newer 2026-11-04T00:00:00Z
+  ```
+- **Граф үүсгэх.** Repo-гийн үндсээс, 20 секунд орчим. Кодыг компьютер дээрээ задлана, AI руу юу ч илгээхгүй:
+  ```bash
+  GRAPHIFY_BACKEND=none graphify extract . --code-only
+  GRAPHIFY_BACKEND=none graphify update .     # кодоо өөрчилсний дараа
+  ```
+  - Гаралт `graphify-out/`-д бичигдэнэ, repo-д оруулахгүй (`.gitignore`). Хамрах хүрээ `.graphifyignore`-д: зөвхөн `web/`.
+- **Асуух.**
+  ```bash
+  graphify explain "seesTask"                                # шууд дуудагч ба дуудагдагч
+  graphify affected "seesTask" --relation calls --depth 3    # дуудагчийн дуудагч
+  graphify query "what calls seesTask?" --context call
+  ```
+- **Анхаарах.**
+  - Холбоос бүр EXTRACTED / INFERRED / AMBIGUOUS тэмдэгтэй. INFERRED, AMBIGUOUS нь буруу байж болно.
+  - Функцийг утга болгон дамжуулах (`.filter(seesTask)`), динамик дуудлага графт орохгүй байж болно. Граф холбоо олоогүй нь хамааралгүйн нотолгоо биш: текст хайлтаар давхар шалгана.
+  - Graphify Cloud (`app.graphify.com`), `--strict`, `/graphify` skill, AI-аар баримт задлах (`--backend`, `label`, `add <url>`)-ыг хэрэглэхгүй: баримт, бизнесийн өгөгдөл гадагш явна.
+  - Claude Code-ийн hook-ийг (`graphify claude install`) repo-д commit хийхгүй: graphify суугаагүй орчинд Read, Grep бүрт алдааны мөр гарна. Хэрэгтэй бол зөвхөн тухайн компьютерийн `.claude/settings.local.json`-д.
+  - `graph.html`-ийг нээхэд хөтөч `unpkg.com`-оос JS татна.
+
 ## Instagram reel үзэх арга
 
 Хэрэглэгч reel явуулбал:

@@ -1,0 +1,4 @@
+# Graphify-ийн кодын граф: кодоос дахин үүсгэдэг тул repo-д оруулахгүй (docs/decisions.md, 2026-11-18)
+graphify-out/
+# Нэг компьютерийн Claude Code-ийн тохиргоо (Graphify-ийн hook гэх мэт)
+.claude/settings.local.json

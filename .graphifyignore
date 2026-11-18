@@ -1,0 +1,5 @@
+# Graphify-ийн граф зөвхөн аппын кодыг (web/) хамарна. Бусдыг хасна.
+docs/
+.claude/
+undefined/
+web/package-lock.json
