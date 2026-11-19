@@ -20,6 +20,7 @@ npm run dev
 - `node scripts/clean-flow.cjs`: хоосон системийг шалгана (`npx vite preview --port 4173 --strictPort` ажиллаж байх ёстой).
 - `node scripts/tour-walk.cjs` (жишээ өгөгдөл), `node scripts/tour-walk.cjs --empty` (хоосон систем): ERP-ийн заавруудыг алхам бүрээр нь явна.
 - `ERP_DB=erp.sqlite node server/main.ts`: серверийг өөрийн компьютер дээр асаана (Node 22.5+, суулгах зүйлгүй). `npm run dev` ба preview `/api`-г түүн рүү дамжуулна.
+- `ERP_DB=… ERP_DIST=dist ERP_PROXY=1 node server/main.ts`: өөрийн сервер (VPS) дээр хуудсыг ч сервер өөрөө үйлчилнэ; HTTPS-ийг урд талын прокси (nginx) хийнэ, сервер зөвхөн тухайн компьютерээс хүсэлт авна.
 - `node scripts/server-test.ts`: серверийг хөтөчгүйгээр шалгана (эрх, нэвтрэлт, өгөгдөл солилцох).
 - `node scripts/server-flow.cjs`: сервертэй аппыг хөтчөөр шалгана; сервер, preview-г өөрөө асаана (эхлээд `npm run build`).
 
