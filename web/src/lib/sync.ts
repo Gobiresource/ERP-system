@@ -223,9 +223,9 @@ export async function inviteRemote(person: Person, password?: string) {
  */
 export const linkRemote = (who: Id) => call<{ link: string }>('link/new', { who })
 /** The address to send: the app, with the link after # (never sent to any server by the browser) */
-export const joinUrl = (token: string) => `${location.origin}${location.pathname}#join-${token}`
-/** The link this page was opened with, if any */
-export const joining = () => (link.on && location.hash.startsWith('#join-') ? location.hash.slice(6) : null)
+export const joinUrl = (token: string) => `${location.origin}${location.pathname}#j-${token}`
+/** The link this page was opened with, if any: `#j-…`, or `#join-…` as links were made before 2026-11-26 */
+export const joining = () => (link.on ? (/^#j(?:oin)?-(.+)$/.exec(location.hash)?.[1] ?? null) : null)
 /** Whose the link is, while it holds */
 export const linkWho = (token: string) => call<{ given: string; family: string; login: string }>('link/who', { token })
 /** Sets the password with the link and signs in, with the data here */

@@ -36,9 +36,12 @@ async function up(url) {
 
 (async () => {
   let stop = () => {};
+  /** The server's database, when this script can reach it: its own, or ERP_DB given with an address of this computer */
+  let dbFile = REMOTE ? process.env.ERP_DB : null;
   if (!REMOTE) {
     const dir = mkdtempSync(path.join(tmpdir(), 'erp-server-flow-'));
-    const env = { ...process.env, PORT: String(API), ERP_DB: path.join(dir, 'erp.sqlite'), ATTENDANCE_CODE: CODE, ERP_API: `http://localhost:${API}` };
+    dbFile = path.join(dir, 'erp.sqlite');
+    const env = { ...process.env, PORT: String(API), ERP_DB: dbFile, ATTENDANCE_CODE: CODE, ERP_API: `http://localhost:${API}` };
     delete env.TIMELY_API_KEYS; delete env.OPENROUTER_API_KEY;
     const server = spawn('node', ['server/main.ts'], { cwd: WEB, env, stdio: 'ignore' });
     const preview = spawn('npx', ['vite', 'preview', '--port', String(WEBPORT), '--strictPort'], { cwd: WEB, env, stdio: 'ignore', detached: true });
@@ -95,7 +98,7 @@ async function up(url) {
     const hint = await a.p.locator('#sl-url-hint').innerText().catch(() => '');
     await a.p.getByRole('button', { name: 'Хуулах', exact: true }).click(); await a.wait(800);
     const copied = await a.p.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-    ok(url.startsWith(BASE) && /#join-u\w+\.[\w-]{32}$/.test(url) && hint.includes(`«${login}»`) && copied === url && await a.p.locator('#sl-url').count() === 0, 'added, the admin is given the link to send, which says the login, and copies it');
+    ok(url.startsWith(BASE) && /^#j-[A-Za-z0-9]{12}$/.test(url.slice(BASE.length)) && hint.includes(`«${login}»`) && copied === url && await a.p.locator('#sl-url').count() === 0, 'added, the admin is given a short link to send (#j- and 12 letters and figures), which says the login, and copies it');
     return url;
   };
 
@@ -128,7 +131,7 @@ async function up(url) {
 
   // ---- A second person, from another browser
   const nominLink = await invite(a, 'Номин', 'Бат', 'nomin', 'staff');
-  const nominId = nominLink.match(/#join-([^.]+)\./)[1];
+  const nominId = Object.values((await a.rows()).people).find(p => p.account?.login === 'nomin').id;
   ok((await a.p.locator('.adm-table tbody tr', { hasText: 'saruul' }).innerText()).includes('Бусдад харагдахгүй') && !(await a.p.locator('.adm-table tbody tr', { hasText: 'nomin' }).innerText()).includes('Бусдад харагдахгүй'), 'in Удирдлага the system admin\'s own row says the others do not see it; nobody else\'s does');
   ok((await a.main()).includes('Номин'), 'the admin adds a person, who shows in Удирдлага');
   const b = await open('staff');
@@ -143,7 +146,7 @@ async function up(url) {
   ok((await b.p.locator('.mform__errors li').allInnerTexts()).join('|') === 'Нууц үг 8-аас доошгүй тэмдэгттэй, үсэг, тоо хоёулаа орсон байх ёстой.', 'a weak password: said so');
   await b.p.locator('#jn-password').fill('Turshilt2026'); await b.p.locator('#jn-again').fill('Turshilt2026'); await b.p.getByRole('button', { name: 'Нэвтрэх', exact: true }).click();
   await b.p.waitForSelector('dialog.welcome[open] .welcome__name', { timeout: 20000 }).catch(() => {}); await b.wait(1200);
-  ok((await b.p.locator('dialog.welcome .welcome__name').innerText().catch(() => '')).includes('Номин') && !(await b.p.evaluate(() => location.hash)).includes('join'), 'their own password made, the new person is in and welcomed, and the link has left the address');
+  ok((await b.p.locator('dialog.welcome .welcome__name').innerText().catch(() => '')).includes('Номин') && !/^#j(oin)?-/.test(await b.p.evaluate(() => location.hash)), 'their own password made, the new person is in and welcomed, and the link has left the address');
   await b.skip();
   ok((await b.p.locator('.sbar, .side').first().innerText()).includes('Туршилт'), 'into the same ХХК');
   const theirs = await b.rows();
@@ -161,6 +164,20 @@ async function up(url) {
   await a.p.waitForSelector('#sl-url', { timeout: 20000 });
   ok((await a.p.locator('#sl-url').inputValue()) !== nominLink && await a.p.getByRole('button', { name: 'Нууц үг шинэчлэх' }).count() === 0, 'the person\'s page gives a new link, instead of a password to set for them');
   await a.p.getByRole('button', { name: 'Болих' }).first().click(); await a.wait(600);
+  // A long link as they were made before 2026-11-26 (#join-<person>.<secret>): it still opens the page for its person
+  if (dbFile) {
+    const { DatabaseSync } = require('node:sqlite');
+    const { createHash, randomBytes } = require('node:crypto');
+    const long = randomBytes(24).toString('base64url');
+    const db = new DatabaseSync(dbFile);
+    db.prepare(`INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v`)
+      .run(`link:${nominId}`, JSON.stringify({ t: createHash('sha256').update(long).digest('base64url'), until: Math.floor(Date.now() / 1000) + 3600 }));
+    db.close();
+    const old = await open('old-link');
+    await old.p.goto(`${BASE}#join-${nominId}.${long}`, { waitUntil: 'networkidle' }); await old.wait(900);
+    ok(await old.p.title() === 'Нууц үг үүсгэх' && (await old.p.locator('.join__login').innerText().catch(() => '')) === 'nomin', 'a long link made before links were short still opens «Нууц үг үүсгэх» for its person');
+    await old.ctx.close();
+  }
 
 
   // ---- Work reaches the others
