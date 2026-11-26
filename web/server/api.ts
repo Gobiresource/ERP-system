@@ -71,25 +71,41 @@ const BAD_LINK = 'Энэ холбоос хүчингүй болсон байна
 /** A password nobody knows: a person invited by link signs in only once they have set their own */
 const unknowable = () => b64u(crypto.getRandomValues(new Uint8Array(32)))
 
-/**
- * A new sign-in link for the person (docs/decisions.md, 2026-11-16): whoever opens it sets the person's password and
- * is signed in as them. The link carries `<person>.<secret>`; the server keeps what is kept of the secret, in meta
- * under `link:<person>`, so a newer link puts out the one before.
- */
-async function newLink(db: Db, who: Id) {
-  const secret = b64u(crypto.getRandomValues(new Uint8Array(24)))
-  await all(db, `INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v`, `link:${who}`, JSON.stringify({ t: await kept(secret), until: now() + WEEK }))
-  return `${who}.${secret}`
+/** A link's secret: 12 letters and figures, about 71 bits of chance. Letters and figures only, so that a link stays
+ *  whole wherever it is pasted; each as likely as the next (248 is the largest multiple of 62 under 256). */
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+const SHORT = /^[A-Za-z0-9]{12}$/
+function linkSecret() {
+  let out = ''
+  while (out.length < 12) for (const b of crypto.getRandomValues(new Uint8Array(16))) if (b < 248 && out.length < 12) out += LETTERS[b % 62]
+  return out
 }
 
-/** The person a sign-in link is for, while it holds; else null */
+/**
+ * A new sign-in link for the person (docs/decisions.md, 2026-11-16; short since 2026-11-26): whoever opens it sets the
+ * person's password and is signed in as them. The link carries its secret alone; the server keeps what is kept of it in
+ * meta under `link:<person>`, so a newer link puts out the one before, and the person is found by it.
+ */
+async function newLink(db: Db, who: Id) {
+  const secret = linkSecret()
+  await all(db, `INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v`, `link:${who}`, JSON.stringify({ t: await kept(secret), until: now() + WEEK }))
+  return secret
+}
+
+/** The person a sign-in link is for, while it holds; else null. A link made before 2026-11-26 is `<person>.<secret>`. */
 async function linkHolder(db: Db, token: unknown): Promise<Id | null> {
-  const dot = text(token) ? token.lastIndexOf('.') : -1
-  if (dot < 1) return null
-  const [who, secret] = [(token as string).slice(0, dot), (token as string).slice(dot + 1)]
-  const row = await one<{ v: string }>(db, `SELECT v FROM meta WHERE k = ?`, `link:${who}`)
-  const v = row ? (JSON.parse(row.v) as { t: string; until: number }) : null
-  return v && v.until > now() && same(await kept(secret), v.t) ? who : null
+  if (!text(token)) return null
+  const dot = token.lastIndexOf('.')
+  if (dot < 1 && !SHORT.test(token)) return null
+  const t = await kept(dot < 1 ? token : token.slice(dot + 1))
+  const rows = dot < 1
+    ? await all<{ k: string; v: string }>(db, `SELECT k, v FROM meta WHERE k LIKE 'link:%'`)
+    : await all<{ k: string; v: string }>(db, `SELECT k, v FROM meta WHERE k = ?`, `link:${token.slice(0, dot)}`)
+  for (const row of rows) {
+    const v = JSON.parse(row.v) as { t: string; until: number }
+    if (v.until > now() && same(t, v.t)) return row.k.slice('link:'.length)
+  }
+  return null
 }
 
 /** The link's person sets their password and is in; whoever was signed in as them before is out */

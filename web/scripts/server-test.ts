@@ -5,6 +5,7 @@
 // Before a deploy that changes a query, the same checks against Cloudflare's own database (scripts/d1-rest.ts), in an
 // empty one made for the test and removed after:
 //   NODE_USE_ENV_PROXY=1 node web/scripts/server-test.ts --d1=gobi-erp-test
+import { createHash, randomBytes } from 'node:crypto'
 import { handleApi, type ApiEnv } from '../server/api.ts'
 import type { About, FileStore } from '../server/files.ts'
 import { openDb } from '../server/sqlite.ts'
@@ -624,14 +625,14 @@ async function main() {
     const BAD = 'Энэ холбоос хүчингүй болсон байна. Удирдлагадаа хандаж шинэ холбоос авна уу.'
     r = await admin.call('POST', 'invite', { person: person('u20', 'Холбоостой', 'c1', 'linked', preset('director')), pos: 9 })
     const token = String(r.j?.link)
-    ok(r.status === 200 && /^u20\.[\w-]{32}$/.test(token), 'added without a password, the person comes with a sign-in link')
+    ok(r.status === 200 && /^[A-Za-z0-9]{12}$/.test(token), 'added without a password, the person comes with a short sign-in link: 12 letters and figures')
     const guest = new Browser(env)
     ok((await guest.login('linked', 'pass1234')).status === 401, 'nobody signs in as them before the link is used')
     r = await guest.call('POST', 'link/who', { token })
     ok(r.status === 200 && r.j.given === 'Холбоостой' && r.j.login === 'linked' && Object.keys(r.j).sort().join() === 'family,given,login', 'the link says whose it is: the name and the login, nothing more')
     r = await guest.call('POST', 'link/who', { token: token.slice(0, -1) + (token.endsWith('A') ? 'B' : 'A') })
     ok(r.status === 404 && r.j.error === BAD, 'a link one letter off is no link, and the page says what to do')
-    ok((await guest.call('POST', 'link/who', { token: `u1.${token.split('.')[1]}` })).status === 404 && (await guest.call('POST', 'link/who', { token: 'nonsense' })).status === 404, "nor is its secret with someone else's id, or a made-up one")
+    ok((await guest.call('POST', 'link/who', { token: `u1.${token}` })).status === 404 && (await guest.call('POST', 'link/who', { token: 'nonsense' })).status === 404, "nor is its secret with someone else's id, or a made-up one")
     r = await guest.call('POST', 'link/use', { token, salt: SALT, hash: hashOf('mine1234') })
     ok(r.status === 200 && r.j.me === 'u20' && /HttpOnly/.test(r.set ?? ''), 'with it, the person makes their own password and is signed in')
     ok((await guest.pull()).status === 200 && guest.ids('companies').join() === 'c1', 'and gets their data')
@@ -653,6 +654,15 @@ async function main() {
     ok((await new Browser(env).call('POST', 'link/who', { token: r.j.link })).status === 404, 'a link older than a week works no more')
     r = await admin.call('POST', 'link/new', { who: 'u5' })
     ok(r.status === 200 && (await new Browser(env).call('POST', 'link/use', { token: r.j.link, salt: SALT, hash: hashOf('back1234') })).status === 403, 'someone stopped from signing in is not let in by a link')
+    // A long link made before 2026-11-26 names its person: it holds until its week is out, for that person only
+    const long = randomBytes(24).toString('base64url')
+    await env.DB!.prepare(`INSERT INTO meta (k, v) VALUES ('link:u20', ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v`)
+      .bind(JSON.stringify({ t: createHash('sha256').update(long).digest('base64url'), until: Math.floor(Date.now() / 1000) + 3600 })).all()
+    r = await new Browser(env).call('POST', 'link/who', { token: `u20.${long}` })
+    ok(r.status === 200 && r.j.login === 'linked' && (await new Browser(env).call('POST', 'link/who', { token: `u5.${long}` })).status === 404 && (await new Browser(env).call('POST', 'link/who', { token: long })).status === 404, 'a long link made before links were short still holds, for its own person only')
+    // (the password the checks of tasks below sign in with)
+    r = await new Browser(env).call('POST', 'link/use', { token: `u20.${long}`, salt: SALT, hash: hashOf('reset1234') })
+    ok(r.status === 200 && r.j.me === 'u20' && (await new Browser(env).login('linked', 'reset1234')).status === 200, 'and with it the person sets their password and is in')
     ok((await admin.call('POST', 'invite', { person: person('u21', 'Буруу', 'c1', 'halfway', NO_ACCESS), salt: SALT })).status === 400, 'half a password is no password: refused')
   }
 
