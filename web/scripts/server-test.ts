@@ -713,6 +713,59 @@ async function main() {
     ok(has(under, 'tasks', 'old1') && [staff, director, outside].every(b => !has(b, 'tasks', 'old1')), 'a task from before its maker was noted is its own people\'s alone')
   }
 
+  console.log('Company memberships')
+  {
+    await invite(admin, person('u30', 'Харьяаллын админ', 'c1', 'members-admin', preset('director')))
+    await invite(admin, person('u31', 'Олон компанийн ажилтан', 'c1', 'members-staff', preset('hr')))
+    const manager = new Browser(env), worker = new Browser(env)
+    await manager.login('members-admin', 'pass1234'); await manager.pull()
+    await worker.login('members-staff', 'pass1234'); await worker.pull()
+    const memberships = (who: Browser, id: string, companies: string[]) => who.push([{ c: 'people', id, ops: [[['companies'], companies]] }])
+    const denied = async (who: Browser, id: string, companies: string[]) => (await memberships(who, id, companies)).j.refused.length === 1
+    ok(await denied(worker, 'u31', ['c1', 'c2']), 'a member cannot join another ХХК by asking the server directly')
+    ok(await denied(manager, 'u31', ['c1', 'c2']), 'an admin of only the first ХХК cannot give membership in the second')
+    r = await manager.push([{ c: 'people', id: 'u31', ops: [[['account', 'access', 'c2'], preset('director')]] }])
+    ok(r.j.refused.length === 1, 'nor plant rights in a ХХК the person does not belong to')
+    ok(await denied(admin, 'u31', []), 'a person keeps at least one ХХК')
+    ok(await denied(admin, 'u31', ['c1', 'c1']), 'a membership cannot be duplicated')
+    ok(await denied(admin, 'u31', ['c1', 'missing']), 'a membership cannot name a missing ХХК')
+    ok(await denied(admin, 'u1', ['c1']), 'the founder cannot lose an existing ХХК')
+
+    await admin.pull()
+    r = await admin.edit<Person>('people', 'u31', p => ({ ...p, companies: ['c1', 'c2'], account: { ...p.account!, access: { ...p.account!.access, c2: { ...NO_ACCESS } } } }))
+    ok(r.j.refused.length === 0, 'the system admin gives an existing account a second ХХК')
+    r = await worker.pull()
+    const shared = worker.get<Person>('people', 'u31')!
+    ok(r.j.full === true && worker.ids('companies').join() === 'c1,c2' && shared.account!.access.c1.hrEdit && !shared.account!.access.c2.admin, 'the same signed-in account gets the new company, keeping its old rights and starting the new one as staff')
+    await admin.put('docs', { id: 'member-doc', company: 'c2', name: 'Хувийн баримт', kind: 'order', to: ['u31'], by: 'u1', added: '' } as never)
+    await worker.pull()
+    ok(!!worker.get('docs', 'member-doc'), 'the second company can address a document to its new member')
+    r = await admin.edit<Person>('people', 'u31', p => ({ ...p, account: { ...p.account!, access: { ...p.account!.access, c2: preset('clerk') } } }))
+    await worker.pull()
+    ok(r.j.refused.length === 0 && worker.get<Person>('people', 'u31')!.account!.access.c2.docsEdit && worker.get<Person>('people', 'u31')!.account!.access.c1.hrEdit, 'rights in the second company change independently of the first')
+    await manager.pull()
+    ok(await denied(manager, 'u31', ['c1']), 'an admin of only one of the old companies cannot change the account\'s memberships')
+
+    await admin.pull()
+    await admin.edit<Person>('people', 'u30', p => ({ ...p, companies: ['c1', 'c2'], account: { ...p.account!, access: { ...p.account!.access, c2: preset('director') } } }))
+    await manager.pull()
+    ok(await denied(manager, 'u30', ['c1']), 'even an admin of both companies cannot remove their own membership')
+    r = await manager.edit<Person>('people', 'u31', p => {
+      const { c2: _, ...access } = p.account!.access
+      return { ...p, companies: ['c1'], account: { ...p.account!, access } }
+    })
+    ok(r.j.refused.length === 0, 'an admin of every old company removes a membership and its rights together')
+    r = await worker.pull()
+    ok(r.j.full === true && worker.ids('companies').join() === 'c1' && !worker.get('docs', 'member-doc') && !worker.get<Person>('people', 'u31')!.account!.access.c2, 'the next sync removes the departed company and even a document still addressed to the person there')
+    await admin.pull()
+    ok(!!admin.get('docs', 'member-doc'), 'the old document stays in the company after its member leaves')
+    r = await manager.edit<Person>('people', 'u31', p => ({ ...p, companies: ['c1', 'c2'], account: { ...p.account!, access: { ...p.account!.access, c2: { ...NO_ACCESS } } } }))
+    ok(r.j.refused.length === 0, 'an admin of both companies adds the same account back')
+    await worker.pull()
+    ok(worker.ids('companies').join() === 'c1,c2' && !worker.get<Person>('people', 'u31')!.account!.access.c2.docsEdit, 'rejoining starts as staff instead of reviving the old company rights')
+    ok((await new Browser(env).login('members-staff', 'pass1234')).status === 200, 'adding or removing companies leaves the account login and password unchanged')
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`)
   process.exit(failed ? 1 : 0)
 }

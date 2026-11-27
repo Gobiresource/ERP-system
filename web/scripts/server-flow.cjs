@@ -11,7 +11,7 @@
 // Needs Playwright with Chromium (already in the cloud container; elsewhere: npm i playwright) and Node 22.5 or newer.
 const { chromium } = require('playwright');
 const { spawn } = require('node:child_process');
-const { mkdtempSync, rmSync } = require('node:fs');
+const { mkdtempSync, mkdirSync, rmSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 
@@ -44,8 +44,8 @@ async function up(url) {
     const env = { ...process.env, PORT: String(API), ERP_DB: dbFile, ATTENDANCE_CODE: CODE, ERP_API: `http://localhost:${API}` };
     delete env.TIMELY_API_KEYS; delete env.OPENROUTER_API_KEY;
     const server = spawn('node', ['server/main.ts'], { cwd: WEB, env, stdio: 'ignore' });
-    const preview = spawn('npx', ['vite', 'preview', '--port', String(WEBPORT), '--strictPort'], { cwd: WEB, env, stdio: 'ignore', detached: true });
-    stop = () => { server.kill(); try { process.kill(-preview.pid) } catch {} rmSync(dir, { recursive: true, force: true }); };
+    const preview = spawn(process.execPath, [path.join(WEB, 'node_modules/vite/bin/vite.js'), 'preview', '--port', String(WEBPORT), '--strictPort'], { cwd: WEB, env, stdio: 'ignore', detached: process.platform !== 'win32' });
+    stop = () => { server.kill(); try { if (process.platform === 'win32') preview.kill(); else process.kill(-preview.pid); } catch {} rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); };
     process.on('exit', stop);
     if (!(await up(`http://localhost:${API}/api/state`)) || !(await up(BASE))) { console.log('FAIL the server or the preview did not start'); process.exit(1); }
   }
@@ -245,6 +245,49 @@ async function up(url) {
   await b.go('docs');
   rows = await b.rows();
   ok(Object.keys(rows.companies).join() === co && Object.values(rows).every(t => Object.values(t).every(v => v !== null)) && await b.p.locator('button.folder-add').count() === 0, 'someone of the first ХХК is not told of it, not even by a record\'s number, and cannot add one');
+
+  // ---- One account in several companies, with separate rights; all data here is made up in the temporary database.
+  await a.go(`admin-${me.id}`);
+  ok(await a.p.locator('.adm-companies input:enabled').count() === 0, 'the founder cannot uncheck their own company memberships');
+  await a.go(`admin-${nominId}`);
+  const coBox = a.p.locator('.adm-companies label', { hasText: 'Хоёрдугаар ХХК' }).getByRole('checkbox');
+  const firstBox = a.p.locator('.adm-companies label', { hasText: 'Туршилт ХХК' }).getByRole('checkbox');
+  ok(await firstBox.isDisabled() && await coBox.isEnabled() && !await coBox.isChecked(), 'the existing company is selected and cannot be the last one removed; another can be selected');
+  await coBox.focus(); await a.p.keyboard.press('Space'); await a.wait(1500);
+  rows = await a.rows();
+  const originalRights = rows.people[nominId].account.access[co];
+  ok(rows.people[nominId].companies.includes(co2) && rows.people[nominId].account.access[co2].docs === 'none' && !rows.people[nominId].account.access[co2].admin, 'a keyboard selection adds the second company, starting as staff');
+  ok(await a.p.locator('#adm-rights-company').inputValue() === co2 && (await a.p.locator('#adr-t').innerText()).includes('Хоёрдугаар'), 'the rights editor selects the new company without changing the company being worked in');
+  await a.p.locator('.adm-preset', { hasText: 'Бичиг хэрэг' }).filter({ has: a.p.locator('input[type=radio]') }).click(); await a.wait(1500);
+  rows = await a.rows();
+  ok(rows.people[nominId].account.access[co2].docsEdit && JSON.stringify(rows.people[nominId].account.access[co]) === JSON.stringify(originalRights), 'rights in the new company are saved without changing rights in the first');
+  await a.p.locator('#adm-rights-company').selectOption(co);
+  ok((await a.p.locator('#adr-t').innerText()).includes('Туршилт'), 'the rights editor can return to the first company');
+  if (process.env.ERP_SCREENSHOTS) {
+    const out = path.resolve(process.env.ERP_SCREENSHOTS); mkdirSync(out, { recursive: true });
+    for (const [width, mode] of [[1280, 'light'], [390, 'light'], [390, 'dark'], [1280, 'dark'], [320, 'dark']]) {
+      if ((await a.p.evaluate(() => document.documentElement.dataset.mode)) !== mode) {
+        await a.p.setViewportSize({ width: 1440, height: 900 }); await a.p.locator('.tbtn--theme').click(); await a.wait(300);
+      }
+      await a.p.setViewportSize({ width, height: 1000 });
+      await a.wait(300);
+      await a.p.evaluate(() => window.scrollTo(0, 0));
+      ok(await a.p.locator('.adm-companies').evaluate(el => el.scrollWidth <= el.clientWidth + 1), `the companies fit at ${width}px in ${mode} mode`);
+      await a.p.screenshot({ path: path.join(out, `companies-${width}-${mode}.png`), fullPage: true });
+    }
+    await a.p.setViewportSize({ width: 1440, height: 900 }); await a.p.locator('.tbtn--theme').click();
+  }
+  await b.sync(); await b.p.locator('button.brand').click(); await b.p.getByRole('menuitemradio', { name: 'Хоёрдугаар ХХК' }).click(); await b.wait(600);
+  ok((await b.p.locator('.brand__name').innerText()).includes('Хоёрдугаар'), 'the same signed-in person switches to the second company');
+  await a.p.reload({ waitUntil: 'networkidle' }); await a.wait(900);
+  ok(await coBox.isChecked(), 'the company membership survives a reload');
+  await coBox.uncheck(); await a.wait(1500); await b.sync();
+  rows = await b.rows();
+  ok(Object.keys(rows.companies).join() === co && !rows.people[nominId].account.access[co2] && (await b.p.locator('.brand__name').innerText()).includes('Туршилт'), 'removing the second company drops its rights and returns its signed-in user to their remaining company');
+  await a.p.getByRole('button', { name: 'Буцаах', exact: true }).click(); await a.wait(1500);
+  rows = await a.rows();
+  ok(rows.people[nominId].companies.includes(co2) && rows.people[nominId].account.access[co2].docsEdit, 'Undo restores the membership and its previous rights');
+  await coBox.uncheck(); await a.wait(1500); await b.sync();
 
   // ---- A project's milestones (Үе шат): added, changed and taken away on its page, by anyone on the project
   await a.go('projects');

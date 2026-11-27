@@ -5,7 +5,7 @@
 // Reading follows the screens exactly. Changing is checked by who may touch a record at all (its ХХК, its owner, its
 // part in a process); the finer order of a process's steps is still the browser's to keep (docs/decisions.md, 2026-11-15).
 import type { Chat, Contract, Doc, DocRequest, Draft, Employee, HrRequest, Id, Message, MonthReport, Person, Project, ScanItem, State, Task } from '../src/lib/types.ts'
-import { accessOf, changesTask, docView, inProject, managesAccount, seer, seesTask, teamOf } from '../src/lib/access.ts'
+import { accessOf, changesTask, docView, inProject, managesAccount, managesCompanies, seer, seesTask, teamOf } from '../src/lib/access.ts'
 import { rolesOf } from '../src/lib/contracts.ts'
 import { actorsOf, involves } from '../src/lib/hrRequests.ts'
 import { managerOf, seesAll } from '../src/lib/reports.ts'
@@ -76,6 +76,8 @@ export function cols(c: Table, id: Id, r: unknown): { co: string; k: string } {
 /** What the person gets of a record: its JSON as kept, a lesser version, or null when it is not theirs to see */
 export function see(x: Ctx, c: Table, r: { id: Id; co: string; k: string; data: string | null }): string | null {
   if (r.data === null) return null
+  // Leaving a ХХК closes even records still addressed to or owned by this person there.
+  if (r.co && !member(x, r.co)) return null
   const ok = (yes: boolean) => (yes ? r.data : null)
   switch (c) {
     case 'companies': case 'roles': case 'kpi': case 'timely':
@@ -174,13 +176,15 @@ function person(x: Ctx, old: Person, next: Person, ops: Op[]): string | null {
     } else if (OWN.includes(a)) {
       if (old.id !== x.me) return NO
     } else if (a === 'companies' && path.length === 1) {
-      // Whoever set the system up joins the ХХК they add; nobody is taken out of one here
-      if (!x.sys || old.id !== x.me || !old.companies.every(co => next.companies.includes(co))) return NO
+      // The founder still joins a newly made ХХК in the same round, before it exists in this context.
+      const founding = x.sys && old.id === x.me && old.companies.every(co => next.companies.includes(co))
+      if (!founding && !managesCompanies(x.s, x.me, old.id, next.companies)) return NO
     } else if (a === 'account' && old.account && next.account) {
       if (b === 'toured' || b === 'lastLogin') {
         if (old.id !== x.me) return NO
       } else if (b === 'access' && c) {
         if (!rights(x, c).admin || (old.account.sysadmin && !x.sys)) return NO
+        if (!next.companies.includes(c) && !(old.companies.includes(c) && !(c in next.account.access))) return NO
         if (old.id === x.me && !x.sys && !next.account.access[c]?.admin) return 'Өөрийн удирдлагын эрхийг хасах боломжгүй.'
       } else if (b === 'login' && path.length === 2) {
         if (!managesAccount(x.s, x.me, old.id)) return NO
