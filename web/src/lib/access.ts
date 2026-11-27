@@ -46,6 +46,14 @@ export function managesAccount(s: Pick<State, 'people'>, who: Id, other: Id): bo
   return !!p?.companies.length && !p.account?.sysadmin && p.companies.every(c => accessOf(s, who, c).admin)
 }
 
+/** Changing where someone works takes management of their old and new ХХК; nobody removes their own way in. */
+export function managesCompanies(s: Pick<State, 'people' | 'companies'>, who: Id, other: Id, companies: Id[]): boolean {
+  const p = s.people.find(x => x.id === other)
+  return !!p?.account && !p.account.sysadmin && who !== other && managesAccount(s, who, other)
+    && companies.length > 0 && new Set(companies).size === companies.length
+    && companies.every(c => s.companies.some(x => x.id === c) && accessOf(s, who, c).admin)
+}
+
 type Org = Pick<State, 'employees' | 'departments' | 'roles'>
 
 /** The ХХК's employees under the person by Шууд удирдлага, all the way down, and the person's own record */

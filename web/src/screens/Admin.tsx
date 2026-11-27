@@ -19,7 +19,7 @@ import { Seg } from '../ui/Seg'
 import { Avatar, Empty } from '../ui/bits'
 
 export default function Admin({ id }: { id?: string }) {
-  return id ? <User id={id} /> : <Users />
+  return id ? <User key={id} id={id} /> : <Users />
 }
 
 const when = (iso?: string) => (iso ? dots(dayOf(iso)) : 'Нэвтэрч байгаагүй')
@@ -110,6 +110,7 @@ function User({ id }: { id: string }) {
   const p = scoped(s).people.find(x => x.id === id)
   const [login, setLogin] = useState(p?.account?.login ?? '')
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [pickedCompany, setPickedCompany] = useState(s.company)
   const back = <a className="ibtn ibtn--glass head__back" href="#admin" aria-label="Хэрэглэгчид рүү буцах"><ChevronLeft className="ico" /></a>
   if (!p?.account) {
     return (
@@ -120,16 +121,28 @@ function User({ id }: { id: string }) {
     )
   }
   const acc = p.account
-  const mine = rightsOf(p, s.company)
+  const editable = s.companies.filter(c => p.companies.includes(c.id) && accessOf(s, s.me, c.id).admin)
+  const companyId = editable.some(c => c.id === pickedCompany) ? pickedCompany : editable[0]?.id ?? s.company
+  const mine = rightsOf(p, companyId)
   const me = id === s.me
-  const company = s.companies.find(c => c.id === s.company)?.name
+  const company = s.companies.find(c => c.id === companyId)?.name
   // A login and password hold in every ХХК the person works in, so an admin of only some of them leaves them be
   const may = managesAccount(s, s.me, id)
   const elsewhere = s.companies.filter(c => p.companies.includes(c.id) && !accessOf(s, s.me, c.id).admin).map(c => c.name).join(', ')
   const save = (next: Access, what: string) => {
     const before = mine
-    if (!actions.setAccess(id, s.company, next)) return toast(me ? 'Өөрийн удирдлагын эрхийг хасах боломжгүй.' : 'Танд энэ үйлдлийг хийх эрх алга.', { kind: 'warn' })
-    toast(what, { undo: () => actions.setAccess(id, s.company, before) })
+    if (!actions.setAccess(id, companyId, next)) return toast(me ? 'Өөрийн удирдлагын эрхийг хасах боломжгүй.' : 'Танд энэ үйлдлийг хийх эрх алга.', { kind: 'warn' })
+    toast(what, { undo: () => actions.setAccess(id, companyId, before) })
+  }
+  const membership = (company: string, checked: boolean) => {
+    const before = p.companies
+    const next = checked ? [...before, company] : before.filter(c => c !== company)
+    if (!actions.setCompanies(id, next)) return toast('Танд компанийн харьяаллыг өөрчлөх эрх алга.', { kind: 'warn' })
+    if (checked) setPickedCompany(company)
+    else if (company === s.company) go('admin')
+    toast('Харьяалах компаниуд хадгалагдлаа.', { undo: () => {
+      if (actions.setCompanies(id, before)) for (const c of before) actions.setAccess(id, c, rightsOf(p, c))
+    } })
   }
   const set = (patch: Partial<Access>) => save({ ...mine, ...patch }, 'Эрх хадгалагдлаа.')
   const rename = () => {
@@ -146,8 +159,8 @@ function User({ id }: { id: string }) {
     toast(acc.active ? `${short(p)} нэвтрэх боломжгүй боллоо.` : `${short(p)} дахин нэвтэрнэ.`, { undo: () => actions.setAccount(id, { active: acc.active }) })
   }
   const preset = presetOf(mine)
-  const team = mine.hr === 'team' || mine.attendance === 'team' || mine.docs === 'team' ? [...teamOf(s, id, s.company)].map(x => s.employees.find(e => e.id === x)!).filter(e => e.user !== id) : null
-  const hasRecord = s.employees.some(e => e.company === s.company && e.user === id)
+  const team = mine.hr === 'team' || mine.attendance === 'team' || mine.docs === 'team' ? [...teamOf(s, id, companyId)].map(x => s.employees.find(e => e.id === x)!).filter(e => e.user !== id) : null
+  const hasRecord = s.employees.some(e => e.company === companyId && e.user === id)
 
   return (
     <div ref={ref} className="adm-user">
@@ -162,6 +175,32 @@ function User({ id }: { id: string }) {
         ]}
       />
       <div className="adm-grid">
+        <section className="card glass adm-companies" aria-labelledby="adc-t" data-enter>
+          <div className="card__head">
+            <div>
+              <h2 className="card__title" id="adc-t">Харьяалагдах компаниуд</h2>
+              <p className="card__sub">Тохирох бүх компанийг сонгоно уу. Өөрчлөлт шууд хадгалагдана.</p>
+            </div>
+          </div>
+          <fieldset className="adm-company-list" disabled={acc.sysadmin || !may || me} aria-describedby="adc-hint">
+            <legend className="sr-only">Харьяалагдах компаниуд</legend>
+            {s.companies.map(c => {
+              const checked = p.companies.includes(c.id)
+              const canEdit = accessOf(s, s.me, c.id).admin
+              return (
+                <label key={c.id} className="adm-preset">
+                  <input type="checkbox" checked={checked} disabled={!canEdit || (checked && p.companies.length === 1)}
+                    onChange={e => membership(c.id, e.target.checked)} />
+                  <span><b>{c.name}</b><small>{!canEdit ? 'Харьяалал өөрчлөхөд удирдлагын эрх хэрэгтэй' : checked ? rightsName(rightsOf(p, c.id), acc.sysadmin) : 'Нэмэхэд «Ажилтан» эрхтэй болно'}</small></span>
+                </label>
+              )
+            })}
+          </fieldset>
+          <p className="adm-note" id="adc-hint">{acc.sysadmin ? 'Системийн админ бүх компанид бүрэн эрхтэй.'
+            : me ? 'Өөрийн компанийн харьяаллыг өөрчлөх боломжгүй.'
+              : !may ? 'Харьяаллыг энэ хэрэглэгчийн бүх компанид удирдлагын эрхтэй хүн өөрчилнө.'
+                : 'Дор хаяж нэг компанид харьяалагдана. Харьяаллаас хасахад тухайн компанид хандах эрх хаагдана. Өмнөх бүртгэл, мэдээлэл хадгалагдана.'}</p>
+        </section>
         <section className="card glass adm-rights" aria-labelledby="adr-t" data-enter>
           <div className="card__head">
             <div>
@@ -169,6 +208,12 @@ function User({ id }: { id: string }) {
               <p className="card__sub">{acc.sysadmin ? (link.on ? 'Системийн админ: бүх ХХК-д бүрэн эрхтэй. Бусдад харагдахгүй.' : 'Системийн админ: бүх ХХК-д бүрэн эрхтэй.') : 'Өөрчлөлт шууд хадгалагдана.'}</p>
             </div>
           </div>
+          {editable.length > 1 && <div className="field adm-company-pick">
+            <label className="field__label" htmlFor="adm-rights-company">Эрх тохируулах компани</label>
+            <select id="adm-rights-company" value={companyId} onChange={e => setPickedCompany(e.target.value)}>
+              {editable.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>}
           <fieldset className="adm-presets" disabled={acc.sysadmin}>
             <legend className="field__label">Бэлэн эрх</legend>
             {PRESETS.map(x => (

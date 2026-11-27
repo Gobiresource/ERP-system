@@ -16,6 +16,13 @@
 .adm-rights { grid-column: span 7; }
 .adm-side { grid-column: span 5; align-self: start; }
 .adm-team { grid-column: 1 / -1; }
+.adm-companies { grid-column: 1 / -1; }
+.adm-company-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px; min-inline-size: 0; margin: 0 0 16px; padding: 0; border: 0; }
+.adm-company-list .adm-preset { min-width: 0; }
+.adm-company-list .adm-preset span { min-width: 0; overflow-wrap: anywhere; }
+.adm-company-list:disabled .adm-preset { cursor: default; }
+.adm-company-pick { margin-bottom: 24px; }
+.adm-company-pick select { width: 100%; }
 @media (width <= 1100px) { .adm-rights, .adm-side { grid-column: 1 / -1; } }
 
 /* Ready-made sets, then each right */

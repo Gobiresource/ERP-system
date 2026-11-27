@@ -9,7 +9,7 @@ import { seedDocs } from './docs'
 import { seedChats } from './chat'
 import { REVIEW, STAGE, canEdit, clausesFor, deciders, reviewsOf, rolesOf, seedContracts } from './contracts'
 import { bandOf, dueOf, empOf, findReport, kpiOf, managerOf, mayScore, nextMonth, seedReports, seesAll, total } from './reports'
-import { PRESETS, accessOf, demoAccounts, hashOf, loginKey, managesAccount, newSalt, withDocRights } from './access'
+import { NO_ACCESS, PRESETS, accessOf, demoAccounts, hashOf, loginKey, managesAccount, managesCompanies, newSalt, withDocRights } from './access'
 import { companyMark, today } from './format'
 import { docTypesFor } from './seedHr'
 import { seedLessons, teaches } from './training'
@@ -391,9 +391,19 @@ export const actions = {
   setAccess(who: Id, company: Id, access: Access) {
     if (!accessOf(state, state.me, company).admin) return false
     if (who === state.me && !access.admin && !state.people.find(p => p.id === who)?.account?.sysadmin) return false
-    const a = state.people.find(p => p.id === who)?.account
-    if (!a || (a.sysadmin && !sysadmin())) return false
+    const p = state.people.find(p => p.id === who)
+    const a = p?.account
+    if (!a || !p.companies.includes(company) || (a.sysadmin && !sysadmin())) return false
     editAccount(who, { access: { ...a.access, [company]: access } })
+    return true
+  },
+  /** One account in several ХХК: a new membership starts as staff; leaving it drops its rights, not its records. */
+  setCompanies(who: Id, companies: Id[]) {
+    if (!managesCompanies(state, state.me, who, companies)) return false
+    set(s => ({ ...s, people: s.people.map(p => p.id !== who ? p : {
+      ...p, companies,
+      account: { ...p.account!, access: Object.fromEntries(companies.map(c => [c, p.companies.includes(c) ? p.account!.access[c] ?? { ...NO_ACCESS } : { ...NO_ACCESS }])) },
+    }) }))
     return true
   },
   /** Renames the login, or stops and lets again someone signing in; never oneself */
